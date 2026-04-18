@@ -8,7 +8,7 @@ use App\Http\Controllers\AuthController;
 // Auth routes (guests only)
 Route::middleware('guest')->group(function () {
     Route::get('/login',     [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login',    [AuthController::class, 'login'])->name('login.post')->middleware('throttle:5,10');
+    Route::post('/login',    [AuthController::class, 'login'])->name('login.post')->middleware('throttle:5,2');
     Route::get('/register/success', function () {
         return view('auth.registered');
     })->name('register.success');
@@ -188,6 +188,7 @@ Route::middleware('auth')->group(function () {
 
     // Notifications
     Route::post('/notifications/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
+    Route::get('/api/user-visibility/{id}', [App\Http\Controllers\SettingsController::class, 'getUserVisibility']);
     Route::post('/notifications/clear-all', [App\Http\Controllers\NotificationController::class, 'clearAll'])->name('notifications.clearAll');
     Route::post('/notifications/{id}/read', [App\Http\Controllers\NotificationController::class, 'markRead'])->name('notifications.markRead');
     Route::get('/api/notifications/count', [App\Http\Controllers\NotificationController::class, 'count'])->name('notifications.count');

@@ -35,7 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, $request) {
             if ($request->routeIs('login.post')) {
                 return redirect()->route('login')
-                    ->withErrors(['email' => 'Too many login attempts. Please wait 10 minutes before trying again.'])
+                    ->withErrors(['email' => 'Too many login attempts. Please wait 2 minutes before trying again.'])
                     ->withInput($request->only('email'));
             }
         });
