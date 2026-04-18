@@ -11,7 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule): void {
-        $time = \DB::table('app_settings')->where('key', 'notification_time')->value('value') ?? '08:00';
+        try {
+            $time = \DB::table('app_settings')->where('key', 'notification_time')->value('value') ?? '08:00';
+        } catch (\Exception $e) {
+            $time = '08:00';
+        }
         $schedule->command('commissions:send-reminders')->dailyAt($time);
         $schedule->command('notes:send-reminders')->everyMinute();
         $schedule->command('events:send-reminders')->dailyAt($time);
