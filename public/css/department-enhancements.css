@@ -1,0 +1,369 @@
+/* Department Page Enhancements */
+
+/* Animated Currency Symbol */
+.dept-table tbody td::before {
+    content: '₱ ';
+    font-weight: 700;
+    color: #A37929;
+    margin-right: 2px;
+}
+
+.dept-table tbody td:first-child::before,
+.dept-table tbody td:last-child::before {
+    content: '';
+}
+
+/* Highlight High Values */
+.dept-table tbody td[data-value]:not(:first-child):not(:last-child) {
+    position: relative;
+}
+
+/* Empty Cell Styling */
+.dept-table tbody td:empty::after {
+    content: '—';
+    color: #d1d5db;
+    font-weight: 400;
+}
+
+/* Zebra Striping Enhancement */
+.dept-table tbody tr:nth-child(odd) {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 1), rgba(248, 250, 252, 0.8));
+}
+
+/* Date Column Special Styling */
+.dept-table tbody td:first-child {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+}
+
+/* Total Column Pulse Effect on Hover */
+.dept-table tbody tr:hover .total-col {
+    animation: pulseGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: inset 0 0 10px rgba(163, 121, 41, 0.3);
+    }
+    50% {
+        box-shadow: inset 0 0 20px rgba(163, 121, 41, 0.5);
+    }
+}
+
+/* Action Column Styling */
+.dept-table tbody td:last-child {
+    background: linear-gradient(90deg, rgba(248, 250, 252, 0.5), rgba(241, 245, 249, 0.8));
+    padding: 10px 8px;
+}
+
+/* Grand Total Row Animation */
+.dept-table tfoot tr {
+    animation: slideInUp 0.5s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Loading State for Table */
+.dept-table-container.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.dept-table-container.loading::after {
+    content: 'Loading...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #1e4575, #A37929);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+}
+
+/* Expense Value Badges */
+.expense-high {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+    border-left: 3px solid #ef4444;
+    font-weight: 700;
+}
+
+.expense-medium {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.05));
+    border-left: 3px solid #fbbf24;
+    font-weight: 700;
+}
+
+.expense-low {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
+    border-left: 3px solid #22c55e;
+    font-weight: 700;
+}
+
+/* Responsive Table Wrapper */
+@media (max-width: 1200px) {
+    .dept-table {
+        font-size: 13px;
+    }
+    
+    .dept-table thead th {
+        padding: 14px 10px;
+        font-size: 11px;
+    }
+    
+    .dept-table tbody td {
+        padding: 12px 8px;
+        font-size: 13px;
+    }
+    
+    .btn-edit,
+    .btn-delete {
+        padding: 8px 12px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 768px) {
+    .dept-table-container {
+        border-radius: 8px;
+        border-width: 2px;
+    }
+    
+    .dept-table {
+        font-size: 12px;
+    }
+    
+    .dept-table thead th {
+        padding: 12px 8px;
+        font-size: 10px;
+        letter-spacing: 0.5px;
+    }
+    
+    .dept-table tbody td {
+        padding: 10px 6px;
+        font-size: 12px;
+    }
+    
+    .dept-table .total-col {
+        font-size: 14px;
+    }
+    
+    .dept-table .grand-total {
+        font-size: 18px;
+    }
+    
+    .btn-edit,
+    .btn-delete {
+        padding: 6px 10px;
+        font-size: 10px;
+        margin: 2px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .dept-table-container {
+        border: 2px solid #1e4575;
+        box-shadow: none;
+    }
+    
+    .dept-table tbody tr:hover {
+        background: none;
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .btn-edit,
+    .btn-delete {
+        display: none;
+    }
+}
+
+
+/* Budget Progress Bar */
+.budget-progress-wrapper {
+    margin-top: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, #ffffff, #f8f9fa);
+    border-radius: 12px;
+    border: 2px solid #1e4575;
+    box-shadow: 0 4px 12px rgba(30, 69, 117, 0.1);
+}
+
+.budget-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.budget-progress-label {
+    font-weight: 700;
+    color: #1e4575;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.budget-progress-percentage {
+    font-weight: 700;
+    font-size: 18px;
+    color: #A37929;
+}
+
+.budget-progress-bar-container {
+    width: 100%;
+    height: 24px;
+    background: linear-gradient(90deg, #e5e7eb, #f3f4f6);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.budget-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    border-radius: 12px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.budget-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.budget-progress-bar.warning {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.budget-progress-bar.danger {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.budget-progress-bar.over-budget {
+    background: linear-gradient(90deg, #991b1b, #7f1d1d);
+}
+
+.budget-status-message {
+    margin-top: 10px;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    text-align: center;
+}
+
+.budget-status-message.success {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
+    color: #16a34a;
+    border: 2px solid #22c55e;
+}
+
+.budget-status-message.warning {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.05));
+    color: #d97706;
+    border: 2px solid #fbbf24;
+}
+
+.budget-status-message.danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+    color: #dc2626;
+    border: 2px solid #ef4444;
+}
+
+/* Enhanced Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, rgba(30, 69, 117, 0.05), rgba(163, 121, 41, 0.05));
+    border-radius: 12px;
+    border: 2px dashed #8a9bad;
+    margin: 20px 0;
+}
+
+.empty-state-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e4575;
+    margin-bottom: 10px;
+}
+
+.empty-state-description {
+    font-size: 14px;
+    color: #8a9bad;
+    margin-bottom: 20px;
+}
+
+/* Tooltip for table cells */
+.dept-table tbody td[title] {
+    cursor: help;
+    position: relative;
+}
+
+.dept-table tbody td[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #1e4575, #2c5a8f);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}

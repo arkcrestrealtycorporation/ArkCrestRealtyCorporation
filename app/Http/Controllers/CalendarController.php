@@ -1,0 +1,180 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\CommissionRequestSales;
+use App\Models\TripSchedule;
+
+class CalendarController extends Controller
+{
+    public function salesCalendar(Request $request)
+    {
+        $month = (int) $request->get('month', date('n'));
+        $year  = (int) $request->get('year', date('Y'));
+        $view  = $request->get('view', 'month'); // month | list
+
+        $dateFrom = sprintf('%04d-%02d-01', $year, $month);
+        $dateTo   = date('Y-m-t', strtotime($dateFrom));
+
+        // Commission sales (reservations & releases)
+        $sales = CommissionRequestSales::whereBetween('date_requested', [$dateFrom, $dateTo])
+            ->orWhereBetween('date_released', [$dateFrom, $dateTo])
+            ->orWhereBetween('reservation_date', [$dateFrom, $dateTo])
+            ->orWhereBetween('date_of_downpayment', [$dateFrom, $dateTo])
+            ->get();
+
+        // Site visits / tripping schedules
+        $trips = TripSchedule::whereBetween('tripping_date', [$dateFrom, $dateTo])
+            ->orderBy('tripping_date')
+            ->get();
+
+        // Build events array keyed by day
+        $eventsByDay = collect();
+
+        foreach ($sales as $s) {
+            // Reservation event
+            if ($s->reservation_date && $s->reservation_date->month == $month && $s->reservation_date->year == $year) {
+                $day = $s->reservation_date->day;
+                if (!$eventsByDay->has($day)) $eventsByDay->put($day, collect());
+                $eventsByDay->get($day)->push([
+                    'type'    => 'reservation',
+                    'label'   => $s->client_name,
+                    'sub'     => $s->project_name,
+                    'agent'   => $s->agent_name,
+                    'amount'  => $s->net_tcp,
+                    'date'    => $s->reservation_date->format('Y-m-d'),
+                    'status'  => $s->status,
+                    'id'      => $s->id,
+                ]);
+            }
+            // Date requested event
+            if ($s->date_requested && $s->date_requested->month == $month && $s->date_requested->year == $year) {
+                $day = $s->date_requested->day;
+                if (!$eventsByDay->has($day)) $eventsByDay->put($day, collect());
+                $eventsByDay->get($day)->push([
+                    'type'    => 'sale',
+                    'label'   => $s->client_name,
+                    'sub'     => $s->project_name,
+                    'agent'   => $s->agent_name,
+                    'amount'  => $s->net_tcp,
+                    'date'    => $s->date_requested->format('Y-m-d'),
+                    'status'  => $s->status,
+                    'id'      => $s->id,
+                ]);
+            }
+            // Commission release event
+            if ($s->date_released && $s->date_released->month == $month && $s->date_released->year == $year) {
+                $day = $s->date_released->day;
+                if (!$eventsByDay->has($day)) $eventsByDay->put($day, collect());
+                $eventsByDay->get($day)->push([
+                    'type'    => 'release',
+                    'label'   => $s->agent_name,
+                    'sub'     => $s->project_name,
+                    'agent'   => $s->agent_name,
+                    'amount'  => $s->commission,
+                    'date'    => $s->date_released->format('Y-m-d'),
+                    'status'  => $s->status,
+                    'id'      => $s->id,
+                ]);
+            }
+            // Downpayment event
+            if ($s->date_of_downpayment && $s->date_of_downpayment->month == $month && $s->date_of_downpayment->year == $year) {
+                $day = $s->date_of_downpayment->day;
+                if (!$eventsByDay->has($day)) $eventsByDay->put($day, collect());
+                $eventsByDay->get($day)->push([
+                    'type'    => 'downpayment',
+                    'label'   => $s->client_name,
+                    'sub'     => $s->project_name,
+                    'agent'   => $s->agent_name,
+                    'amount'  => $s->net_tcp,
+                    'date'    => $s->date_of_downpayment->format('Y-m-d'),
+                    'status'  => $s->status,
+                    'id'      => $s->id,
+                ]);
+            }
+        }
+
+        foreach ($trips as $t) {
+            $day = $t->tripping_date->day;
+            if (!$eventsByDay->has($day)) $eventsByDay->put($day, collect());
+            $eventsByDay->get($day)->push([
+                'type'   => 'trip',
+                'label'  => $t->client_name,
+                'sub'    => $t->property_name,
+                'agent'  => $t->agent_name,
+                'amount' => null,
+                'date'   => $t->tripping_date->format('Y-m-d'),
+                'status' => $t->status,
+                'id'     => $t->id,
+                'time'   => $t->tripping_time,
+            ]);
+        }
+
+        // Available years
+        $salesYears = CommissionRequestSales::selectRaw('YEAR(date_requested) as y')->whereNotNull('date_requested')->distinct()->pluck('y');
+        $tripYears  = TripSchedule::selectRaw('YEAR(tripping_date) as y')->whereNotNull('tripping_date')->distinct()->pluck('y');
+        $availableYears = $salesYears->merge($tripYears)->unique()->sort()->values();
+        if (!$availableYears->contains($year)) $availableYears->prepend($year);
+        $availableYears = $availableYears->sortDesc()->values();
+
+        // Stats
+        $totalSales    = $sales->filter(fn($s) => $s->date_requested && $s->date_requested->format('Y-m') === sprintf('%04d-%02d', $year, $month))->count();
+        $totalReleases = $sales->filter(fn($s) => $s->date_released && $s->date_released->format('Y-m') === sprintf('%04d-%02d', $year, $month))->count();
+        $totalTrips    = $trips->count();
+        $totalNetTcp   = $sales->filter(fn($s) => $s->date_requested && $s->date_requested->format('Y-m') === sprintf('%04d-%02d', $year, $month))->sum('net_tcp');
+
+        // All events flat for list view
+        $allEvents = $eventsByDay->flatten(1)->sortBy('date')->values();
+
+        // This week's trippings and downpayments
+        $weekStart = now()->startOfWeek(\Carbon\Carbon::MONDAY)->format('Y-m-d');
+        $weekEnd   = now()->endOfWeek(\Carbon\Carbon::SUNDAY)->format('Y-m-d');
+
+        $thisWeekTrips = TripSchedule::whereBetween('tripping_date', [$weekStart, $weekEnd])
+            ->whereIn('status', ['confirmed', 'pending'])
+            ->orderBy('tripping_date')->orderBy('tripping_time')
+            ->get();
+
+        $thisWeekDownpayments = CommissionRequestSales::whereBetween('date_of_downpayment', [$weekStart, $weekEnd])
+            ->orderBy('date_of_downpayment')
+            ->get();
+
+        return view('sales-calendar', compact(
+            'month', 'year', 'view',
+            'eventsByDay', 'allEvents',
+            'availableYears',
+            'totalSales', 'totalReleases', 'totalTrips', 'totalNetTcp',
+            'thisWeekTrips', 'thisWeekDownpayments', 'weekStart', 'weekEnd'
+        ));
+    }
+
+    public function index(Request $request)
+    {
+        $month = $request->get('month', date('n'));
+        $year  = $request->get('year', date('Y'));
+
+        // All releases for the selected month/year
+        $releases = CommissionRequestSales::whereNotNull('date_released')
+            ->whereYear('date_released', $year)
+            ->whereMonth('date_released', $month)
+            ->orderBy('date_released')
+            ->get();
+
+        // Group by day for easy lookup in the view
+        $releasesByDay = $releases->groupBy(fn($r) => $r->date_released->day);
+
+        // Available years from data
+        $availableYears = CommissionRequestSales::whereNotNull('date_released')
+            ->selectRaw('YEAR(date_released) as year')
+            ->distinct()
+            ->orderBy('year', 'desc')
+            ->pluck('year');
+
+        if (!$availableYears->contains((int)$year)) {
+            $availableYears->prepend((int)$year);
+        }
+
+        return view('calendar', compact('month', 'year', 'releases', 'releasesByDay', 'availableYears'));
+    }
+}

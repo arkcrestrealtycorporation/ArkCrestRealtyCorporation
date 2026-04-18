@@ -1,0 +1,85 @@
+// Sidebar Active State - Standalone JavaScript
+(function() {
+    'use strict';
+    
+    function setActiveSidebar() {
+        const currentPath = window.location.pathname;
+        
+        const navItems = document.querySelectorAll('.nav-item[data-page], .nav-subitem[data-page]');
+        
+        if (!navItems || navItems.length === 0) return;
+        
+        navItems.forEach(item => item.classList.remove('active'));
+        
+        navItems.forEach(item => {
+            const page = item.getAttribute('data-page');
+            let isActive = false;
+            
+            if (page === 'dashboard' && currentPath === '/dashboard') {
+                isActive = true;
+            } else if (page === 'departments' && currentPath.includes('/departments')) {
+                isActive = true;
+            } else if (page === 'summary-report' && currentPath.includes('/summary-report')) {
+                isActive = true;
+            } else if (page === 'sales-marketing' && currentPath.includes('/sales-marketing')) {
+                isActive = true;
+            } else if (page === 'commission-monitoring' && currentPath.includes('/commission-monitoring')) {
+                isActive = true;
+            } else if (page === 'commission-dashboard' && currentPath.includes('/commission-dashboard')) {
+                isActive = true;
+            } else if (page === 'calendar' && currentPath === '/calendar') {
+                isActive = true;
+            } else if (page === 'client-database' && currentPath.includes('/client-database')) {
+                isActive = true;
+            } else if (page === 'site-visit-database' && currentPath.includes('/site-visit-database')) {
+                isActive = true;
+            } else if (page === 'cd-clients' && currentPath.includes('/reserved-clients')) {
+                isActive = true;
+            } else if (page === 'sm-calendar' && currentPath.includes('/sales-calendar')) {
+                isActive = true;
+            } else if (page === 'crm' && currentPath.includes('/crm')) {
+                isActive = true;
+            } else if (page === 'forms' && currentPath.includes('/forms')) {
+                isActive = true;
+            } else if (page === 'settings' && currentPath.includes('/settings')) {
+                isActive = true;
+            }
+            
+            if (isActive) {
+                item.classList.add('active');
+                
+                // If this is a subitem, open its parent dropdown
+                if (item.classList.contains('nav-subitem')) {
+                    const submenu = item.closest('.nav-submenu');
+                    if (submenu) {
+                        submenu.classList.add('open');
+                        // Determine which dropdown this belongs to
+                        if (submenu.id === 'salesSubmenu') {
+                            const arrow = document.getElementById('salesArrow');
+                            if (arrow) arrow.classList.add('open');
+                            localStorage.setItem('salesDropdownOpen', 'true');
+                        } else if (submenu.id === 'clientDbSubmenu') {
+                            const arrow = document.getElementById('clientDbArrow');
+                            if (arrow) arrow.classList.add('open');
+                        } else if (submenu.id === 'commissionSubmenu') {
+                            const arrow = document.getElementById('commissionArrow');
+                            if (arrow) arrow.classList.add('open');
+                        } else {
+                            const arrow = document.getElementById('financeArrow');
+                            if (arrow) arrow.classList.add('open');
+                            localStorage.setItem('financeDropdownOpen', 'true');
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setActiveSidebar);
+    } else {
+        setActiveSidebar();
+    }
+    
+    setTimeout(setActiveSidebar, 100);
+})();

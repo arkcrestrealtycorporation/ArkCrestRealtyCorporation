@@ -1,0 +1,105 @@
+/* Optimized Global Styles - Consolidated for Performance */
+
+/* SVG Icons */
+.icon-sm { width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 6px; }
+.icon-md { width: 24px; height: 24px; }
+.icon-lg { width: 28px; height: 28px; }
+
+/* Department Icons */
+.dept-icon svg { width: 24px; height: 24px; }
+
+/* Animations - Use CSS transforms for better performance */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translate3d(0, 20px, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.3s ease-out;
+    will-change: transform, opacity;
+}
+
+/* Staggered animations */
+.dept-item-modern:nth-child(1) { animation-delay: 0s; }
+.dept-item-modern:nth-child(2) { animation-delay: 0.1s; }
+.dept-item-modern:nth-child(3) { animation-delay: 0.2s; }
+.dept-item-modern:nth-child(4) { animation-delay: 0.3s; }
+.dept-item-modern:nth-child(5) { animation-delay: 0.4s; }
+.dept-item-modern:nth-child(6) { animation-delay: 0.5s; }
+
+/* Smooth transitions */
+.smooth-transition {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hardware acceleration */
+.gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* Reduce repaints */
+* {
+    box-sizing: border-box;
+}
+
+/* Optimize hover effects */
+.hover-lift:hover {
+    transform: translateY(-2px) translateZ(0);
+}
+
+/* Budget display spacing */
+.budget-display-spacing { margin-top: 8px; }
+.budget-value-success { color: #27ae60; }
+
+/* Dropdown styles */
+.combobox-dropdown { display: none; }
+.combobox-dropdown.show { display: block; }
+
+/* Table header flex */
+.table-header-flex {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.table-title-section {
+    margin-bottom: 15px;
+}
+
+.table-title-lg {
+    margin: 0;
+    font-size: 24px;
+}
+
+.table-filters-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.filter-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.filter-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: #1e4575;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* Form readonly */
+.form-readonly {
+    background-color: #f4f6f8;
+}

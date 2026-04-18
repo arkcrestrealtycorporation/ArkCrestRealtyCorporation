@@ -1,0 +1,105 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Department;
+use App\Models\CommissionRequest;
+use App\Models\CommissionRequestSales;
+use App\Models\SummaryReport;
+use Carbon\Carbon;
+
+class DashboardController extends Controller
+{
+    public function index()
+    {
+        // Sales Agent / Sales Manager can only access the site visit form
+        $user = auth()->user();
+        $salesPositions = ['sales agent', 'sales manager'];
+        if (in_array(strtolower(trim($user->position ?? '')), $salesPositions)) {
+            return redirect()->route('tripping');
+        }
+
+        // Get current month and year
+        $currentMonth = now()->format('F');
+        $currentYear = now()->format('Y');
+        $currentMonthNumber = now()->month;
+        
+        // Get summary report for current month
+        $summaryReport = SummaryReport::where('month', $currentMonthNumber)
+            ->where('year', $currentYear)
+            ->first();
+        
+        $units = $summaryReport ? $summaryReport->units : 0;
+        $grossSales = $summaryReport ? $summaryReport->gross_sales : 0;
+
+        // Yearly total sales from summary reports
+        $yearlySales = SummaryReport::where('year', $currentYear)->sum('gross_sales');
+
+        // Monthly sales trend for chart (all 12 months of current year)
+        $monthlySales = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $report = SummaryReport::where('month', $m)->where('year', $currentYear)->first();
+            $monthlySales[] = $report ? (float)$report->gross_sales : 0;
+        }
+
+        // Receivables = all "Not Yet Released" commissions (all time, not just current month)
+        $receivables = CommissionRequestSales::where('status', 'Not Yet Released')->sum('commission');
+        
+        // Exclude CAPEX from dashboard
+        $departments = Department::where('slug', '!=', 'capex')->get();
+        
+        // Calculate total expenses per department from commission requests (current month only)
+        $departmentData = [];
+        $totalExpenses = 0;
+        $expenseBreakdown = [];
+        
+        foreach ($departments as $dept) {
+            // Sum requested_amount from commission_requests for this department (current month only)
+            // Use case-insensitive comparison and trim whitespace
+            // Filter by date_requested month
+            $deptExpenses = CommissionRequest::whereRaw('LOWER(TRIM(department)) = ?', [strtolower(trim($dept->name))])
+                ->whereMonth('date_requested', $currentMonthNumber)
+                ->whereYear('date_requested', $currentYear)
+                ->sum('requested_amount');
+            
+            $remaining = $dept->allowable_budget - $deptExpenses;
+            
+            $departmentData[] = [
+                'name' => $dept->name,
+                'budget' => $dept->allowable_budget,
+                'expenses' => $deptExpenses,
+                'remaining' => $remaining,
+                'percentage' => $dept->allowable_budget > 0 ? ($deptExpenses / $dept->allowable_budget) * 100 : 0
+            ];
+            
+            // Get expense breakdown by category for this department (current month only)
+            $categories = [];
+            $requests = CommissionRequest::whereRaw('LOWER(TRIM(department)) = ?', [strtolower(trim($dept->name))])
+                ->whereMonth('date_requested', $currentMonthNumber)
+                ->whereYear('date_requested', $currentYear)
+                ->whereNotNull('requested_amount')
+                ->where('requested_amount', '>', 0)
+                ->get();
+            
+            foreach ($requests as $request) {
+                $catName = $request->category;
+                if (!isset($categories[$catName])) {
+                    $categories[$catName] = 0;
+                }
+                $categories[$catName] += $request->requested_amount;
+            }
+            
+            $expenseBreakdown[$dept->name] = $categories;
+            $totalExpenses += $deptExpenses;
+        }
+        
+        // Tomorrow's commission releases (for notification banner)
+        $tomorrowReleases = CommissionRequestSales::whereDate('date_released', Carbon::tomorrow()->toDateString())
+            ->where('status', 'Not Yet Released')
+            ->orderBy('agent_name')
+            ->get();
+
+        return view('dashboard', compact('departmentData', 'totalExpenses', 'expenseBreakdown', 'currentMonth', 'currentYear', 'units', 'grossSales', 'yearlySales', 'receivables', 'monthlySales', 'tomorrowReleases'));
+    }
+}
