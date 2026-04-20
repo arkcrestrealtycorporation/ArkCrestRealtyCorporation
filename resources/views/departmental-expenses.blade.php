@@ -28,21 +28,17 @@
                     $barColor = $pct >= 90 ? '#ef4444' : ($pct >= 70 ? '#f59e0b' : '#16a34a');
                 @endphp
                 <div class="budget-card-compact" onclick="selectDepartmentFromCard('{{ $dept->name }}')" style="cursor:pointer;" title="Click to select {{ $dept->name }}">
-                    <div class="budget-card-header-compact" style="display:flex;justify-content:space-between;align-items:center;">
-                        <h4>{{ $dept->name }}</h4>
-                        @if(auth()->user()->isAdmin())
-                        <button onclick="event.stopPropagation();openBudgetModal({{ $dept->id }}, '{{ $dept->name }}', {{ $dept->allowable_budget }}, '{{ $dept->budget_from?->format('Y-m-d') ?? '' }}', '{{ $dept->budget_to?->format('Y-m-d') ?? '' }}')" class="btn-update-budget" style="margin:0;">
-                            <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                            Edit
-                        </button>
+                    <div class="budget-card-header-compact" style="padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-bottom:10px;">
+                        <h4 style="font-size:13px;font-weight:700;color:#1e4575;margin:0;white-space:normal;word-break:break-word;">{{ $dept->name }}</h4>
+                        @if($dept->budget_from || $dept->budget_to)
+                        <div style="font-size:11px;color:#6b7280;margin-top:4px;">
+                            {{ $dept->budget_from?->format('M d, Y') ?? '—' }} → {{ $dept->budget_to?->format('M d, Y') ?? '—' }}
+                        </div>
+                        @else
+                        <div style="font-size:11px;color:#d1d5db;margin-top:4px;">No date set</div>
                         @endif
                     </div>
                     <div class="budget-card-body-compact">
-                        @if($dept->budget_from || $dept->budget_to)
-                        <div style="font-size:11px;color:#6b7280;margin-bottom:8px;">
-                            {{ $dept->budget_from?->format('M d, Y') ?? '—' }} → {{ $dept->budget_to?->format('M d, Y') ?? '—' }}
-                        </div>
-                        @endif
                         <div style="display:flex;flex-direction:column;gap:6px;">
                             <div style="display:flex;justify-content:space-between;font-size:12px;">
                                 <span style="color:#6b7280;">Budget</span>
@@ -59,9 +55,15 @@
                         </div>
                         {{-- Progress bar --}}
                         <div style="margin-top:10px;background:#f3f4f6;border-radius:99px;height:6px;overflow:hidden;">
-                            <div style="height:100%;width:{{ $pct }}%;background:{{ $barColor }};border-radius:99px;transition:width .3s;"></div>
+                            <div style="height:100%;width:{{ $pct }}%;background:{{ $barColor }};border-radius:99px;"></div>
                         </div>
                         <div style="font-size:10px;color:#9ca3af;text-align:right;margin-top:2px;">{{ number_format($pct, 1) }}% used</div>
+                        @if(auth()->user()->isAdmin())
+                        <button onclick="event.stopPropagation();openBudgetModal({{ $dept->id }}, '{{ $dept->name }}', {{ $dept->allowable_budget }}, '{{ $dept->budget_from?->format('Y-m-d') ?? '' }}', '{{ $dept->budget_to?->format('Y-m-d') ?? '' }}')" class="btn-update-budget" style="width:100%;margin-top:10px;justify-content:center;">
+                            <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            Edit Budget
+                        </button>
+                        @endif
                     </div>
                 </div>
                 @endif
