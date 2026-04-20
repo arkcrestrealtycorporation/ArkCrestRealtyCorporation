@@ -31,12 +31,7 @@ class CheckPageVisibility
         $pageKey   = self::PAGE_MAP[$routeName] ?? null;
 
         if ($pageKey) {
-            $hidden = array_values(json_decode(
-                \DB::table('app_settings')->where('key', 'hidden_pages')->value('value') ?? '[]',
-                true
-            ) ?: []);
-
-            // Only page-level keys (no dot) block access
+            $hidden = array_values($user->hidden_pages ?? []);
             $hiddenPages = array_filter($hidden, fn($k) => strpos($k, '.') === false);
 
             if (in_array($pageKey, $hiddenPages)) {

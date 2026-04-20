@@ -31,6 +31,7 @@ class User extends Authenticatable
         'last_login_at',
         'security_question',
         'security_answer',
+        'hidden_pages',
     ];
 
     /**
@@ -55,6 +56,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'last_login_at' => 'datetime',
             'date_hired' => 'date',
+            'hidden_pages' => 'array',
         ];
     }
 

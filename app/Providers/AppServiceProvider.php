@@ -27,10 +27,7 @@ class AppServiceProvider extends ServiceProvider
                 if ($user->isAdmin()) {
                     $view->with('hiddenSections', []);
                 } else {
-                    $hidden = array_values(json_decode(
-                        \DB::table('app_settings')->where('key', 'hidden_pages')->value('value') ?? '[]',
-                        true
-                    ) ?: []);
+                    $hidden = array_values($user->hidden_pages ?? []);
                     $view->with('hiddenSections', $hidden);
                 }
                 // Notes & notifications — all users get their own

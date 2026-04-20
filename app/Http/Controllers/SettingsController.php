@@ -404,20 +404,38 @@ class SettingsController extends Controller
         return redirect()->route('settings')->with('success', 'Period unlocked.')->with('open_section', 'period-lock');
     }
 
+    public function getUserVisibility($id)
+    {
+        if (!auth()->user()->isAdmin()) abort(403);
+        $user = User::findOrFail($id);
+        return response()->json(['hidden_pages' => $user->hidden_pages ?? []]);
+    }
+
     public function savePageVisibility(Request $request)
     {
         if (!auth()->user()->isAdmin()) abort(403);
-        // Only update if form was actually submitted (sentinel check)
         if (!$request->has('visibility_submitted')) {
             return redirect()->route('settings')->with('open_section', 'visibility');
         }
-        $hidden = array_values(array_filter($request->input('hidden_pages', [])));
-        \DB::table('app_settings')->updateOrInsert(
-            ['key' => 'hidden_pages'],
-            ['value' => json_encode($hidden), 'created_at' => now(), 'updated_at' => now()]
-        );
-        ActivityLog::log('update', 'Settings', 'Updated page/section visibility for staff: ' . (empty($hidden) ? 'all visible' : implode(', ', $hidden)));
-        return redirect()->route('settings')->with('success', 'Visibility settings updated.')->with('open_section', 'visibility');
+        $userId = $request->input('visibility_user_id');
+        $user = User::findOrFail($userId);
+
+        $allPages = [
+            'dashboard','departments','commission-monitoring','commission-monitoring.dashboard',
+            'calendar','sales-marketing','client-database','client-database.list',
+            'client-database.property','site-visit-database','sales-calendar','forms',
+            'settings.profile','settings.about','settings.system','settings.notes',
+            'settings.privacy','settings.notifications','settings.users','settings.employee',
+            'settings.personnel','settings.teams','settings.period-lock','settings.visibility',
+            'settings.activity','settings.deleted','settings.permissions',
+        ];
+
+        $visiblePages = $request->input('visible_pages', []);
+        $hidden = array_values(array_diff($allPages, $visiblePages));
+
+        $user->update(['hidden_pages' => $hidden]);
+        ActivityLog::log('update', 'Settings', "Updated page visibility for user '{$user->name}'.");
+        return redirect()->route('settings', ['vis_user' => $userId])->with('success', "Visibility updated for {$user->name}.")->with('open_section', 'visibility');
     }
 
     public function updatePeriodLock(Request $request)

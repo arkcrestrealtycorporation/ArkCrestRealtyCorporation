@@ -1041,58 +1041,92 @@
 
     <div class="st-panel" id="panel-visibility">
 
-      <div class="st-page-header"><div class="st-page-title">Page Visibility</div><div class="st-page-sub">Check to hide from staff. Admin always sees everything.</div></div>
+      <div class="st-page-header"><div class="st-page-title">Page Visibility</div><div class="st-page-sub">Checked items are visible to the selected user. Uncheck to hide. Admin always sees everything.</div></div>
 
       <div class="st-card"><div class="st-card-body">
 
-        <form method="POST" action="{{ route('settings.visibility') }}">@csrf
+        @php
+          $visGroups = [
+            'Finance' => [
+              'dashboard'                        => 'Finance Dashboard',
+              'departments'                      => 'Departments',
+              'commission-monitoring'            => 'Commission Monitoring',
+              'commission-monitoring.dashboard'  => '↳ Commission Dashboard',
+              'calendar'                         => 'Calendar',
+            ],
+            'Sales & Marketing' => [
+              'sales-marketing'                  => 'Sales & Marketing Dashboard',
+              'client-database'                  => 'Client Database',
+              'client-database.list'             => '↳ List of Clients',
+              'client-database.property'         => '↳ List of Properties',
+              'site-visit-database'              => 'Site Visit Database',
+              'sales-calendar'                   => 'Calendar',
+            ],
+            'Forms' => [
+              'forms'                            => 'Forms',
+            ],
+            'Settings' => [
+              'settings.profile'                 => 'My Profile',
+              'settings.about'                   => 'About Me',
+              'settings.system'                  => 'System Info',
+              'settings.notes'                   => 'My Notes',
+              'settings.privacy'                 => 'Privacy & Policy',
+              'settings.notifications'           => 'Notifications',
+              'settings.users'                   => 'User Management',
+              'settings.employee'                => 'Employee Data',
+              'settings.personnel'               => 'ARC Contact List',
+              'settings.teams'                   => 'Team Management',
+              'settings.period-lock'             => 'Period Lock',
+              'settings.visibility'              => 'Page Visibility',
+              'settings.activity'                => 'Activity Log',
+              'settings.deleted'                 => 'Deleted Records',
+              'settings.permissions'             => 'Permission Requests',
+            ],
+          ];
+          $staffUsers = $activeUsers->where('role', '!=', 'admin')->where('status', 'active');
+          $selectedUserId = request('vis_user') ?? ($staffUsers->first()->id ?? null);
+          $selectedUser = $staffUsers->firstWhere('id', $selectedUserId);
+          // visible_pages = all pages NOT in hidden_pages
+          $userHidden = $selectedUser ? ($selectedUser->hidden_pages ?? []) : [];
+        @endphp
 
-          <div class="vis-grid">
-
-            @php
-
-              $pages = [
-
-                'departments'=>'Departments','summary-report'=>'Summary Report',
-
-                'commission-monitoring'=>'Commission Monitoring','calendar'=>'Calendar',
-
-                'sales-marketing'=>'Sales & Marketing','forms'=>'Forms',
-
-                'dashboard.budget-cards'=>'Dashboard: Budget Cards',
-
-                'dashboard.expenses-breakdown'=>'Dashboard: Expenses Breakdown',
-
-                'dashboard.dept-list'=>'Dashboard: Department List',
-
-                'commission-monitoring.cards'=>'Commission: Stat Cards',
-
-                'commission-monitoring.add-form'=>'Commission: Add Form',
-
-                'commission-monitoring.table'=>'Commission: Table',
-
-                'settings.notifications'=>'Settings: Notifications',
-
-              ];
-
-            @endphp
-
-            @foreach($pages as $key => $label)
-
-            <div class="vis-item">
-
-              <input type="checkbox" id="vis_{{ str_replace(['.', '-'], '_', $key) }}" name="hidden_pages[]" value="{{ $key }}" {{ in_array($key, $hiddenSections) ? 'checked' : '' }}>
-
-              <label for="vis_{{ str_replace(['.', '-'], '_', $key) }}">{{ $label }}</label>
-
-            </div>
-
+        {{-- User selector --}}
+        <div style="margin-bottom:20px;">
+          <label style="font-weight:600;font-size:13px;color:#1e4575;display:block;margin-bottom:8px;">Select User</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;" id="vis-user-tabs">
+            @foreach($staffUsers as $u)
+              <button type="button" onclick="selectVisUser({{ $u->id }}, this)"
+                style="padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;border:2px solid {{ $selectedUserId == $u->id ? '#1e4575' : '#d0d5dd' }};background:{{ $selectedUserId == $u->id ? '#1e4575' : '#fff' }};color:{{ $selectedUserId == $u->id ? '#fff' : '#374151' }};">
+                {{ $u->name }}
+              </button>
             @endforeach
+          </div>
+        </div>
 
+        <form method="POST" action="{{ route('settings.visibility') }}" id="vis-form">@csrf
+          <input type="hidden" name="visibility_submitted" value="1">
+          <input type="hidden" name="visibility_user_id" id="vis_user_id" value="{{ $selectedUserId }}">
+
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;">
+            @foreach($visGroups as $groupName => $pages)
+            <div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px;">
+              <div style="font-weight:700;font-size:13px;color:#1e4575;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e5e7eb;">{{ $groupName }}</div>
+              @foreach($pages as $key => $label)
+              <div style="display:flex;align-items:center;gap:8px;padding:4px 0;{{ str_starts_with($label,'↳') ? 'padding-left:12px;' : '' }}">
+                <input type="checkbox" id="vis_{{ str_replace(['.', '-'], '_', $key) }}" name="visible_pages[]" value="{{ $key }}"
+                  {{ !in_array($key, $userHidden) ? 'checked' : '' }}
+                  style="width:15px;height:15px;cursor:pointer;">
+                <label for="vis_{{ str_replace(['.', '-'], '_', $key) }}" style="font-size:13px;color:#374151;cursor:pointer;">{{ $label }}</label>
+              </div>
+              @endforeach
+            </div>
+            @endforeach
           </div>
 
-          <div style="margin-top:16px;"><button type="submit" class="st-btn st-btn-primary">Save Visibility</button></div>
-
+          <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+            <button type="submit" class="st-btn st-btn-primary">Save Visibility</button>
+            @if($selectedUser)<span style="font-size:13px;color:#6b7280;">for {{ $selectedUser->name }}</span>@endif
+          </div>
         </form>
 
       </div></div>
@@ -1751,6 +1785,28 @@ function showPanel(name) {
     const btn   = document.getElementById('nav-' + name);
     if (panel) panel.classList.add('active');
     if (btn)   btn.classList.add('active');
+}
+
+function selectVisUser(userId, btn) {
+    document.getElementById('vis_user_id').value = userId;
+    // Update button styles
+    document.querySelectorAll('#vis-user-tabs button').forEach(b => {
+        b.style.background = '#fff';
+        b.style.color = '#374151';
+        b.style.borderColor = '#d0d5dd';
+    });
+    btn.style.background = '#1e4575';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#1e4575';
+    // Fetch user's hidden pages and update checkboxes
+    fetch('/api/user-visibility/' + userId)
+        .then(r => r.json())
+        .then(data => {
+            const hidden = data.hidden_pages || [];
+            document.querySelectorAll('#vis-form input[type=checkbox]').forEach(cb => {
+                cb.checked = !hidden.includes(cb.value);
+            });
+        });
 }
 function addEmailRow() {
     const row = document.createElement('div');
