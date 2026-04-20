@@ -421,7 +421,7 @@ class SettingsController extends Controller
         $user = User::findOrFail($userId);
 
         $allPages = [
-            'dashboard','departments','commission-monitoring','commission-monitoring.dashboard',
+            'dashboard','departments','summary-report','commission-monitoring','commission-monitoring.dashboard',
             'calendar','sales-marketing','client-database','client-database.list',
             'client-database.property','site-visit-database','sales-calendar','forms',
             'settings.profile','settings.about','settings.system','settings.notes',

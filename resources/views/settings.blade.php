@@ -1059,6 +1059,7 @@
             'Finance' => [
               'dashboard'                        => 'Finance Dashboard',
               'departments'                      => 'Departments',
+              'summary-report'                   => 'Summary Report',
               'commission-monitoring'            => 'Commission Monitoring',
               'commission-monitoring.dashboard'  => '↳ Commission Dashboard',
               'calendar'                         => 'Calendar',
