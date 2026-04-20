@@ -207,7 +207,13 @@ class DepartmentalExpensesController extends Controller
                 if ($exists) $count++;
             } while ($exists);
             $validated['control_number'] = $controlNumber;
-            $commissionRequest = CommissionRequest::create($validated);
+            try {
+                $commissionRequest = CommissionRequest::create($validated);
+            } catch (\Exception $e2) {
+                return response()->json(['success' => false, 'message' => 'Duplicate control number. Please try again.'], 422);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
 
         ActivityLog::log('create', 'Departmental Expenses', "Added expense '{$validated['category']}' for {$validated['department']} by {$validated['requestor_name']} (₱" . number_format($validated['requested_amount'] ?? 0, 2) . ")");
