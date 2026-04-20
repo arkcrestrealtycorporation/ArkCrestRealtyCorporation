@@ -72,7 +72,17 @@ class DepartmentController extends Controller
         if (Department::where('slug', $slug)->exists()) {
             return response()->json(['success' => false, 'message' => 'Department already exists.']);
         }
-        Department::create(['name' => $name, 'slug' => $slug, 'allowable_budget' => 0]);
+        $dept = Department::create(['name' => $name, 'slug' => $slug, 'allowable_budget' => 0]);
+        
+        // Add categories if provided
+        if ($request->categories && is_array($request->categories)) {
+            foreach ($request->categories as $catName) {
+                if (trim($catName)) {
+                    ExpenseCategory::create(['department_id' => $dept->id, 'name' => trim($catName)]);
+                }
+            }
+        }
+        
         return response()->json(['success' => true]);
     }
 

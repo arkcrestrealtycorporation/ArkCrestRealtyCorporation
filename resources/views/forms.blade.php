@@ -58,11 +58,9 @@
           <div style="font-size:24px;font-weight:700;color:#2563eb;margin-top:10px;letter-spacing:.5px;">BUDGET REQUEST FORM</div>
           <div class="dept-sel" style="margin-top:6px;">
             <select id="f_dept" onchange="updDept()" style="font-size:12px;padding:3px 8px;border:1px solid #ccc;border-radius:4px;">
-              <option value="HUMAN RESOURCES">Human Resources Department</option>
-              <option value="ADMINISTRATIVE">Administrative Department</option>
-              <option value="SALES &amp; MARKETING">Sales &amp; Marketing Department</option>
-              <option value="FINANCE">Finance Department</option>
-              <option value="EXECUTIVE">Executive Department</option>
+              @foreach($departments->where('slug', '!=', 'capex') as $dept)
+              <option value="{{ strtoupper($dept->name) }}">{{ $dept->name }} Department</option>
+              @endforeach
             </select>
           </div>
         </div>
@@ -190,28 +188,13 @@
 </div>
 
 <script>
-// Hardcoded categories per department
-var _deptCategories = {
-  'HUMAN RESOURCES': [
-    'Office Staff Allowances','Recruitment and Hiring','Licenses and Permits',
-    'Transportation','Events/ Program','Miscellaneous'
-  ],
-  'ADMINISTRATIVE': [
-    'Pantry Supplies','Office Rental','Utilities','Office Supplies and Equipments',
-    'Maintenance and Repairs','Transportation','Food/ Meals','Medical Supplies',
-    'Cleaning / Janitorial Supplies','Miscellaneous'
-  ],
-  'SALES & MARKETING': [
-    'Advertisement Cost','Sales Incentives','Agent Allowances',
-    'Transportation','Food/ Meals','Sales Miscellaneous'
-  ],
-  'EXECUTIVE': [
-    'Food/ Meals','Transportation','Repairs and Maintenance','Miscellaneous'
-  ],
-  'FINANCE': [
-    'Retention Fees','Penalty/ Fines','Tax and Licenses','Miscellaneous'
-  ]
-};
+// Dynamic categories from DB
+var _deptCategories = {};
+@foreach($departments->where('slug', '!=', 'capex') as $dept)
+_deptCategories['{{ strtoupper($dept->name) }}'] = [
+  @foreach($dept->categories as $cat)'{{ addslashes($cat->name) }}',@endforeach
+];
+@endforeach
 
 function updDept(){
   var v = document.getElementById('f_dept').value;

@@ -17,7 +17,7 @@
 
     {{-- Add Department Modal --}}
     <div id="addDeptModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-        <div style="background:#fff;border-radius:12px;padding:28px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="background:#fff;border-radius:12px;padding:28px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                 <h3 style="font-size:16px;font-weight:700;color:#1e4575;margin:0;">Add Department</h3>
                 <button onclick="document.getElementById('addDeptModal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;">&times;</button>
@@ -28,9 +28,17 @@
                     <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Department Name <span style="color:#ef4444;">*</span></label>
                     <input type="text" id="new_dept_name" required placeholder="e.g. Operations" style="width:100%;padding:9px 12px;border:1.5px solid #d0d5dd;border-radius:8px;font-size:13px;box-sizing:border-box;">
                 </div>
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:6px;">Categories</label>
+                    <div id="new_dept_categories" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" id="new_cat_input" placeholder="Add category..." style="flex:1;padding:8px 12px;border:1.5px solid #d0d5dd;border-radius:8px;font-size:13px;">
+                        <button type="button" onclick="addNewDeptCategory()" style="padding:8px 14px;background:#1e4575;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Add</button>
+                    </div>
+                </div>
                 <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
                     <button type="button" onclick="document.getElementById('addDeptModal').style.display='none'" style="padding:8px 16px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Cancel</button>
-                    <button type="submit" style="padding:8px 16px;background:#1e4575;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Add</button>
+                    <button type="submit" style="padding:8px 16px;background:#1e4575;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Add Department</button>
                 </div>
             </form>
         </div>
@@ -40,14 +48,34 @@
         e.preventDefault();
         const name = document.getElementById('new_dept_name').value.trim();
         if (!name) return;
+        const cats = Array.from(document.querySelectorAll('#new_dept_categories .dept-cat-tag')).map(t => t.dataset.cat);
         fetch('/api/departments/add', {
             method: 'POST',
             headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}'},
-            body: JSON.stringify({name: name})
+            body: JSON.stringify({name: name, categories: cats})
         }).then(r => r.json()).then(d => {
             if (d.success) { location.reload(); }
             else { alert(d.message || 'Error adding department'); }
         });
+    });
+
+    function addNewDeptCategory() {
+        const input = document.getElementById('new_cat_input');
+        const val = input.value.trim();
+        if (!val) return;
+        const container = document.getElementById('new_dept_categories');
+        const tag = document.createElement('div');
+        tag.className = 'dept-cat-tag';
+        tag.dataset.cat = val;
+        tag.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#f0f4ff;border-radius:6px;font-size:12px;';
+        tag.innerHTML = '<span>' + val + '</span><button type="button" onclick="this.closest(\'.dept-cat-tag\').remove()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:14px;">&times;</button>';
+        container.appendChild(tag);
+        input.value = '';
+        input.focus();
+    }
+
+    document.getElementById('new_cat_input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); addNewDeptCategory(); }
     });
 
     function deleteDepartment(id, name) {
@@ -161,11 +189,9 @@
                             <input type="text" id="department" name="department" class="form-control combobox-input" required autocomplete="off" placeholder="Type or select department" onclick="toggleDepartmentDropdown()" oninput="filterDepartments(this.value)">
                             <button type="button" class="combobox-arrow" onclick="toggleDepartmentDropdown()">▼</button>
                             <div id="departmentDropdown" class="combobox-dropdown" style="display: none;">
-                                <div class="dropdown-item" onclick="selectDepartment('Administrative')">Administrative</div>
-                                <div class="dropdown-item" onclick="selectDepartment('Sales & Marketing')">Sales & Marketing</div>
-                                <div class="dropdown-item" onclick="selectDepartment('Human Resources')">Human Resources</div>
-                                <div class="dropdown-item" onclick="selectDepartment('Finance')">Finance</div>
-                                <div class="dropdown-item" onclick="selectDepartment('Executive')">Executive</div>
+                                @foreach($departments->where('slug', '!=', 'capex') as $dept)
+                                <div class="dropdown-item" onclick="selectDepartment('{{ $dept->name }}')">{{ $dept->name }}</div>
+                                @endforeach
                             </div>
                         </div>
                     </div>
@@ -412,11 +438,9 @@
                         <input type="text" id="edit_department" name="department" class="form-control form-control-sm combobox-input" required autocomplete="off" placeholder="Type or select department" onclick="toggleEditDepartmentDropdown()" oninput="filterEditDepartments(this.value)">
                         <button type="button" class="combobox-arrow" onclick="toggleEditDepartmentDropdown()">▼</button>
                         <div id="editDepartmentDropdown" class="combobox-dropdown" style="display: none;">
-                            <div class="dropdown-item" onclick="selectEditDepartment('Administrative')">Administrative</div>
-                            <div class="dropdown-item" onclick="selectEditDepartment('Sales & Marketing')">Sales & Marketing</div>
-                            <div class="dropdown-item" onclick="selectEditDepartment('Human Resources')">Human Resources</div>
-                            <div class="dropdown-item" onclick="selectEditDepartment('Finance')">Finance</div>
-                            <div class="dropdown-item" onclick="selectEditDepartment('Executive')">Executive</div>
+                            @foreach($departments->where('slug', '!=', 'capex') as $dept)
+                            <div class="dropdown-item" onclick="selectEditDepartment('{{ $dept->name }}')">{{ $dept->name }}</div>
+                            @endforeach
                         </div>
                     </div>
                 </div>

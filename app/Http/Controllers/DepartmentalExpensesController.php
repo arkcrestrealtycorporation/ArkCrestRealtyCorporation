@@ -55,10 +55,25 @@ class DepartmentalExpensesController extends Controller
     public function index()
     {
         $requests = CommissionRequest::orderBy('date_requested', 'asc')->orderBy('id', 'asc')->get();
-        $categories = $this->categories;
         
         // Get departments with their expenses
-        $departments = \App\Models\Department::with('expenses')->get();
+        $departments = \App\Models\Department::with('expenses', 'categories')->get();
+        
+        // Build categories from DB + hardcoded fallback
+        $categories = [];
+        foreach ($departments as $dept) {
+            $dbCats = $dept->categories->pluck('name')->toArray();
+            if (!empty($dbCats)) {
+                $categories[$dept->name] = $dbCats;
+            }
+        }
+        // Merge hardcoded categories for existing departments that have no DB categories
+        foreach ($this->categories as $key => $cats) {
+            $fullName = ['Admin' => 'Administrative', 'HR' => 'Human Resource'][$key] ?? $key;
+            if (!isset($categories[$fullName]) || empty($categories[$fullName])) {
+                $categories[$fullName] = $cats;
+            }
+        }
         
         // Get unique requestor names for autocomplete
         $requestorNames = CommissionRequest::select('requestor_name')
