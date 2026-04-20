@@ -132,7 +132,7 @@ class SettingsController extends Controller
             'smtpPassword'       => $settings['smtp_password'] ?? '',
             'smtpFromName'       => $settings['smtp_from_name'] ?? config('app.name'),
             'pendingUsers'       => User::where('status', 'pending')->where('email', 'not like', 'pending_%')->orderBy('created_at', 'desc')->get(),
-            'activeUsers'        => User::whereIn('status', ['active', 'pre_registered'])->orderBy('employee_id')->get(),
+            'activeUsers'        => User::whereIn('status', ['active', 'pre_registered', 'pending'])->orderBy('employee_id')->get(),
             'activityLogs'       => ActivityLog::with('user')->orderBy('created_at', 'desc')->limit(200)->get(),
             'hiddenSections'     => array_values(json_decode(\DB::table('app_settings')->where('key', 'hidden_pages')->value('value') ?? '[]', true) ?: []),
             'salesTeams'         => \App\Models\SalesTeam::with(['agents', 'quotas' => fn($q) => $q->orderBy('date_from', 'desc')])->orderBy('leader_name')->get(),

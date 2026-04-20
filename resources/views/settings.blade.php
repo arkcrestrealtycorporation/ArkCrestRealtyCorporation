@@ -1092,7 +1092,7 @@
               'settings.permissions'             => 'Permission Requests',
             ],
           ];
-          $staffUsers = $activeUsers->where('role', '!=', 'admin')->where('status', 'active');
+          $staffUsers = $activeUsers->whereNotIn('status', ['pre_registered'])->where('role', '!=', 'admin');
           $selectedUserId = request('vis_user') ?? ($staffUsers->first()->id ?? null);
           $selectedUser = $staffUsers->firstWhere('id', $selectedUserId);
           $userHidden = $selectedUser ? ($selectedUser->hidden_pages ?? []) : [];
@@ -1149,35 +1149,32 @@
 
     {{-- ADD USER MODAL --}}
     <div id="addUserVisModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-      <div style="background:#fff;border-radius:12px;padding:28px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+      <div style="background:#fff;border-radius:12px;padding:28px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-          <h3 style="font-size:16px;font-weight:700;color:#1e4575;margin:0;">Add New User</h3>
+          <h3 style="font-size:16px;font-weight:700;color:#1e4575;margin:0;">Select User</h3>
           <button type="button" onclick="document.getElementById('addUserVisModal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;">&times;</button>
         </div>
-        <form method="POST" action="{{ route('settings.employee.add') }}">@csrf
-          <input type="hidden" name="redirect_to_visibility" value="1">
-          <div style="display:flex;flex-direction:column;gap:14px;">
-            <div>
-              <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Full Name <span style="color:#ef4444;">*</span></label>
-              <input class="st-input" type="text" name="name" required placeholder="Full name" style="width:100%;">
-            </div>
-            <div>
-              <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Position <span style="color:#ef4444;">*</span></label>
-              <input class="st-input" type="text" name="position" required placeholder="Job title / position" style="width:100%;">
-            </div>
-            <div>
-              <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Employee ID <span style="color:#ef4444;">*</span></label>
-              <input class="st-input" type="text" name="employee_id" required placeholder="e.g. 0050" style="width:100%;">
-            </div>
-            <div>
-              <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Date Hired <span style="color:#ef4444;">*</span></label>
-              <input class="st-input" type="date" name="date_hired" required style="width:100%;">
-            </div>
+        @php $allStaff = \App\Models\User::where('role','!=','admin')->whereNotIn('status',['pre_registered'])->orderBy('name')->get(); @endphp
+        @if($allStaff->isEmpty())
+          <div style="color:#6b7280;font-size:13px;">No users found.</div>
+        @else
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            @foreach($allStaff as $u)
+            <button type="button" onclick="pickVisUser({{ $u->id }}, '{{ addslashes($u->name) }}')"
+              style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;text-align:left;width:100%;">
+              <div style="width:36px;height:36px;border-radius:50%;background:#1e4575;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
+                {{ strtoupper(substr($u->name,0,1)) }}
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:13px;color:#111827;">{{ $u->name }}</div>
+                <div style="font-size:12px;color:#6b7280;">{{ $u->position ?? '' }} · {{ ucfirst($u->status) }}</div>
+              </div>
+            </button>
+            @endforeach
           </div>
-          <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end;">
-            <button type="button" onclick="document.getElementById('addUserVisModal').style.display='none'" class="st-btn" style="background:#f3f4f6;color:#374151;">Cancel</button>
-            <button type="submit" class="st-btn st-btn-primary">Add User</button>
-          </div>
+        @endif
+      </div>
+    </div>
         </form>
       </div>
     </div>
@@ -1856,6 +1853,25 @@ function selectVisUser(userId, btn) {
                 cb.checked = !hidden.includes(cb.value);
             });
         });
+}
+
+function pickVisUser(userId, userName) {
+    document.getElementById('addUserVisModal').style.display = 'none';
+    // Update hidden input
+    document.getElementById('vis_user_id').value = userId;
+    // Highlight the selected user tab if exists, else reload page with vis_user param
+    const tabs = document.querySelectorAll('#vis-user-tabs button');
+    let found = false;
+    tabs.forEach(btn => {
+        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes('selectVisUser(' + userId + ',')) {
+            selectVisUser(userId, btn);
+            found = true;
+        }
+    });
+    if (!found) {
+        // User not in tabs yet, reload to show them
+        window.location.href = window.location.pathname + '?vis_user=' + userId + '#panel-visibility';
+    }
 }
 function addEmailRow() {
     const row = document.createElement('div');
