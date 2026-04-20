@@ -31,11 +31,11 @@
                     <div class="budget-card-header-compact" style="padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-bottom:10px;">
                         <h4 style="font-size:13px;font-weight:700;color:#fff;margin:0;white-space:normal;word-break:break-word;">{{ $dept->name }}</h4>
                         @if($dept->budget_from || $dept->budget_to)
-                        <div style="font-size:11px;color:#6b7280;margin-top:4px;">
+                        <div style="font-size:12px;color:rgba(255,255,255,0.9);margin-top:5px;font-weight:500;">
                             {{ $dept->budget_from?->format('M d, Y') ?? '—' }} → {{ $dept->budget_to?->format('M d, Y') ?? '—' }}
                         </div>
                         @else
-                        <div style="font-size:11px;color:#d1d5db;margin-top:4px;">No date set</div>
+                        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:5px;font-style:italic;">No date set</div>
                         @endif
                     </div>
                     <div class="budget-card-body-compact">
