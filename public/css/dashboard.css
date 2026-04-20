@@ -3634,7 +3634,22 @@ button#notificationToggle:hover {
 .custom-toast.error   { border-left-color: #ef4444; background: white; }
 .custom-toast.warning { border-left-color: #f59e0b; background: white; }
 .custom-toast.info    { border-left-color: #2563eb; background: white; }
-.custom-toast.confirm { border-left-color: #1e4575; background: white; }
+.custom-toast.confirm {
+    top: 50%;
+    right: auto;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.9);
+    width: 360px;
+    border-left: none;
+    border: 2px solid #1e4575;
+    border-radius: 12px;
+    padding: 24px;
+    animation: none;
+}
+.custom-toast.confirm.show {
+    transform: translate(-50%, -50%) scale(1);
+    animation: none;
+}
 
 .toast-icon {
     width: 36px;

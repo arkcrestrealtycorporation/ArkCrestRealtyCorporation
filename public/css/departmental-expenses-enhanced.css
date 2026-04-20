@@ -779,41 +779,43 @@
 /* Toast Notification */
 .custom-toast {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.8);
+    bottom: 24px;
+    right: 24px;
+    transform: translateY(20px);
     background: white;
     border-radius: 12px;
-    padding: 25px 30px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+    padding: 16px 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     z-index: 10000;
     display: none;
     opacity: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    min-width: 350px;
-    border: 3px solid;
+    min-width: 300px;
+    max-width: 400px;
+    border-left: 4px solid;
 }
 
 .custom-toast.show {
     display: flex;
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: translateY(0);
 }
 
-.custom-toast.success {
-    border-color: #22c55e;
-}
-
-.custom-toast.error {
-    border-color: #ef4444;
-}
-
-.custom-toast.warning {
-    border-color: #fbbf24;
-}
-
+/* Confirm stays centered */
 .custom-toast.confirm {
-    border-color: #1e4575;
+    bottom: auto;
+    right: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    min-width: 350px;
+    border-left: none;
+    border: 3px solid #1e4575;
+    padding: 25px 30px;
+}
+
+.custom-toast.confirm.show {
+    transform: translate(-50%, -50%) scale(1);
 }
 
 .toast-icon {
