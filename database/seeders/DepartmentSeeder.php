@@ -2,27 +2,26 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Department;
 
 class DepartmentSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $departments = [
-            ['name' => 'Admin', 'slug' => 'admin', 'allowable_budget' => 600000],
-            ['name' => 'Sales & Marketing', 'slug' => 'sales', 'allowable_budget' => 1000000],
-            ['name' => 'HR', 'slug' => 'hr', 'allowable_budget' => 500000],
-            ['name' => 'Finance', 'slug' => 'finance', 'allowable_budget' => 800000],
-            ['name' => 'Executive', 'slug' => 'executive', 'allowable_budget' => 700000],
-            ['name' => 'CAPEX', 'slug' => 'capex', 'allowable_budget' => 400000],
+            ['name' => 'Admin',            'slug' => 'admin'],
+            ['name' => 'Sales & Marketing','slug' => 'sales_and_marketing'],
+            ['name' => 'HR',               'slug' => 'hr'],
+            ['name' => 'Finance',          'slug' => 'finance'],
+            ['name' => 'Executive',        'slug' => 'executive'],
         ];
 
         foreach ($departments as $dept) {
-            \App\Models\Department::create($dept);
+            Department::firstOrCreate(
+                ['slug' => $dept['slug']],
+                ['name' => $dept['name'], 'allowable_budget' => 0]
+            );
         }
     }
 }
