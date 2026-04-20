@@ -21,31 +21,47 @@
         <div class="budget-cards-grid">
             @foreach($departments as $dept)
                 @if($dept->slug !== 'capex')
+                @php
+                    $totalExpenses = \App\Models\CommissionRequest::where('department', $dept->name)->sum('requested_amount');
+                    $remaining = $dept->allowable_budget - $totalExpenses;
+                    $pct = $dept->allowable_budget > 0 ? min(100, ($totalExpenses / $dept->allowable_budget) * 100) : 0;
+                    $barColor = $pct >= 90 ? '#ef4444' : ($pct >= 70 ? '#f59e0b' : '#16a34a');
+                @endphp
                 <div class="budget-card-compact" onclick="selectDepartmentFromCard('{{ $dept->name }}')" style="cursor:pointer;" title="Click to select {{ $dept->name }}">
-                    <div class="budget-card-header-compact">
+                    <div class="budget-card-header-compact" style="display:flex;justify-content:space-between;align-items:center;">
                         <h4>{{ $dept->name }}</h4>
+                        @if(auth()->user()->isAdmin())
+                        <button onclick="event.stopPropagation();openBudgetModal({{ $dept->id }}, '{{ $dept->name }}', {{ $dept->allowable_budget }}, '{{ $dept->budget_from?->format('Y-m-d') ?? '' }}', '{{ $dept->budget_to?->format('Y-m-d') ?? '' }}')" class="btn-update-budget" style="margin:0;">
+                            <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            Edit
+                        </button>
+                        @endif
                     </div>
                     <div class="budget-card-body-compact">
-                        <div class="budget-display">
-                            <span class="budget-label-sm">Allowable Budget:</span>
-                            <span class="budget-value-lg" id="budget_display_{{ $dept->id }}">₱ {{ number_format($dept->allowable_budget, 2) }}</span>
+                        @if($dept->budget_from || $dept->budget_to)
+                        <div style="font-size:11px;color:#6b7280;margin-bottom:8px;">
+                            {{ $dept->budget_from?->format('M d, Y') ?? '—' }} → {{ $dept->budget_to?->format('M d, Y') ?? '—' }}
                         </div>
-                        <div class="budget-display" style="margin-top: 8px;">
-                            <span class="budget-label-sm">Remaining Budget:</span>
-                            <span class="budget-value-lg" style="color: #27ae60;" id="remaining_display_{{ $dept->id }}">
-                                @php
-                                    $totalExpenses = \App\Models\CommissionRequest::where('department', $dept->name)->sum('requested_amount');
-                                    $remaining = $dept->allowable_budget - $totalExpenses;
-                                @endphp
-                                ₱ {{ number_format($remaining, 2) }}
-                            </span>
+                        @endif
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            <div style="display:flex;justify-content:space-between;font-size:12px;">
+                                <span style="color:#6b7280;">Budget</span>
+                                <span style="font-weight:700;color:#1e4575;" id="budget_display_{{ $dept->id }}">₱{{ number_format($dept->allowable_budget, 2) }}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-size:12px;">
+                                <span style="color:#6b7280;">Expenses</span>
+                                <span style="font-weight:600;color:#dc2626;">₱{{ number_format($totalExpenses, 2) }}</span>
+                            </div>
+                            <div style="display:flex;justify-content:space-between;font-size:12px;">
+                                <span style="color:#6b7280;">Remaining</span>
+                                <span style="font-weight:700;color:{{ $remaining >= 0 ? '#16a34a' : '#dc2626' }};" id="remaining_display_{{ $dept->id }}">₱{{ number_format($remaining, 2) }}</span>
+                            </div>
                         </div>
-                        <button onclick="openBudgetModal({{ $dept->id }}, '{{ $dept->name }}', {{ $dept->allowable_budget }}, {{ $totalExpenses }})" class="btn-update-budget">
-                            <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                            </svg>
-                            Update
-                        </button>
+                        {{-- Progress bar --}}
+                        <div style="margin-top:10px;background:#f3f4f6;border-radius:99px;height:6px;overflow:hidden;">
+                            <div style="height:100%;width:{{ $pct }}%;background:{{ $barColor }};border-radius:99px;transition:width .3s;"></div>
+                        </div>
+                        <div style="font-size:10px;color:#9ca3af;text-align:right;margin-top:2px;">{{ number_format($pct, 1) }}% used</div>
                     </div>
                 </div>
                 @endif
@@ -281,6 +297,16 @@
             <div class="form-group">
                 <label>Remaining Budget</label>
                 <input type="text" id="budget_remaining" class="form-control form-control-sm" readonly style="background-color: #f4f6f8; color: #27ae60; font-weight: 600;">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label>Date From</label>
+                    <input type="date" id="budget_from" class="form-control form-control-sm">
+                </div>
+                <div class="form-group">
+                    <label>Date To</label>
+                    <input type="date" id="budget_to" class="form-control form-control-sm">
+                </div>
             </div>
             <div class="form-actions-right" style="margin-top: 20px;">
                 <button type="submit" class="btn-submit">Update Budget</button>
@@ -1124,15 +1150,23 @@ function closeViewModal() {
 }
 
 // Budget Modal Functions
-function openBudgetModal(deptId, deptName, currentBudget, totalExpenses) {
+function openBudgetModal(deptId, deptName, currentBudget, budgetFrom, budgetTo) {
     document.getElementById('budget_dept_id').value = deptId;
     document.getElementById('budget_dept_name').value = deptName;
     document.getElementById('budget_amount').value = currentBudget;
-    document.getElementById('budget_total_expenses').value = '₱ ' + parseFloat(totalExpenses).toLocaleString('en-US', {minimumFractionDigits: 2});
-    
-    const remaining = currentBudget - totalExpenses;
-    document.getElementById('budget_remaining').value = '₱ ' + parseFloat(remaining).toLocaleString('en-US', {minimumFractionDigits: 2});
-    
+    document.getElementById('budget_from').value = budgetFrom || '';
+    document.getElementById('budget_to').value = budgetTo || '';
+
+    // Calculate total expenses for this dept from the card display
+    const remaining = document.getElementById('remaining_display_' + deptId);
+    const budget = document.getElementById('budget_display_' + deptId);
+    const budgetVal = parseFloat((budget ? budget.textContent : '0').replace(/[₱,]/g, '')) || 0;
+    const remainingVal = parseFloat((remaining ? remaining.textContent : '0').replace(/[₱,]/g, '')) || 0;
+    const totalExp = budgetVal - remainingVal;
+
+    document.getElementById('budget_total_expenses').value = '₱ ' + totalExp.toLocaleString('en-US', {minimumFractionDigits: 2});
+    document.getElementById('budget_remaining').value = '₱ ' + remainingVal.toLocaleString('en-US', {minimumFractionDigits: 2});
+
     document.getElementById('budgetModal').style.display = 'block';
 }
 
@@ -1163,7 +1197,9 @@ document.getElementById('budgetUpdateForm').addEventListener('submit', function(
             'X-CSRF-TOKEN': '{{ csrf_token() }}'
         },
         body: JSON.stringify({
-            allowable_budget: newBudget
+            allowable_budget: newBudget,
+            budget_from: document.getElementById('budget_from').value || null,
+            budget_to: document.getElementById('budget_to').value || null,
         })
     })
     .then(response => response.json())

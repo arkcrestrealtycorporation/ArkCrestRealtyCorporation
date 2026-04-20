@@ -59,9 +59,16 @@ class DepartmentController extends Controller
     {
         $department = Department::findOrFail($id);
         $department->allowable_budget = $request->allowable_budget ?? $request->budget;
+        $department->budget_from = $request->budget_from ?: null;
+        $department->budget_to = $request->budget_to ?: null;
         $department->save();
         
-        return response()->json(['success' => true, 'budget' => $department->allowable_budget]);
+        return response()->json([
+            'success' => true,
+            'budget' => $department->allowable_budget,
+            'budget_from' => $department->budget_from?->format('Y-m-d'),
+            'budget_to' => $department->budget_to?->format('Y-m-d'),
+        ]);
     }
     
     public function addCategory(Request $request, $id)

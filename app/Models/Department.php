@@ -6,7 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Department extends Model
 {
-    protected $fillable = ['name', 'slug', 'allowable_budget'];
+    protected $fillable = ['name', 'slug', 'allowable_budget', 'budget_from', 'budget_to'];
+
+    protected $casts = [
+        'budget_from' => 'date',
+        'budget_to'   => 'date',
+    ];
 
     public function expenses()
     {
