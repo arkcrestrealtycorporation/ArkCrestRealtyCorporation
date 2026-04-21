@@ -3578,11 +3578,11 @@ button#notificationToggle:hover {
 }
 
 .dropdown-item {
-    padding: 12px 16px;
+    padding: 10px 16px;
     cursor: pointer;
-    transition: all 0.15s;
-    font-size: 14px;
-    color: #565651;
+    transition: background 0.15s;
+    font-size: 13px;
+    color: #374151;
     border-bottom: 1px solid #f0f0f0;
     background: white;
 }
@@ -3596,13 +3596,14 @@ button#notificationToggle:hover {
     border-radius: 0 0 6px 6px;
 }
 
-.dropdown-item:hover {
-    background: #1E4575;
-    color: white;
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background: #e8edf5;
+    color: #1e4575;
 }
 
 .dropdown-item:active {
-    background: #A37929;
+    background: #1e4575;
     color: white;
 }
 
