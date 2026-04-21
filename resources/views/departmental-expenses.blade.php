@@ -79,13 +79,14 @@
     });
 
     function deleteDepartment(id, name) {
-        if (!confirm('Delete "' + name + '" department? This cannot be undone.')) return;
-        fetch('/api/departments/' + id + '/delete', {
-            method: 'DELETE',
-            headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}'},
-        }).then(r => r.json()).then(d => {
-            if (d.success) { location.reload(); }
-            else { alert(d.message || 'Error deleting department'); }
+        showConfirm('Delete Department', 'Delete "' + name + '" department? This cannot be undone.', function() {
+            fetch('/api/departments/' + id + '/delete', {
+                method: 'DELETE',
+                headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}'},
+            }).then(r => r.json()).then(d => {
+                if (d.success) { location.reload(); }
+                else { showToast('error', 'Error', d.message || 'Error deleting department'); }
+            });
         });
     }
     </script>
@@ -1281,8 +1282,9 @@ function addBudgetCategory() {
 }
 
 function removeBudgetCategory(btn, catName) {
-    if (!confirm('Remove "' + catName + '" category?')) return;
-    btn.closest('div').remove();
+    showConfirm('Remove Category', 'Remove "' + catName + '" category?', function() {
+        btn.closest('div').remove();
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1408,23 +1410,21 @@ function deleteRequest(id) {
 }
 
 function _doDeleteRequest(id) {
-    if (!confirm('Are you sure you want to delete this record?')) return;
-    fetch(`/api/departmental-expenses/${id}`, {
-        method: 'DELETE',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('success', 'Deleted', 'Request deleted successfully!');
-            setTimeout(() => location.reload(), 800);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showToast('error', 'Error', 'Error deleting request');
+    showConfirm('Delete Record', 'Are you sure you want to delete this record?', function() {
+        fetch(`/api/departmental-expenses/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('success', 'Deleted', 'Request deleted successfully!');
+                setTimeout(() => location.reload(), 800);
+            }
+        })
+        .catch(error => {
+            showToast('error', 'Error', 'Error deleting request');
+        });
     });
 }
 
