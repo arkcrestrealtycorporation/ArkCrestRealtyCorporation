@@ -1143,7 +1143,7 @@ function resetFilters() {
 }
 
 function viewCommission(id) {
-    fetch(`/sales-marketing/${id}`)
+    fetch(`/api/commission-monitoring/${id}`)
         .then(r => r.json())
         .then(data => {
             const fmt = (v) => v ?? '-';
@@ -1172,7 +1172,7 @@ function viewCommission(id) {
 }
 
 function editCommission(id) {
-    fetch(`/sales-marketing/${id}`)
+    fetch(`/api/commission-monitoring/${id}`)
         .then(r => r.json())
         .then(data => {
             const d = (v) => v ? v.split('T')[0] : '';

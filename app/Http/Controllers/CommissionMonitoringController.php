@@ -65,6 +65,43 @@ class CommissionMonitoringController extends Controller
         }
     }
 
+    public function show($id)
+    {
+        return response()->json(CommissionRequest::findOrFail($id));
+    }
+
+    public function update(Request $request, $id)
+    {
+        try {
+            $record = CommissionRequest::findOrFail($id);
+            $validated = $request->validate([
+                'project_name'      => 'nullable|string|max:255',
+                'property_details'  => 'nullable|string|max:255',
+                'client_name'       => 'nullable|string|max:255',
+                'terms_of_payment'  => 'nullable|string|max:255',
+                'agent_name'        => 'nullable|string|max:255',
+                'number_of_units'   => 'nullable|integer',
+                'price_sqm'         => 'nullable|numeric',
+                'lot_area'          => 'nullable|numeric',
+                'discount'          => 'nullable|numeric',
+                'net_tcp'           => 'nullable|numeric',
+                'commission_percent'=> 'nullable|numeric',
+                'commission'        => 'nullable|numeric',
+                'mode_of_payment'   => 'nullable|string|max:255',
+                'date_requested'    => 'nullable|date',
+                'reservation_date'  => 'nullable|date',
+                'date_released'     => 'nullable|date',
+                'status'            => 'nullable|string|max:50',
+                'remarks'           => 'nullable|string',
+            ]);
+            $record->update($validated);
+            \App\Models\ActivityLog::log('update', 'Commission Monitoring', "Updated commission request ID: {$id}");
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function destroy($id)
     {
         if (!auth()->user()->isAdmin()) abort(403);
