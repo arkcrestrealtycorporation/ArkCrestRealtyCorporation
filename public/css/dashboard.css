@@ -3610,21 +3610,22 @@ button#notificationToggle:hover {
 /* Custom Notification Toast - Top Right Side */
 .custom-toast {
     position: fixed;
-    top: 80px;
+    bottom: 24px;
     right: 24px;
     background: white;
     padding: 12px 16px;
     border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    box-shadow: 0 8px 24px rgba(0,0,0,.2);
     z-index: 10000;
     width: auto;
     min-width: 0;
-    max-width: 320px;
+    max-width: 280px;
     min-height: auto;
     display: none;
     align-items: center;
     gap: 10px;
-    border-left: 4px solid #A37929;
+    border: none;
+    border-top: 4px solid #A37929;
     overflow: hidden;
 }
 
