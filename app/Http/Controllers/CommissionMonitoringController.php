@@ -41,6 +41,20 @@ class CommissionMonitoringController extends Controller
                 'date_released'     => 'nullable|date',
                 'status'            => 'nullable|string|max:50',
             ]);
+
+            // Auto-generate control number for commission monitoring
+            $month = now()->format('m');
+            $year  = now()->format('y');
+            $count = 1;
+            while (CommissionRequest::withTrashed()->where('control_number', sprintf('CM-%s-%03d-%s', $month, $count, $year))->exists()) {
+                $count++;
+            }
+            $validated['control_number'] = sprintf('CM-%s-%03d-%s', $month, $count, $year);
+            $validated['requestor_name'] = $validated['requestor_name'] ?? auth()->user()->name;
+            $validated['department']     = $validated['department'] ?? 'Commission';
+            $validated['category']       = $validated['category'] ?? 'Commission';
+            $validated['requested_amount'] = $validated['net_tcp'] ?? 0;
+
             CommissionRequest::create($validated);
             \App\Models\ActivityLog::log('create', 'Commission Monitoring', "Added commission request for client '{$validated['client_name']}'");
             return redirect()->route('commission-monitoring')->with('success', 'Commission request added.');
