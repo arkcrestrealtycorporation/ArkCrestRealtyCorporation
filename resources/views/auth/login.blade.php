@@ -228,11 +228,11 @@ body{display:flex;align-items:center;justify-content:center;background:linear-gr
             <input type="hidden" name="employee_id" id="h_empid">
             <input type="hidden" name="date_hired" id="h_hired">
             <div class="field"><label>Email Address</label><div class="field-wrap"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg><input type="email" name="email" id="r_email" placeholder="yourname@email.com" required></div></div>
-            <div class="field"><label>Password</label><div class="field-wrap"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg><input type="password" name="password" id="r_password" placeholder="Min. 8 chars, upper, lower, number, symbol" required oninput="checkPwdStrength(this.value)"></div>
+            <div class="field"><label>Password</label><div class="field-wrap"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg><input type="password" name="password" id="r_password" placeholder="Min. 8 chars, upper, lower, number, symbol" required oninput="checkPwdStrength(this.value)"><button type="button" onclick="togglePwd('r_password',this)" style="background:none;border:none;cursor:pointer;padding:0 4px;color:#9ca3af;"><svg id="eye_r_password" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button></div>
             <div id="pwd-strength-bar" style="height:3px;border-radius:2px;margin-top:4px;background:#e2e8f0;overflow:hidden;"><div id="pwd-strength-fill" style="height:100%;width:0;transition:width .3s,background .3s;"></div></div>
             <div id="pwd-strength-text" style="font-size:10px;color:#94a3b8;margin-top:2px;"></div>
             </div>
-            <div class="field"><label>Confirm Password</label><div class="field-wrap"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg><input type="password" name="password_confirmation" placeholder="Repeat password" required></div></div>
+            <div class="field"><label>Confirm Password</label><div class="field-wrap"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg><input type="password" name="password_confirmation" id="r_password_confirmation" placeholder="Repeat password" required><button type="button" onclick="togglePwd('r_password_confirmation',this)" style="background:none;border:none;cursor:pointer;padding:0 4px;color:#9ca3af;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg></button></div></div>
             <div class="field"><label>Security Question</label><div style="position:relative;"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:#9ca3af;pointer-events:none;z-index:1;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><select name="security_question" required style="width:100%;padding:13px 12px 13px 36px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:12px;color:#111827;background:white;box-shadow:0 1px 3px rgba(0,0,0,.04);appearance:none;cursor:pointer;"><option value="">Select a security question...</option><option>What is your mother's maiden name?</option><option>What was the name of your first pet?</option><option>What city were you born in?</option><option>What is your favorite book?</option><option>What was the name of your elementary school?</option></select></div></div>
             <div class="field"><label>Security Answer</label><div class="field-wrap"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg><input type="text" name="security_answer" placeholder="Your answer" required></div></div>
           </form>
@@ -361,6 +361,16 @@ function showPrivacyModal(){
 }
 function closePrivacyModal(){
   document.getElementById('privacyModal').style.display='none';
+}
+function togglePwd(id, btn) {
+    var input = document.getElementById(id);
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.style.color = '#1e4575';
+    } else {
+        input.type = 'password';
+        btn.style.color = '#9ca3af';
+    }
 }
 function checkPwdStrength(val) {
     var fill = document.getElementById('pwd-strength-fill');
