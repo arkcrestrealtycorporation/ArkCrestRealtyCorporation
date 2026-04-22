@@ -7,11 +7,11 @@
 
 <div class="summary-report-page">
     <!-- Page Banner -->
-    <div style="background:linear-gradient(135deg,#1e4575 0%,#2563eb 60%,#1e4575 100%);border-radius:16px;padding:28px 36px;margin-bottom:24px;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(30,69,117,.25);">
+    <div style="background:linear-gradient(135deg,#1e4575 0%,#2563eb 60%,#1e4575 100%);border-radius:20px;padding:36px 40px;margin-bottom:28px;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(30,69,117,.25);">
         <div style="position:relative;z-index:2;">
-            <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Finance</div>
-            <h1 style="font-size:26px;font-weight:700;color:white;margin:0 0 4px;">Summary Report</h1>
-            <p style="font-size:13px;color:rgba(255,255,255,.75);margin:0;">Monthly & yearly financial performance overview</p>
+            <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Finance</div>
+            <h1 style="font-size:28px;font-weight:700;color:white;margin:0 0 8px;">Summary Report</h1>
+            <p style="font-size:14px;color:rgba(255,255,255,.75);margin:0;">Monthly & yearly financial performance overview</p>
         </div>
         <div style="position:absolute;top:0;right:0;width:300px;height:100%;pointer-events:none;">
             <div style="position:absolute;width:220px;height:220px;top:-60px;right:-40px;border-radius:50%;background:rgba(255,255,255,.06);"></div>

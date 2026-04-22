@@ -454,13 +454,13 @@
 
     /* Welcome Banner */
     .welcome-banner {
-        background: linear-gradient(135deg, #1e4575 0%, #2563eb 100%);
-        border-radius: 16px;
-        padding: 32px;
-        margin-bottom: 30px;
+        background: linear-gradient(135deg, #1e4575 0%, #2563eb 60%, #1e4575 100%);
+        border-radius: 20px;
+        padding: 36px 40px;
+        margin-bottom: 28px;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 4px 20px rgba(30, 69, 117, 0.3);
+        box-shadow: 0 8px 32px rgba(30,69,117,.25);
     }
 
     .welcome-content {
@@ -469,26 +469,24 @@
     }
 
     .welcome-title {
-        font-size: 32px;
+        font-size: 28px;
         font-weight: 700;
         color: white;
         margin: 0 0 8px 0;
-        animation: slideInLeft 0.6s ease-out;
     }
 
     .welcome-subtitle {
-        font-size: 16px;
-        color: rgba(255, 255, 255, 0.9);
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.75);
         margin: 0;
         display: flex;
         align-items: center;
         gap: 8px;
-        animation: slideInLeft 0.6s ease-out 0.2s both;
     }
 
     .icon-sm {
-        width: 20px;
-        height: 20px;
+        width: 15px;
+        height: 15px;
     }
 
     .welcome-decoration {

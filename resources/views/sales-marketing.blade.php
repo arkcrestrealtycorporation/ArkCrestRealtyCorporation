@@ -31,21 +31,21 @@
 
 <style>
     .welcome-banner {
-        background: linear-gradient(135deg, #1e4575 0%, #2563eb 100%);
-        border-radius: 16px;
-        padding: 32px;
-        margin-bottom: 30px;
+        background: linear-gradient(135deg, #1e4575 0%, #2563eb 60%, #1e4575 100%);
+        border-radius: 20px;
+        padding: 36px 40px;
+        margin-bottom: 28px;
         position: relative;
         overflow: hidden;
-        box-shadow: 0 4px 20px rgba(30, 69, 117, 0.3);
+        box-shadow: 0 8px 32px rgba(30,69,117,.25);
     }
     .welcome-content { position: relative; z-index: 2; }
-    .welcome-title { font-size: 32px; font-weight: 700; color: white; margin: 0 0 8px 0; animation: slideInLeft 0.6s ease-out; }
-    .welcome-subtitle { font-size: 16px; color: rgba(255,255,255,0.9); margin: 0 0 12px; display: flex; align-items: center; gap: 8px; animation: slideInLeft 0.6s ease-out 0.2s both; }
+    .welcome-title { font-size: 28px; font-weight: 700; color: white; margin: 0 0 8px 0; }
+    .welcome-subtitle { font-size: 14px; color: rgba(255,255,255,0.75); margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
     .today-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; position: relative; z-index: 2; }
     .today-pill { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.15); color: white; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 20px; backdrop-filter: blur(4px); }
     .today-pill-alert { background: rgba(251,191,36,.25); color: #fef3c7; }
-    .icon-sm { width: 20px; height: 20px; }
+    .icon-sm { width: 15px; height: 15px; }
     .welcome-decoration { position: absolute; top: 0; right: 0; width: 300px; height: 100%; pointer-events: none; }
     .decoration-circle { position: absolute; border-radius: 50%; background: rgba(163,121,41,0.2); }
     .circle-1 { width: 200px; height: 200px; top: -50px; right: -50px; animation: float 6s ease-in-out infinite; }
