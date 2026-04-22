@@ -7,6 +7,8 @@ use App\Models\Department;
 use App\Models\CommissionRequest;
 use App\Models\CommissionRequestSales;
 use App\Models\SummaryReport;
+use App\Models\TripSchedule;
+use App\Models\Note;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
@@ -100,6 +102,15 @@ class DashboardController extends Controller
             ->orderBy('agent_name')
             ->get();
 
-        return view('dashboard', compact('departmentData', 'totalExpenses', 'expenseBreakdown', 'currentMonth', 'currentYear', 'units', 'grossSales', 'yearlySales', 'receivables', 'monthlySales', 'tomorrowReleases'));
+        // Today's summary for banner
+        $today = Carbon::today()->toDateString();
+        $todayTrips     = TripSchedule::whereDate('tripping_date', $today)->whereIn('status', ['confirmed', 'pending'])->count();
+        $todayReleases  = CommissionRequestSales::whereDate('date_released', $today)->where('status', 'Not Yet Released')->count();
+        $todayEvents    = CommissionRequestSales::where(function($q) use ($today) {
+            $q->whereDate('reservation_date', $today)
+              ->orWhereDate('date_of_downpayment', $today);
+        })->count();
+
+        return view('dashboard', compact('departmentData', 'totalExpenses', 'expenseBreakdown', 'currentMonth', 'currentYear', 'units', 'grossSales', 'yearlySales', 'receivables', 'monthlySales', 'tomorrowReleases', 'todayTrips', 'todayReleases', 'todayEvents'));
     }
 }

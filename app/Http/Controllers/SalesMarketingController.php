@@ -87,9 +87,18 @@ class SalesMarketingController extends Controller
         usort($merged, fn($a, $b) => $b['total_sales'] <=> $a['total_sales']);
         $topPerformers = collect(array_slice($merged, 0, 5))->map(fn($r) => (object)$r);
 
+        // Today's summary for banner
+        $today = \Carbon\Carbon::today()->toDateString();
+        $todayTrips    = \App\Models\TripSchedule::whereDate('tripping_date', $today)->whereIn('status', ['confirmed', 'pending'])->count();
+        $todayReleases = \App\Models\CommissionRequestSales::whereDate('date_released', $today)->where('status', 'Not Yet Released')->count();
+        $todayEvents   = \App\Models\CommissionRequestSales::where(function($q) use ($today) {
+            $q->whereDate('reservation_date', $today)->orWhereDate('date_of_downpayment', $today);
+        })->count();
+
         return view('sales-marketing', compact(
             'totalNetTcp', 'totalClients', 'totalRecords',
-            'topPerformers', 'teamPerformance', 'dateFrom', 'dateTo', 'teams'
+            'topPerformers', 'teamPerformance', 'dateFrom', 'dateTo', 'teams',
+            'todayTrips', 'todayReleases', 'todayEvents'
         ));
     }
 

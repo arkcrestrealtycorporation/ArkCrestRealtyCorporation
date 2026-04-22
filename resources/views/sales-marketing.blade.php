@@ -11,6 +11,20 @@
             </svg>
             Sales Dashboard Overview - {{ date('F Y') }}
         </p>
+        <div class="today-pills">
+            <span class="today-pill">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                {{ $todayEvents }} Event{{ $todayEvents != 1 ? 's' : '' }} Today
+            </span>
+            <span class="today-pill">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                {{ $todayTrips }} Tripping{{ $todayTrips != 1 ? 's' : '' }} Today
+            </span>
+            <span class="today-pill {{ $todayReleases > 0 ? 'today-pill-alert' : '' }}">
+                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {{ $todayReleases }} Release{{ $todayReleases != 1 ? 's' : '' }} Today
+            </span>
+        </div>
     </div>
     <div class="welcome-decoration">
         <div class="decoration-circle circle-1"></div>
@@ -31,7 +45,10 @@
     }
     .welcome-content { position: relative; z-index: 2; }
     .welcome-title { font-size: 32px; font-weight: 700; color: white; margin: 0 0 8px 0; animation: slideInLeft 0.6s ease-out; }
-    .welcome-subtitle { font-size: 16px; color: rgba(255,255,255,0.9); margin: 0; display: flex; align-items: center; gap: 8px; animation: slideInLeft 0.6s ease-out 0.2s both; }
+    .welcome-subtitle { font-size: 16px; color: rgba(255,255,255,0.9); margin: 0 0 12px; display: flex; align-items: center; gap: 8px; animation: slideInLeft 0.6s ease-out 0.2s both; }
+    .today-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; position: relative; z-index: 2; }
+    .today-pill { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.15); color: white; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 20px; backdrop-filter: blur(4px); }
+    .today-pill-alert { background: rgba(251,191,36,.25); color: #fef3c7; }
     .icon-sm { width: 20px; height: 20px; }
     .welcome-decoration { position: absolute; top: 0; right: 0; width: 300px; height: 100%; pointer-events: none; }
     .decoration-circle { position: absolute; border-radius: 50%; background: rgba(163,121,41,0.2); }
