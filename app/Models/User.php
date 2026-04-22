@@ -32,6 +32,7 @@ class User extends Authenticatable
         'security_question',
         'security_answer',
         'hidden_pages',
+        'last_seen_at',
     ];
 
     /**

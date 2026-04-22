@@ -201,4 +201,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/notifications/count', [App\Http\Controllers\NotificationController::class, 'count'])->name('notifications.count');
     Route::get('/api/notifications/latest', [App\Http\Controllers\NotificationController::class, 'latest'])->name('notifications.latest');
 
+    // Online presence
+    Route::post('/api/ping', function () {
+        auth()->user()->update(['last_seen_at' => now()]);
+        return response()->json(['ok' => true]);
+    })->name('api.ping');
+
+    Route::get('/api/online-users', function () {
+        $onlineIds = \App\Models\User::whereNotNull('last_seen_at')
+            ->where('last_seen_at', '>=', now()->subMinutes(2))
+            ->pluck('id');
+        return response()->json($onlineIds);
+    })->name('api.online-users');
+
 }); // end auth middleware

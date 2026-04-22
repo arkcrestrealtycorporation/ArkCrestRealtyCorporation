@@ -149,6 +149,7 @@ class SettingsController extends Controller
                 if ($user) $r->agent_name = $user->name;
             }),
             'personnelContacts'  => \App\Models\PersonnelContact::orderBy('id')->get(),
+            'onlineUserIds'      => User::whereNotNull('last_seen_at')->where('last_seen_at', '>=', now()->subMinutes(2))->pluck('id')->toArray(),
         ];
     }
 

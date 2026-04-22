@@ -823,6 +823,13 @@
 
     // Poll every 30 seconds
     setInterval(pollNotifications, 30000);
+
+    // Ping server every 60 seconds to update last_seen_at
+    function pingPresence() {
+        fetch('/api/ping', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '' } }).catch(() => {});
+    }
+    pingPresence();
+    setInterval(pingPresence, 60000);
     // Also poll after 3 seconds on load
     setTimeout(pollNotifications, 3000);
     </script>
