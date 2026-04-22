@@ -188,6 +188,12 @@ class SalesMarketingController extends Controller
             'number_of_units'   => $r->number_of_units ?? 1,
             'commission_percent'=> $r->commission_percent ?? '',
             'date_requested'    => $r->date_requested ? $r->date_requested->format('Y-m-d') : '',
+            'developer_name'    => $r->developer_name ?? '',
+            'block_lot_number'  => $r->block_lot_number ?? '',
+            'price_sqm'         => $r->price_sqm ?? '',
+            'lot_area'          => $r->lot_area ?? '',
+            'discount'          => $r->discount ?? '',
+            'mode_of_payment'   => $r->mode_of_payment ?? '',
         ]);
     }
 

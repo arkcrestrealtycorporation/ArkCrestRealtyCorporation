@@ -445,15 +445,21 @@
             .then(r => r.json())
             .then(data => {
                 const params = new URLSearchParams({
-                    prefill_client:       data.client_name       || '',
-                    prefill_project:      data.project_name      || '',
-                    prefill_agent:        data.agent_name        || '',
-                    prefill_net_tcp:      data.net_tcp           || '',
-                    prefill_reservation:  data.reservation_date  || '',
-                    prefill_terms:        data.terms_of_payment  || '',
-                    prefill_units:        data.number_of_units   || '',
+                    prefill_client:         data.client_name       || '',
+                    prefill_project:        data.project_name      || '',
+                    prefill_agent:          data.agent_name        || '',
+                    prefill_net_tcp:        data.net_tcp           || '',
+                    prefill_reservation:    data.reservation_date  || '',
+                    prefill_terms:          data.terms_of_payment  || '',
+                    prefill_units:          data.number_of_units   || '',
                     prefill_commission_pct: data.commission_percent || '',
-                    prefill_date:         data.date_requested    || '',
+                    prefill_date:           data.date_requested    || '',
+                    prefill_developer:      data.developer_name    || '',
+                    prefill_block_lot:      data.block_lot_number  || '',
+                    prefill_price_sqm:      data.price_sqm         || '',
+                    prefill_lot_area:       data.lot_area          || '',
+                    prefill_discount:       data.discount          || '',
+                    prefill_mode_of_payment: data.mode_of_payment  || '',
                 });
                 window.location.href = '/commission-monitoring?' + params.toString();
             })

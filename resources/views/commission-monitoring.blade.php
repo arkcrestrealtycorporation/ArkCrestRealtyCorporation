@@ -1505,6 +1505,12 @@ function submitCmPermRequest() {
     const terms     = params.get('prefill_terms');
     const units     = params.get('prefill_units');
     const commPct   = params.get('prefill_commission_pct');
+    const developer = params.get('prefill_developer');
+    const blockLot  = params.get('prefill_block_lot');
+    const priceSqm  = params.get('prefill_price_sqm');
+    const lotArea   = params.get('prefill_lot_area');
+    const discount  = params.get('prefill_discount');
+    const mop       = params.get('prefill_mode_of_payment');
 
     if (!client && !project) return;
 
@@ -1522,6 +1528,11 @@ function submitCmPermRequest() {
         set('terms_of_payment',   terms);
         set('number_of_units',    units);
         set('commission_percent', commPct);
+        set('property_details',   blockLot);
+        set('price_sqm',          priceSqm);
+        set('lot_area',           lotArea);
+        set('discount',           discount);
+        set('mode_of_payment',    mop);
 
         // Scroll to and highlight the form
         const form = document.getElementById('cmAddForm');
