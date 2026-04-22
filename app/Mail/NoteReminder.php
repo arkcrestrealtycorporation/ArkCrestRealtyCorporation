@@ -13,11 +13,16 @@ class NoteReminder extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public Note $note) {}
+    public function __construct(
+        public Note $note,
+        public bool $isTomorrow = false,
+        public bool $isToday = false
+    ) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Reminder: ' . $this->note->title);
+        $prefix = $this->isToday ? 'Today: ' : ($this->isTomorrow ? 'Tomorrow: ' : 'Reminder: ');
+        return new Envelope(subject: $prefix . $this->note->title);
     }
 
     public function content(): Content

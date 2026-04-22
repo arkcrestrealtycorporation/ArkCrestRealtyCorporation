@@ -37,8 +37,8 @@ class SummaryReportController extends Controller
         $selectedMonth = $request->get('month', $currentMonth);
         $selectedYear = $request->get('year', $currentYear);
         
-        // Get or create summary report for selected period
-        $summaryReport = SummaryReport::firstOrCreate(
+        // Get or new summary report for selected period (don't save until user explicitly updates)
+        $summaryReport = SummaryReport::firstOrNew(
             ['month' => $selectedMonth, 'year' => $selectedYear],
             ['units' => 0, 'gross_sales' => 0, 'coh' => 0]
         );
