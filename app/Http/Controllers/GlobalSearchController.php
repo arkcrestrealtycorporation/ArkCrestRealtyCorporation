@@ -4,125 +4,156 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\CommissionRequest;
+use App\Models\CommissionRequestSales;
 use App\Models\Department;
 use App\Models\Expense;
 use App\Models\SummaryReport;
+use App\Models\TripSchedule;
+use App\Models\Note;
 
 class GlobalSearchController extends Controller
 {
     public function search(Request $request)
     {
-        $query = $request->get('q', '');
-        
-        if (strlen($query) < 1) {
-            return response()->json([]);
+        $query = trim($request->get('q', ''));
+        if (strlen($query) < 1) return response()->json([]);
+
+        $user       = auth()->user();
+        $hidden     = $user->hidden_pages ?? [];
+        $results    = [];
+
+        $canSee = fn(string $page) => !in_array($page, $hidden);
+
+        // ── Finance: Commission Monitoring ──────────────────────────────
+        if ($canSee('commission-monitoring')) {
+            CommissionRequest::where(function($q) use ($query) {
+                $q->where('control_number',   'like', "%$query%")
+                  ->orWhere('requestor_name', 'like', "%$query%")
+                  ->orWhere('department',     'like', "%$query%")
+                  ->orWhere('category',       'like', "%$query%")
+                  ->orWhere('status',         'like', "%$query%")
+                  ->orWhere('client_name',    'like', "%$query%")
+                  ->orWhere('agent_name',     'like', "%$query%")
+                  ->orWhere('project_name',   'like', "%$query%");
+            })->orderBy('date_requested', 'desc')->limit(20)->get()
+            ->each(function($r) use (&$results) {
+                $results[] = [
+                    'type'         => 'expense',
+                    'title'        => ($r->control_number ?? '') . ' — ' . ($r->requestor_name ?? ''),
+                    'description'  => ($r->department ?? '') . ' | ' . ($r->category ?? '') . ' | ' . ($r->date_requested ? $r->date_requested->format('M d, Y') : ''),
+                    'amount'       => '₱' . number_format($r->requested_amount, 2),
+                    'status'       => $r->status,
+                    'url'          => '/commission-monitoring',
+                    'highlight_id' => 'expense-' . $r->id,
+                    'icon'         => 'document',
+                ];
+            });
         }
-        
-        $results = [];
-        
-        // Search Commission Requests (All Expenses) - Search EVERYTHING
-        $commissionRequests = CommissionRequest::where(function($q) use ($query) {
-            $q->where('control_number', 'like', '%' . $query . '%')
-              ->orWhere('requestor_name', 'like', '%' . $query . '%')
-              ->orWhere('department', 'like', '%' . $query . '%')
-              ->orWhere('category', 'like', '%' . $query . '%')
-              ->orWhere('status', 'like', '%' . $query . '%')
-              ->orWhere('requested_amount', 'like', '%' . $query . '%')
-              ->orWhere('total_expenses', 'like', '%' . $query . '%')
-              ->orWhere('amount_returned', 'like', '%' . $query . '%')
-              ->orWhereRaw('CAST(requested_amount AS CHAR) LIKE ?', ['%' . $query . '%'])
-              ->orWhereRaw('CAST(total_expenses AS CHAR) LIKE ?', ['%' . $query . '%'])
-              ->orWhereRaw('CAST(amount_returned AS CHAR) LIKE ?', ['%' . $query . '%']);
-        })
-        ->orderBy('date_requested', 'desc')
-        ->limit(50)
-        ->get();
-        
-        foreach ($commissionRequests as $request) {
-            $dateRequested = $request->date_requested ? $request->date_requested->format('M d, Y') : 'No date';
-            
-            $results[] = [
-                'type' => 'expense',
-                'title' => $request->control_number . ' - ' . $request->requestor_name,
-                'description' => $request->department . ' | ' . $request->category . ' | ' . $dateRequested,
-                'amount' => '₱' . number_format($request->requested_amount, 2),
-                'status' => $request->status,
-                'url' => '/departments',
-                'highlight_id' => 'expense-' . $request->id,
-                'icon' => 'document'
-            ];
+
+        // ── Sales & Marketing: Client Database ──────────────────────────
+        if ($canSee('client-database')) {
+            CommissionRequestSales::where(function($q) use ($query) {
+                $q->where('client_name',   'like', "%$query%")
+                  ->orWhere('agent_name',  'like', "%$query%")
+                  ->orWhere('project_name','like', "%$query%")
+                  ->orWhere('developer_name','like', "%$query%")
+                  ->orWhere('block_lot_number','like', "%$query%")
+                  ->orWhere('status',      'like', "%$query%");
+            })->orderBy('date_requested', 'desc')->limit(20)->get()
+            ->each(function($r) use (&$results) {
+                $results[] = [
+                    'type'        => 'client',
+                    'title'       => $r->client_name ?? '',
+                    'description' => ($r->project_name ?? '') . ' | ' . ($r->agent_name ?? '') . ' | ' . ($r->date_requested ? $r->date_requested->format('M d, Y') : ''),
+                    'amount'      => $r->net_tcp ? '₱' . number_format($r->net_tcp, 2) : null,
+                    'status'      => $r->status,
+                    'url'         => '/client-database',
+                    'icon'        => 'person',
+                ];
+            });
         }
-        
-        // Search Departments - Increased limit
-        $departments = Department::where('name', 'like', '%' . $query . '%')
-            ->limit(10)
-            ->get();
-        
-        foreach ($departments as $dept) {
-            $results[] = [
-                'type' => 'department',
-                'title' => $dept->name . ' Department',
-                'description' => 'View department expenses and details',
-                'url' => '/departments',
-                'icon' => 'building'
-            ];
+
+        // ── Sales & Marketing: Site Visit Database ──────────────────────
+        if ($canSee('site-visit-database')) {
+            TripSchedule::where(function($q) use ($query) {
+                $q->where('client_name',   'like', "%$query%")
+                  ->orWhere('agent_name',  'like', "%$query%")
+                  ->orWhere('property_name','like', "%$query%")
+                  ->orWhere('status',      'like', "%$query%");
+            })->orderBy('tripping_date', 'desc')->limit(10)->get()
+            ->each(function($r) use (&$results) {
+                $results[] = [
+                    'type'        => 'trip',
+                    'title'       => $r->client_name ?? '',
+                    'description' => ($r->property_name ?? '') . ' | ' . ($r->agent_name ?? '') . ' | ' . ($r->tripping_date ? $r->tripping_date->format('M d, Y') : ''),
+                    'status'      => $r->status,
+                    'url'         => '/site-visit-database',
+                    'icon'        => 'location',
+                ];
+            });
         }
-        
-        // Search Summary Reports - Search ALL fields including numbers
-        $summaryReports = SummaryReport::where(function($q) use ($query) {
-            $q->where('month', 'like', '%' . $query . '%')
-              ->orWhere('year', 'like', '%' . $query . '%')
-              ->orWhere('units', 'like', '%' . $query . '%')
-              ->orWhere('gross_sales', 'like', '%' . $query . '%')
-              ->orWhere('coh', 'like', '%' . $query . '%')
-              ->orWhereRaw('CAST(units AS CHAR) LIKE ?', ['%' . $query . '%'])
-              ->orWhereRaw('CAST(year AS CHAR) LIKE ?', ['%' . $query . '%'])
-              ->orWhereRaw('CAST(gross_sales AS CHAR) LIKE ?', ['%' . $query . '%'])
-              ->orWhereRaw('CAST(coh AS CHAR) LIKE ?', ['%' . $query . '%']);
-        })
-        ->limit(20)
-        ->get();
-        
-        foreach ($summaryReports as $report) {
-            $results[] = [
-                'type' => 'report',
-                'title' => 'Summary Report - ' . $report->month . ' ' . $report->year,
-                'description' => 'Units: ' . $report->units . ' | Gross Sales: ₱' . number_format($report->gross_sales, 2) . ' | COH: ₱' . number_format($report->coh, 2),
-                'url' => '/summary-report',
-                'icon' => 'chart'
-            ];
+
+        // ── Finance: Summary Reports ─────────────────────────────────────
+        if ($canSee('summary-report')) {
+            SummaryReport::where(function($q) use ($query) {
+                $q->whereRaw('CAST(year AS CHAR) LIKE ?', ["%$query%"])
+                  ->orWhereRaw('CAST(units AS CHAR) LIKE ?', ["%$query%"])
+                  ->orWhereRaw('CAST(gross_sales AS CHAR) LIKE ?', ["%$query%"]);
+            })->limit(10)->get()
+            ->each(function($r) use (&$results) {
+                $months = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+                $results[] = [
+                    'type'        => 'report',
+                    'title'       => 'Summary Report — ' . ($months[$r->month] ?? $r->month) . ' ' . $r->year,
+                    'description' => 'Units: ' . $r->units . ' | Gross Sales: ₱' . number_format($r->gross_sales, 2),
+                    'url'         => '/summary-report',
+                    'icon'        => 'chart',
+                ];
+            });
         }
-        
-        // Add navigation pages if they match
-        $pages = [
-            ['title' => 'Dashboard', 'description' => 'View overview and statistics', 'url' => '/dashboard', 'icon' => 'home'],
-            ['title' => 'Departments', 'description' => 'View all departments', 'url' => '/departments', 'icon' => 'building'],
-            ['title' => 'Summary Report', 'description' => 'Monthly and yearly reports', 'url' => '/summary-report', 'icon' => 'chart'],
-            ['title' => 'Settings', 'description' => 'System configuration', 'url' => '/settings', 'icon' => 'settings'],
+
+        // ── Finance: Departments ─────────────────────────────────────────
+        if ($canSee('departments')) {
+            Department::where('name', 'like', "%$query%")->limit(5)->get()
+            ->each(function($d) use (&$results) {
+                $results[] = [
+                    'type'        => 'department',
+                    'title'       => $d->name . ' Department',
+                    'description' => 'View department expenses and budget',
+                    'url'         => '/departments',
+                    'icon'        => 'building',
+                ];
+            });
+        }
+
+        // ── Page navigation matches ──────────────────────────────────────
+        $allPages = [
+            'dashboard'              => ['Finance Dashboard',            '/dashboard',            'home',     'dashboard'],
+            'departments'            => ['Departmental Expenses',        '/departments',          'building', 'departments'],
+            'summary-report'         => ['Summary Report',               '/summary-report',       'chart',    'summary-report'],
+            'commission-monitoring'  => ['Commission Monitoring',        '/commission-monitoring','document', 'commission-monitoring'],
+            'commission-monitoring.dashboard' => ['Commission Dashboard','/commission-dashboard', 'chart',    'commission-monitoring.dashboard'],
+            'calendar'               => ['Calendar',                     '/calendar',             'calendar', 'calendar'],
+            'sales-marketing'        => ['Sales & Marketing',            '/sales-marketing',      'chart',    'sales-marketing'],
+            'client-database'        => ['Client Database',              '/client-database',      'person',   'client-database'],
+            'site-visit-database'    => ['Site Visit Database',          '/site-visit-database',  'location', 'site-visit-database'],
+            'sales-calendar'         => ['Sales Calendar',               '/sales-calendar',       'calendar', 'sales-calendar'],
+            'forms'                  => ['Forms',                        '/forms',                'document', 'forms'],
+            'settings'               => ['Settings',                     '/settings',             'settings', 'settings'],
         ];
-        
-        foreach ($pages as $page) {
-            if (stripos($page['title'], $query) !== false || stripos($page['description'], $query) !== false) {
-                $results[] = array_merge($page, ['type' => 'page']);
+
+        foreach ($allPages as $key => [$title, $url, $icon, $pageKey]) {
+            if ($canSee($pageKey) && stripos($title, $query) !== false) {
+                $results[] = [
+                    'type'        => 'page',
+                    'title'       => $title,
+                    'description' => 'Go to ' . $title,
+                    'url'         => $url,
+                    'icon'        => $icon,
+                ];
             }
         }
-        
-        // Add common search terms that map to pages
-        $searchTerms = [
-            'units' => ['title' => 'Summary Report - Units', 'description' => 'View units sold per month', 'url' => '/summary-report', 'icon' => 'chart', 'type' => 'page'],
-            'gross sales' => ['title' => 'Summary Report - Gross Sales', 'description' => 'View gross sales per month', 'url' => '/summary-report', 'icon' => 'chart', 'type' => 'page'],
-            'coh' => ['title' => 'Summary Report - COH', 'description' => 'View COH (Cost of House) per month', 'url' => '/summary-report', 'icon' => 'chart', 'type' => 'page'],
-            'net sales' => ['title' => 'Summary Report - Net Sales', 'description' => 'View net sales per month', 'url' => '/summary-report', 'icon' => 'chart', 'type' => 'page'],
-            'total expenses' => ['title' => 'Dashboard - Total Expenses', 'description' => 'View total expenses', 'url' => '/dashboard', 'icon' => 'home', 'type' => 'page'],
-            'expenses' => ['title' => 'Departments - All Expenses', 'description' => 'View all departmental expenses', 'url' => '/departments', 'icon' => 'building', 'type' => 'page'],
-        ];
-        
-        foreach ($searchTerms as $term => $pageInfo) {
-            if (stripos($term, $query) !== false || stripos($query, $term) !== false) {
-                $results[] = $pageInfo;
-            }
-        }
-        
-        return response()->json($results);
+
+        return response()->json(array_slice($results, 0, 50));
     }
 }
