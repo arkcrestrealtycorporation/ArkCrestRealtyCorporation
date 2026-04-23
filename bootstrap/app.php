@@ -18,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         }
         $schedule->command('commissions:send-reminders')->dailyAt($time);
         $schedule->command('notes:send-reminders')->everyMinute();
-        $schedule->command('events:send-reminders')->dailyAt($time);
+        $schedule->command('events:send-reminders')->everyFiveMinutes();
     })
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => route('login'));

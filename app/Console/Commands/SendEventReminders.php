@@ -17,93 +17,137 @@ class SendEventReminders extends Command
 
     public function handle(): void
     {
-        $tomorrow = Carbon::tomorrow()->toDateString();
-        $displayDate = Carbon::tomorrow()->format('F j, Y');
+        $currentTime = now()->format('H:i');
+        $isMorning = ($currentTime >= '06:00' && $currentTime <= '06:05');
+        $isEvening = ($currentTime >= '17:00' && $currentTime <= '17:05');
 
-        // Get all active admin emails
-        $adminEmails = User::where('role', 'admin')
-            ->where('status', 'active')
-            ->whereNotNull('email')
-            ->where('email', 'not like', 'pending_%')
-            ->pluck('email', 'id')
-            ->toArray();
+        // Get admin and sales admin emails
+        $recipients = User::where(function($q) {
+            $q->where('role', 'admin')
+              ->orWhereRaw('LOWER(position) LIKE ?', ['%sales admin%']);
+        })->where('status', 'active')
+          ->whereNotNull('email')
+          ->where('email', 'not like', 'pending_%')
+          ->pluck('email')
+          ->unique()
+          ->toArray();
 
-        if (empty($adminEmails)) {
-            $this->error('No active admin emails found.');
+        if (empty($recipients)) {
+            $this->error('No admin/sales admin emails found.');
             return;
         }
 
-        $adminEvents = [];
+        // ── DAY BEFORE REMINDER (5 PM) ──────────────────────────────────
+        if ($isEvening) {
+            $this->sendDayBeforeReminders($recipients);
+        }
 
-        // 1. Commission releases tomorrow
-        $commReleases = CommissionRequestSales::whereDate('date_released', $tomorrow)
-            ->where('status', 'Not Yet Released')->get();
-        foreach ($commReleases as $c) {
-            $adminEvents[] = [
+        // ── SAME DAY REMINDER (6 AM) ────────────────────────────────────
+        if ($isMorning) {
+            $this->sendSameDayReminders($recipients);
+        }
+
+        $this->info('Done.');
+    }
+
+    private function sendDayBeforeReminders(array $recipients): void
+    {
+        $tomorrow = Carbon::tomorrow()->toDateString();
+        $displayDate = Carbon::tomorrow()->format('F j, Y');
+
+        $events = [];
+
+        // Commission releases tomorrow
+        CommissionRequestSales::whereDate('date_released', $tomorrow)
+            ->where('status', 'Not Yet Released')->get()
+            ->each(fn($c) => $events[] = [
                 'type'   => '💰 Commission Release Tomorrow',
                 'detail' => "{$c->client_name} — {$c->project_name} | Agent: {$c->agent_name} | ₱" . number_format($c->commission ?? 0, 2),
-            ];
-        }
+            ]);
 
-        // 2. Downpayment due tomorrow
-        $downpayments = CommissionRequestSales::whereDate('date_of_downpayment', $tomorrow)->get();
-        foreach ($downpayments as $c) {
-            $adminEvents[] = [
+        // Downpayment due tomorrow (not Done)
+        CommissionRequestSales::whereDate('date_of_downpayment', $tomorrow)
+            ->where('client_status', '!=', 'Done')->get()
+            ->each(fn($c) => $events[] = [
                 'type'   => '📋 Downpayment Due Tomorrow',
                 'detail' => "{$c->client_name} — {$c->project_name} | Agent: {$c->agent_name}",
-            ];
-        }
+            ]);
 
-        // 3. Scheduled site visits tomorrow
-        $trips = TripSchedule::whereDate('tripping_date', $tomorrow)
-            ->whereIn('status', ['confirmed', 'pending'])->get();
-        foreach ($trips as $t) {
-            $time = $t->tripping_time ? Carbon::parse($t->tripping_time)->format('g:i A') : 'Time TBD';
-            $adminEvents[] = [
-                'type'   => '🏠 Site Visit Tomorrow',
-                'detail' => "{$t->client_name} — {$t->property_name} | Agent: {$t->agent_name} | {$time}",
-            ];
-        }
+        // Site visits tomorrow
+        TripSchedule::whereDate('tripping_date', $tomorrow)
+            ->whereIn('status', ['confirmed', 'pending'])->get()
+            ->each(function($t) use (&$events) {
+                $time = $t->tripping_time ? Carbon::parse($t->tripping_time)->format('g:i A') : 'Time TBD';
+                $events[] = [
+                    'type'   => '🏠 Site Visit Tomorrow',
+                    'detail' => "{$t->client_name} — {$t->property_name} | Agent: {$t->agent_name} | {$time}",
+                ];
+            });
 
-        // Send admin events to all admins
-        if (!empty($adminEvents)) {
+        if (!empty($events)) {
             $subject = "ArkCrest Reminder: Events on {$displayDate}";
-            $html = $this->buildEmailHtml($adminEvents, $displayDate, 'Tomorrow\'s Important Events');
-            foreach ($adminEmails as $email) {
+            $html = $this->buildEmailHtml($events, $displayDate, 'Tomorrow\'s Important Events');
+            foreach ($recipients as $email) {
                 try {
                     Mail::html($html, fn($m) => $m->to($email)->subject($subject));
-                    $this->info("Admin reminder sent to: {$email}");
+                    $this->info("Day-before reminder sent to: {$email}");
                 } catch (\Exception $e) {
                     $this->error("Failed to send to {$email}: " . $e->getMessage());
                 }
             }
         } else {
-            $this->info('No admin events for tomorrow.');
+            $this->info('No events for tomorrow.');
         }
+    }
 
-        // 4. Personal notes due tomorrow — send to note owner's email
-        $notes = Note::whereDate('note_date', $tomorrow)->whereNull('completed_at')->with('user')->get();
-        foreach ($notes as $note) {
-            $owner = $note->user;
-            if (!$owner || empty($owner->email) || str_contains($owner->email, 'pending_')) continue;
+    private function sendSameDayReminders(array $recipients): void
+    {
+        $today = Carbon::today()->toDateString();
+        $displayDate = Carbon::today()->format('F j, Y');
 
-            $noteEvents = [[
-                'type'   => '📝 Your Note Reminder Tomorrow',
-                'detail' => $note->title . ($note->body ? " — {$note->body}" : '') .
-                            ($note->reminder_time ? ' at ' . Carbon::parse($note->reminder_time)->format('g:i A') : ''),
-            ]];
+        $events = [];
 
-            $subject = "ArkCrest Note Reminder: {$note->title}";
-            $html = $this->buildEmailHtml($noteEvents, $displayDate, "Hi {$owner->name}, you have a note reminder tomorrow");
-            try {
-                Mail::html($html, fn($m) => $m->to($owner->email)->subject($subject));
-                $this->info("Note reminder sent to: {$owner->email}");
-            } catch (\Exception $e) {
-                $this->error("Failed to send note to {$owner->email}: " . $e->getMessage());
+        // Commission releases today
+        CommissionRequestSales::whereDate('date_released', $today)
+            ->where('status', 'Not Yet Released')->get()
+            ->each(fn($c) => $events[] = [
+                'type'   => '💰 Commission Release Today',
+                'detail' => "{$c->client_name} — {$c->project_name} | Agent: {$c->agent_name} | ₱" . number_format($c->commission ?? 0, 2),
+            ]);
+
+        // Downpayment due today (not Done)
+        CommissionRequestSales::whereDate('date_of_downpayment', $today)
+            ->where('client_status', '!=', 'Done')->get()
+            ->each(fn($c) => $events[] = [
+                'type'   => '📋 Downpayment Due Today',
+                'detail' => "{$c->client_name} — {$c->project_name} | Agent: {$c->agent_name}",
+            ]);
+
+        // Site visits today
+        TripSchedule::whereDate('tripping_date', $today)
+            ->whereIn('status', ['confirmed', 'pending'])->get()
+            ->each(function($t) use (&$events) {
+                $time = $t->tripping_time ? Carbon::parse($t->tripping_time)->format('g:i A') : 'Time TBD';
+                $events[] = [
+                    'type'   => '🏠 Site Visit Today',
+                    'detail' => "{$t->client_name} — {$t->property_name} | Agent: {$t->agent_name} | {$time}",
+                ];
+            });
+
+        if (!empty($events)) {
+            $subject = "ArkCrest Reminder: Events TODAY — {$displayDate}";
+            $html = $this->buildEmailHtml($events, $displayDate, 'Today\'s Important Events');
+            foreach ($recipients as $email) {
+                try {
+                    Mail::html($html, fn($m) => $m->to($email)->subject($subject));
+                    $this->info("Same-day reminder sent to: {$email}");
+                } catch (\Exception $e) {
+                    $this->error("Failed to send to {$email}: " . $e->getMessage());
+                }
             }
+        } else {
+            $this->info('No events for today.');
         }
-
-        $this->info('Done.');
     }
 
     private function buildEmailHtml(array $events, string $date, string $intro): string
