@@ -114,12 +114,12 @@
 }
 .cal-cell.weekend .cal-day-num { color:#c4c9d4; }
 .cal-event {
-    background:linear-gradient(135deg,#1e4575,#2563eb);
-    color:white;border-radius:4px;padding:2px 6px;
+    border-radius:4px;padding:2px 6px;
     font-size:10px;margin-bottom:2px;cursor:pointer;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     flex-shrink:0;transition:opacity .15s;
-    box-shadow:0 1px 3px rgba(30,69,117,.2);
+    box-shadow:0 1px 3px rgba(0,0,0,.15);
+    font-weight:600;background:#059669;color:white;
 }
 .cal-event:hover { opacity:.85; }
 .cal-more {
@@ -239,7 +239,7 @@
     {{-- Legend --}}
     <div class="cal-legend">
         <div style="display:flex;align-items:center;gap:6px;">
-            <div style="width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,#1e4575,#2563eb);"></div>
+            <div style="width:10px;height:10px;border-radius:3px;background:#059669;"></div>
             Commission Released
         </div>
     </div>
