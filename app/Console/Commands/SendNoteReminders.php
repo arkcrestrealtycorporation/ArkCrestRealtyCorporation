@@ -32,7 +32,8 @@ class SendNoteReminders extends Command
                     'note_reminder',
                     'Note Reminder: ' . $note->title,
                     ($note->body ? \Illuminate\Support\Str::limit($note->body, 80) : 'You have a scheduled note.') .
-                    ($note->reminder_time ? ' — ' . \Carbon\Carbon::parse($note->reminder_time)->format('g:i A') : '')
+                    ($note->reminder_time ? ' — ' . \Carbon\Carbon::parse($note->reminder_time)->format('g:i A') : ''),
+                    $note->id
                 );
                 $note->update(['reminder_sent' => true]);
                 $this->info("Sent reminder for note #{$note->id}: {$note->title}");
@@ -62,7 +63,8 @@ class SendNoteReminders extends Command
                         'note_reminder',
                         'Upcoming Note Tomorrow: ' . $note->title,
                         'You have a note scheduled tomorrow' .
-                        ($note->reminder_time ? ' at ' . \Carbon\Carbon::parse($note->reminder_time)->format('g:i A') : '') . '.'
+                        ($note->reminder_time ? ' at ' . \Carbon\Carbon::parse($note->reminder_time)->format('g:i A') : '') . '.',
+                        $note->id
                     );
                     $this->info("Sent tomorrow reminder for note #{$note->id}");
                 } catch (\Exception $e) {
@@ -88,7 +90,8 @@ class SendNoteReminders extends Command
                         'note_reminder',
                         'Note Today: ' . $note->title,
                         'You have a note scheduled today' .
-                        ($note->reminder_time ? ' at ' . \Carbon\Carbon::parse($note->reminder_time)->format('g:i A') : '') . '.'
+                        ($note->reminder_time ? ' at ' . \Carbon\Carbon::parse($note->reminder_time)->format('g:i A') : '') . '.',
+                        $note->id
                     );
                     $this->info("Sent today reminder for note #{$note->id}");
                 } catch (\Exception $e) {

@@ -741,7 +741,7 @@
         const opacity = nonClickable ? 'opacity:0.5;pointer-events:none;' : '';
 
         let onclick = '';
-        if (n.type === 'note_reminder' && n.note_id) {
+        if (n.type === 'note_reminder' && n.note_id > 0) {
             const safeTitle = (n.title || '').replace(/'/g, "\\'");
             const safeMsg = (n.message || '').replace(/'/g, "\\'");
             onclick = `onclick="event.stopPropagation();openNoteModal(${n.note_id}, '${safeTitle}', '${safeMsg}', this, ${n.id})"`;
