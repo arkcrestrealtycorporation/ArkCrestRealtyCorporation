@@ -153,7 +153,7 @@
                 </select>
             </form>
             <a href="{{ route('calendar', ['month'=>$prevMonth,'year'=>$prevYear]) }}" class="cal-nav-btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:white;">&#8249;</a>
-            <span class="cal-month-pill" style="background:rgba(255,255,255,.15);color:white;border:1.5px solid rgba(255,255,255,.3);">{{ $monthNames[$month] }} {{ $year }}</span>
+            <span class="cal-month-pill" style="background:rgba(255,255,255,.15);color:white;border:1.5px solid rgba(255,255,255,.3);">{{ $monthNames[$month] }}</span>
             <a href="{{ route('calendar', ['month'=>$nextMonth,'year'=>$nextYear]) }}" class="cal-nav-btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:white;">&#8250;</a>
             <a href="{{ route('calendar', ['month'=>date('n'),'year'=>date('Y')]) }}" class="cal-today-btn" style="background:rgba(255,255,255,.2);color:white;border:1.5px solid rgba(255,255,255,.3);">Today</a>
             <a href="{{ route('calendar', ['month'=>$month,'year'=>$year,'view'=>'month']) }}" style="{{ ($view??'month')=='month' ? 'background:rgba(255,255,255,.25);color:white;border-color:rgba(255,255,255,.4);' : 'background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.2);' }} padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;border:1.5px solid;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
