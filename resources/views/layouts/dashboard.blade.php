@@ -741,10 +741,10 @@
         const opacity = nonClickable ? 'opacity:0.5;pointer-events:none;' : '';
 
         let onclick = '';
-        if (n.type === 'note_reminder' && n.note_id > 0) {
+        if (n.type === 'note_reminder') {
             const safeTitle = (n.title || '').replace(/'/g, "\\'");
             const safeMsg = (n.message || '').replace(/'/g, "\\'");
-            onclick = `onclick="event.stopPropagation();openNoteModal(${n.note_id}, '${safeTitle}', '${safeMsg}', this, ${n.id})"`;
+            onclick = `onclick="event.stopPropagation();openNoteModal(${n.note_id || 0}, '${safeTitle}', '${safeMsg}', this, ${n.id})"`;
         } else if (n.type === 'user_pending') {
             onclick = `onclick="event.stopPropagation();window.location='/settings?panel=users'"`;
         } else if (n.type === 'permission_request') {
