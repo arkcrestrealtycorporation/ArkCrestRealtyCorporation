@@ -131,7 +131,7 @@
 .sc-day-hdr.weekend { color:#94a3b8; }
 .sc-days { display:grid;grid-template-columns:repeat(7,1fr);flex:1;min-height:0; }
 .sc-cell {
-    border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;
+    border-right:1px solid #d1d5db;border-bottom:1px solid #d1d5db;
     padding:5px 6px;display:flex;flex-direction:column;
     overflow:hidden;transition:background .15s;cursor:default;
 }
@@ -143,7 +143,9 @@
 .sc-day-num {
     display:inline-flex;align-items:center;justify-content:center;
     width:22px;height:22px;border-radius:50%;
-    font-size:12px;font-weight:500;color:#374151;
+    font-size:12px;font-weight:700;color:#1e293b;
+    align-self:flex-end;flex-shrink:0;margin-bottom:2px;
+}    font-size:12px;font-weight:500;color:#374151;
     align-self:flex-end;flex-shrink:0;margin-bottom:2px;
 }
 .sc-cell.today .sc-day-num {
@@ -151,7 +153,7 @@
     color:white;font-weight:700;
     box-shadow:0 2px 6px rgba(30,69,117,.3);
 }
-.sc-cell.weekend .sc-day-num { color:#c4c9d4; }
+.sc-cell.weekend .sc-day-num { color:#94a3b8; }
 
 /* ── Event chips ── */
 .sc-event {

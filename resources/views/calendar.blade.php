@@ -93,7 +93,7 @@
     flex:1;min-height:0;
 }
 .cal-cell {
-    border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;
+    border-right:1px solid #d1d5db;border-bottom:1px solid #d1d5db;
     padding:6px 7px;display:flex;flex-direction:column;
     overflow:hidden;transition:background .15s;
 }
@@ -105,7 +105,7 @@
 .cal-day-num {
     display:inline-flex;align-items:center;justify-content:center;
     width:22px;height:22px;border-radius:50%;
-    font-size:12px;font-weight:500;color:#374151;
+    font-size:12px;font-weight:700;color:#1e293b;
     align-self:flex-end;flex-shrink:0;margin-bottom:3px;
 }
 .cal-cell.today .cal-day-num {
@@ -113,7 +113,7 @@
     color:white;font-weight:700;
     box-shadow:0 2px 6px rgba(30,69,117,.3);
 }
-.cal-cell.weekend .cal-day-num { color:#c4c9d4; }
+.cal-cell.weekend .cal-day-num { color:#94a3b8; }
 .cal-event {
     border-radius:4px;padding:2px 6px;
     font-size:10px;margin-bottom:2px;cursor:pointer;
@@ -168,37 +168,6 @@
         <div style="position:absolute;top:0;right:0;width:300px;height:100%;pointer-events:none;">
             <div style="position:absolute;width:220px;height:220px;top:-60px;right:-40px;border-radius:50%;background:rgba(255,255,255,.06);"></div>
             <div style="position:absolute;width:140px;height:140px;top:20px;right:120px;border-radius:50%;background:rgba(255,255,255,.04);"></div>
-        </div>
-    </div>
-
-    {{-- Stats --}}
-    <div class="cal-stats">
-        <div class="cal-stat-card">
-            <div class="cal-stat-icon">
-                <svg fill="none" stroke="#1e4575" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            </div>
-            <div>
-                <div class="cal-stat-val">{{ $daysInMonth }}</div>
-                <div class="cal-stat-lbl">Days this month</div>
-            </div>
-        </div>
-        <div class="cal-stat-card">
-            <div class="cal-stat-icon" style="background:linear-gradient(135deg,#d1fae5,#a7f3d0);">
-                <svg fill="none" stroke="#059669" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-            <div>
-                <div class="cal-stat-val" style="color:#059669;">{{ $totalEvents }}</div>
-                <div class="cal-stat-lbl">Releases this month</div>
-            </div>
-        </div>
-        <div class="cal-stat-card">
-            <div class="cal-stat-icon" style="background:linear-gradient(135deg,#fef3c7,#fde68a);">
-                <svg fill="none" stroke="#d97706" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-            <div>
-                <div class="cal-stat-val" style="color:#d97706;">{{ date('d') }}</div>
-                <div class="cal-stat-lbl">Today — {{ date('F d, Y') }}</div>
-            </div>
         </div>
     </div>
 
@@ -277,13 +246,6 @@
     </div>
     @endif
 
-    {{-- Legend --}}
-    <div class="cal-legend">
-        <div style="display:flex;align-items:center;gap:6px;">
-            <div style="width:10px;height:10px;border-radius:3px;background:#059669;"></div>
-            Commission Released
-        </div>
-    </div>
 </div>
 
 {{-- Event Detail Modal --}}
