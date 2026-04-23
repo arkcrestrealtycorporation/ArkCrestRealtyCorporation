@@ -125,8 +125,8 @@
                                 @if(isset($sysNotifs) && $sysNotifs->count() > 0)
                                     @foreach($sysNotifs as $notif)
                                     <div class="notification-item {{ $notif->is_read ? '' : 'unread' }}"
-                                        style="cursor:{{ in_array($notif->type, ['note_reminder','user_pending','permission_request']) && !$notif->is_read ? 'pointer' : 'default' }};{{ $notif->is_read && !in_array($notif->type, ['user_pending','permission_request']) ? 'opacity:0.5;pointer-events:none;' : '' }}"
-                                        @if($notif->type === 'note_reminder' && !$notif->is_read)
+                                        style="cursor:{{ in_array($notif->type, ['note_reminder','user_pending','permission_request']) ? 'pointer' : 'default' }};{{ $notif->is_read && !in_array($notif->type, ['user_pending','permission_request','note_reminder']) ? 'opacity:0.5;pointer-events:none;' : '' }}"
+                                        @if($notif->type === 'note_reminder')
                                         onclick="event.stopPropagation();openNoteModal({{ $notif->note_id ?? 0 }}, '{{ addslashes($notif->title) }}', '{{ addslashes($notif->message) }}', this, {{ $notif->id }})"
                                         @elseif($notif->type === 'user_pending')
                                         onclick="event.stopPropagation();window.location='{{ route('settings') }}?panel=users'"
@@ -741,7 +741,7 @@
         const opacity = nonClickable ? 'opacity:0.5;pointer-events:none;' : '';
 
         let onclick = '';
-        if (n.type === 'note_reminder' && !isRead && n.note_id) {
+        if (n.type === 'note_reminder' && n.note_id) {
             const safeTitle = (n.title || '').replace(/'/g, "\\'");
             const safeMsg = (n.message || '').replace(/'/g, "\\'");
             onclick = `onclick="event.stopPropagation();openNoteModal(${n.note_id}, '${safeTitle}', '${safeMsg}', this, ${n.id})"`;
