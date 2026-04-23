@@ -407,14 +407,6 @@
 
       </button>
 
-      <button class="st-nav-btn" id="nav-notifications" onclick="showPanel('notifications')">
-
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-
-        Notifications
-
-      </button>
-
       @php $sHidden = $hiddenSections ?? []; $isAdmin = auth()->user()->isAdmin(); $canSeeS = fn($k) => $isAdmin || !in_array($k, $sHidden); @endphp
 
       @if($isAdmin || array_filter(['settings.users','settings.visibility','settings.activity','settings.deleted','settings.permissions','settings.teams','settings.period-lock','settings.employee','settings.personnel'], fn($k) => !in_array($k, $sHidden)))
@@ -820,92 +812,6 @@
     </div>
 
     {{-- NOTIFICATIONS PANEL --}}
-
-    <div class="st-panel" id="panel-notifications">
-
-      <div class="st-page-header"><div class="st-page-title">Notifications</div><div class="st-page-sub">Configure email reminders for commission releases</div></div>
-
-      <div class="st-card"><div class="st-card-hdr"><div class="st-card-hdr-text"><h3>Email (SMTP) Configuration</h3><p>For Gmail, use smtp.gmail.com with an App Password</p></div></div>
-
-      <div class="st-card-body">
-
-        <form method="POST" action="{{ route('settings.smtp') }}">@csrf
-
-          <div class="st-form-grid">
-
-            <div class="st-form-group"><label class="st-label">SMTP Host</label><input class="st-input" type="text" name="smtp_host" value="{{ $smtpHost ?: 'smtp.gmail.com' }}" placeholder="smtp.gmail.com"></div>
-
-            <div class="st-form-group"><label class="st-label">SMTP Port</label><input class="st-input" type="number" name="smtp_port" value="{{ $smtpPort ?: '587' }}" placeholder="587"></div>
-
-            <div class="st-form-group"><label class="st-label">Email Address</label><input class="st-input" type="email" name="smtp_username" value="{{ $smtpUsername }}" placeholder="yourname@gmail.com"></div>
-
-            <div class="st-form-group"><label class="st-label">Password / App Password</label><input class="st-input" type="password" name="smtp_password" value="{{ $smtpPassword }}" placeholder="Enter password"></div>
-
-            <div class="st-form-group"><label class="st-label">Sender Name</label><input class="st-input" type="text" name="smtp_from_name" value="{{ $smtpFromName }}" placeholder="Arckrest Realty"></div>
-
-          </div>
-
-          <div style="margin-top:16px;"><button type="submit" class="st-btn st-btn-primary">Save Email Config</button></div>
-
-        </form>
-
-      </div></div>
-
-      <div class="st-card"><div class="st-card-hdr"><div class="st-card-hdr-text"><h3>Recipients and Schedule</h3><p>Who receives the reminders and when</p></div></div>
-
-      <div class="st-card-body">
-
-        <form method="POST" action="{{ route('settings.notifications') }}">@csrf
-
-          <div class="st-form-group" style="margin-bottom:14px;">
-
-            <label class="st-label">Recipient Email Addresses</label>
-
-            <div id="emailList">
-
-              @forelse($notificationEmails as $email)
-
-              <div class="email-row">
-
-                <input class="st-input" type="email" name="notification_emails[]" value="{{ $email }}" style="flex:1;">
-
-                <button type="button" class="st-btn st-btn-danger st-btn-sm" onclick="this.closest('.email-row').remove()">Remove</button>
-
-              </div>
-
-              @empty
-
-              <div class="email-row">
-
-                <input class="st-input" type="email" name="notification_emails[]" placeholder="email@example.com" style="flex:1;">
-
-                <button type="button" class="st-btn st-btn-danger st-btn-sm" onclick="this.closest('.email-row').remove()">Remove</button>
-
-              </div>
-
-              @endforelse
-
-            </div>
-
-            <button type="button" class="st-btn st-btn-primary st-btn-sm" style="margin-top:8px;" onclick="addEmailRow()">+ Add Email</button>
-
-          </div>
-
-          <div class="st-form-group" style="margin-bottom:14px;">
-
-            <label class="st-label">Daily Reminder Time</label>
-
-            <input class="st-input" type="time" name="notification_time" value="{{ $notificationTime }}" style="max-width:200px;">
-
-          </div>
-
-          <button type="submit" class="st-btn st-btn-primary">Save Notification Settings</button>
-
-        </form>
-
-      </div></div>
-
-    </div>
 
     @if($isAdmin || $canSeeS('settings.users'))
 
