@@ -7,8 +7,9 @@ use Illuminate\Http\Request;
 
 class CheckPageVisibility
 {
-    // Map route names to their setting key — dashboard is never hideable
+    // Map route names to their setting key
     const PAGE_MAP = [
+        'dashboard'             => 'dashboard',
         'summary-report'        => 'summary-report',
         'summary-report.yearly' => 'summary-report',
         'departments.admin'     => 'departments',
@@ -32,11 +33,22 @@ class CheckPageVisibility
 
         if ($pageKey) {
             $hidden = array_values($user->hidden_pages ?? []);
-            $hiddenPages = array_filter($hidden, fn($k) => strpos($k, '.') === false);
 
-            if (in_array($pageKey, $hiddenPages)) {
-                return redirect()->route('dashboard')
-                    ->with('error', 'You do not have access to that page.');
+            if (in_array($pageKey, $hidden)) {
+                // Find first visible page to redirect to
+                $fallbacks = [
+                    'sales-marketing' => 'sales-marketing',
+                    'client-database' => 'client-database',
+                    'site-visit-database' => 'site-visit-database',
+                    'forms' => 'forms',
+                    'settings' => 'settings',
+                ];
+                foreach ($fallbacks as $key => $route) {
+                    if (!in_array($key, $hidden)) {
+                        return redirect()->route($route);
+                    }
+                }
+                return redirect()->route('settings');
             }
         }
 

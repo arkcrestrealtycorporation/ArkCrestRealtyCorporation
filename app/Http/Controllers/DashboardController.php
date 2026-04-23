@@ -22,6 +22,20 @@ class DashboardController extends Controller
             return redirect()->route('tripping');
         }
 
+        // If dashboard is hidden for this user, redirect to first visible page
+        if (!$user->isAdmin()) {
+            $hidden = $user->hidden_pages ?? [];
+            if (in_array('dashboard', $hidden)) {
+                $fallbacks = ['sales-marketing', 'client-database', 'site-visit-database', 'forms', 'settings'];
+                foreach ($fallbacks as $key) {
+                    if (!in_array($key, $hidden)) {
+                        return redirect()->route($key);
+                    }
+                }
+                return redirect()->route('settings');
+            }
+        }
+
         // Get current month and year
         $currentMonth = now()->format('F');
         $currentYear = now()->format('Y');

@@ -49,7 +49,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Protected routes
 Route::middleware('auth')->group(function () {
 
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('page.visible');
 
     // Summary Report
     Route::get('/summary-report', [App\Http\Controllers\SummaryReportController::class, 'index'])->name('summary-report')->middleware('page.visible');
