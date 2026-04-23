@@ -268,56 +268,6 @@
         </div>
     </div>
 
-    {{-- This Week Panel --}}
-    <div style="display:flex;gap:12px;margin-bottom:10px;flex-shrink:0;">
-        {{-- Site Visits This Week --}}
-        <div style="flex:1;background:white;border-radius:12px;border:1px solid #e8ecf0;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);">
-            <div style="background:linear-gradient(135deg,#A37929,#d4a03a);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:white;">
-                    <svg fill="none" stroke="white" viewBox="0 0 24 24" style="width:14px;height:14px;flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    Site Visits This Week
-                </div>
-                <span style="background:rgba(255,255,255,.25);color:white;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">{{ $thisWeekTrips->count() }}</span>
-            </div>
-            <div style="padding:8px 14px;max-height:110px;overflow-y:auto;">
-                @forelse($thisWeekTrips as $t)
-                <div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid #f8fafc;">
-                    <span style="font-size:10px;font-weight:700;color:#A37929;min-width:34px;flex-shrink:0;padding-top:1px;">{{ $t->tripping_date->format('D j') }}</span>
-                    <div>
-                        <div style="font-size:12px;font-weight:600;color:#0f172a;">{{ $t->client_name }}</div>
-                        <div style="font-size:11px;color:#94a3b8;">{{ $t->property_name ?? '—' }}@if($t->tripping_time) &bull; {{ \Carbon\Carbon::parse($t->tripping_time)->format('g:i A') }}@endif &bull; <span style="color:{{ $t->status==='confirmed'?'#2563eb':'#d97706' }};font-weight:600;">{{ ucfirst($t->status) }}</span></div>
-                    </div>
-                </div>
-                @empty
-                <div style="font-size:12px;color:#cbd5e1;padding:8px 0;font-style:italic;">No site visits this week</div>
-                @endforelse
-            </div>
-        </div>
-        {{-- Downpayments This Week --}}
-        <div style="flex:1;background:white;border-radius:12px;border:1px solid #e8ecf0;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);">
-            <div style="background:linear-gradient(135deg,#0891b2,#06b6d4);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:white;">
-                    <svg fill="none" stroke="white" viewBox="0 0 24 24" style="width:14px;height:14px;flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    Downpayments This Week
-                </div>
-                <span style="background:rgba(255,255,255,.25);color:white;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">{{ $thisWeekDownpayments->count() }}</span>
-            </div>
-            <div style="padding:8px 14px;max-height:110px;overflow-y:auto;">
-                @forelse($thisWeekDownpayments as $dp)
-                <div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid #f8fafc;">
-                    <span style="font-size:10px;font-weight:700;color:#0891b2;min-width:34px;flex-shrink:0;padding-top:1px;">{{ $dp->date_of_downpayment->format('D j') }}</span>
-                    <div>
-                        <div style="font-size:12px;font-weight:600;color:#0f172a;">{{ $dp->client_name }}</div>
-                        <div style="font-size:11px;color:#94a3b8;">{{ $dp->project_name ?? '—' }} &bull; {{ $dp->agent_name ?? '—' }}</div>
-                    </div>
-                </div>
-                @empty
-                <div style="font-size:12px;color:#cbd5e1;padding:8px 0;font-style:italic;">No downpayments this week</div>
-                @endforelse
-            </div>
-        </div>
-    </div>
-
     {{-- MONTH VIEW --}}
     @if($view === 'month')
     <div class="sc-grid-wrap">
