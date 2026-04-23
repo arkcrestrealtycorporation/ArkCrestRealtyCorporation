@@ -12,6 +12,7 @@
     $nextMonth   = $month == 12 ? 1 : $month + 1;
     $nextYear    = $month == 12 ? $year + 1 : $year;
     $totalEvents = collect($releasesByDay ?? [])->sum(fn($e) => count($e));
+    $view        = $view ?? 'month';
 @endphp
 
 <style>
@@ -155,6 +156,14 @@
             <span class="cal-month-pill" style="background:rgba(255,255,255,.15);color:white;border:1.5px solid rgba(255,255,255,.3);">{{ $monthNames[$month] }} {{ $year }}</span>
             <a href="{{ route('calendar', ['month'=>$nextMonth,'year'=>$nextYear]) }}" class="cal-nav-btn" style="background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:white;">&#8250;</a>
             <a href="{{ route('calendar', ['month'=>date('n'),'year'=>date('Y')]) }}" class="cal-today-btn" style="background:rgba(255,255,255,.2);color:white;border:1.5px solid rgba(255,255,255,.3);">Today</a>
+            <a href="{{ route('calendar', ['month'=>$month,'year'=>$year,'view'=>'month']) }}" style="{{ ($view??'month')=='month' ? 'background:rgba(255,255,255,.25);color:white;border-color:rgba(255,255,255,.4);' : 'background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.2);' }} padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;border:1.5px solid;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                Month
+            </a>
+            <a href="{{ route('calendar', ['month'=>$month,'year'=>$year,'view'=>'list']) }}" style="{{ ($view??'month')=='list' ? 'background:rgba(255,255,255,.25);color:white;border-color:rgba(255,255,255,.4);' : 'background:rgba(255,255,255,.1);color:rgba(255,255,255,.8);border-color:rgba(255,255,255,.2);' }} padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;border:1.5px solid;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                List
+            </a>
         </div>
         <div style="position:absolute;top:0;right:0;width:300px;height:100%;pointer-events:none;">
             <div style="position:absolute;width:220px;height:220px;top:-60px;right:-40px;border-radius:50%;background:rgba(255,255,255,.06);"></div>
@@ -193,7 +202,38 @@
         </div>
     </div>
 
-    {{-- Calendar Grid --}}
+    {{-- Calendar Grid / List --}}
+    @if($view === 'list')
+    <div style="background:white;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1px solid #e8ecf0;overflow:hidden;flex:1;">
+        @if($releases->isEmpty())
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;color:#94a3b8;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:40px;height:40px;margin-bottom:10px;opacity:.4;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            No releases for {{ $monthNames[$month] }} {{ $year }}
+        </div>
+        @else
+        <table style="width:100%;border-collapse:collapse;">
+            <thead><tr style="background:linear-gradient(135deg,#0f2a4a,#1e4575);">
+                @foreach(['Date Released','Agent','Client','Project','Net TCP','Commission','Status'] as $h)
+                <th style="padding:12px 16px;text-align:left;font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap;">{{ $h }}</th>
+                @endforeach
+            </tr></thead>
+            <tbody>
+            @foreach($releases as $r)
+            <tr style="border-bottom:1px solid #f1f5f9;cursor:pointer;" onclick="showEventDetail({{ $r->id }})" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+                <td style="padding:11px 16px;font-size:13px;font-weight:600;color:#059669;white-space:nowrap;">{{ $r->date_released ? $r->date_released->format('M d, Y') : '—' }}</td>
+                <td style="padding:11px 16px;font-size:13px;color:#0f172a;font-weight:600;">{{ $r->agent_name ?? '—' }}</td>
+                <td style="padding:11px 16px;font-size:13px;color:#374151;">{{ $r->client_name ?? '—' }}</td>
+                <td style="padding:11px 16px;font-size:13px;color:#374151;">{{ $r->project_name ?? '—' }}</td>
+                <td style="padding:11px 16px;font-size:13px;color:#374151;">{{ $r->net_tcp ? '₱'.number_format($r->net_tcp,2) : '—' }}</td>
+                <td style="padding:11px 16px;font-size:13px;font-weight:700;color:#059669;">{{ $r->commission ? '₱'.number_format($r->commission,2) : '—' }}</td>
+                <td style="padding:11px 16px;"><span style="background:#dcfce7;color:#166534;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;">{{ $r->status ?? '—' }}</span></td>
+            </tr>
+            @endforeach
+            </tbody>
+        </table>
+        @endif
+    </div>
+    @else
     <div class="cal-grid-wrap">
         <div class="cal-day-headers">
             @foreach($dayNames as $i => $d)
@@ -235,6 +275,7 @@
             @endif
         </div>
     </div>
+    @endif
 
     {{-- Legend --}}
     <div class="cal-legend">

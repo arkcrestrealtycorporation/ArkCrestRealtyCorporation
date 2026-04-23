@@ -153,6 +153,7 @@ class CalendarController extends Controller
     {
         $month = $request->get('month', date('n'));
         $year  = $request->get('year', date('Y'));
+        $view  = $request->get('view', 'month');
 
         // All releases for the selected month/year
         $releases = CommissionRequestSales::whereNotNull('date_released')
@@ -175,6 +176,6 @@ class CalendarController extends Controller
             $availableYears->prepend((int)$year);
         }
 
-        return view('calendar', compact('month', 'year', 'releases', 'releasesByDay', 'availableYears'));
+        return view('calendar', compact('month', 'year', 'view', 'releases', 'releasesByDay', 'availableYears'));
     }
 }
