@@ -20,6 +20,7 @@ class SendEventReminders extends Command
         $currentTime = now()->format('H:i');
         $isMorning = ($currentTime >= '06:00' && $currentTime <= '06:05');
         $isEvening = ($currentTime >= '17:00' && $currentTime <= '17:05');
+        $isDayBeforeMorning = ($currentTime >= '08:00' && $currentTime <= '08:05');
 
         // Get admin and sales admin emails
         $recipients = User::where(function($q) {
@@ -37,8 +38,8 @@ class SendEventReminders extends Command
             return;
         }
 
-        // ── DAY BEFORE REMINDER (5 PM) ──────────────────────────────────
-        if ($isEvening) {
+        // ── DAY BEFORE REMINDER (8 AM and 5 PM) ────────────────────────
+        if ($isEvening || $isDayBeforeMorning) {
             $this->sendDayBeforeReminders($recipients);
         }
 
