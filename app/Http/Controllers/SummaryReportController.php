@@ -60,7 +60,7 @@ class SummaryReportController extends Controller
             $expenses = CommissionRequest::where('department', $deptKey)
                 ->whereYear('date_requested', $selectedYear)
                 ->whereMonth('date_requested', $selectedMonth)
-                ->sum('requested_amount');
+                ->sum('total_expenses');
             
             $departmentExpenses[$deptKey] = $expenses;
             $totalExpenses += $expenses;
@@ -181,7 +181,7 @@ class SummaryReportController extends Controller
                 $expenses = CommissionRequest::where('department', $deptKey)
                     ->whereYear('date_requested', $selectedYear)
                     ->whereMonth('date_requested', $month)
-                    ->sum('requested_amount');
+                    ->sum('total_expenses');
                 
                 $departmentExpenses[$deptKey] = $expenses;
                 $monthTotalExpenses += $expenses;
