@@ -116,10 +116,12 @@
                         <label>NET TCP</label>
                         <input type="number" id="cm_add_net_tcp" name="net_tcp" placeholder="0.00" step="0.01" min="0" oninput="computeAddCommission()">
                     </div>
+                    @if($isAdmin)
                     <div class="form-group">
                         <label>% OF COMMISSION</label>
                         <input type="number" id="cm_add_commission_percent" name="commission_percent" placeholder="e.g. 5" step="0.0001" min="0" max="100" oninput="computeAddCommission()">
                     </div>
+                    @endif
                     <div class="form-group">
                         <label>TERMS OF PAYMENT <span class="required">*</span></label>
                         <div class="combobox-wrapper">
@@ -283,9 +285,11 @@
                         <td>{{ $request->reservation_date ? $request->reservation_date->format('M d, Y') : '-' }}</td>
                         <td>{{ $request->project_name ?? '-' }}</td>
                         <td>{{ $request->property_details ?? '-' }}</td>
+                        @if($isAdmin)
                         <td>{{ $request->price_sqm ? '₱'.number_format($request->price_sqm, 2) : '-' }}</td>
                         <td>{{ $request->lot_area ? number_format($request->lot_area, 2).' sqm' : '-' }}</td>
                         <td>{{ $request->discount ? '₱'.number_format($request->discount, 2) : '-' }}</td>
+                        @endif
                         <td>{{ $request->net_tcp ? '₱'.number_format($request->net_tcp, 2) : '-' }}</td>
                         <td>{{ $request->terms_of_payment ?? '-' }}</td>
                         <td>{{ $request->mode_of_payment ?? '-' }}</td>
@@ -293,8 +297,8 @@
                         <td>{{ $request->agent_name ?? '-' }}</td>
                         <td>{{ $request->date_requested ? $request->date_requested->format('M d, Y') : '-' }}</td>
                         <td>{{ $request->number_of_units ?? '-' }}</td>
-                        <td>{{ $request->commission_percent ? $request->commission_percent.'%' : '-' }}</td>
                         @if($isAdmin)
+                        <td>{{ $request->commission_percent ? $request->commission_percent.'%' : '-' }}</td>
                         <td>{{ $request->commission ? '₱'.number_format($request->commission, 2) : '-' }}</td>
                         @endif
                         <td>{{ $request->date_released ? $request->date_released->format('M d, Y') : '-' }}</td>
