@@ -123,6 +123,10 @@
                     </div>
                     @endif
                     <div class="form-group">
+                        <label>VALUE OF COMMISSION <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>
+                        <input type="number" id="cm_add_commission_display" placeholder="0.00" step="0.01" min="0" oninput="computeAddCommissionFromValue()">
+                    </div>
+                    <div class="form-group">
                         <label>TERMS OF PAYMENT <span class="required">*</span></label>
                         <div class="combobox-wrapper">
                             <input type="text" id="cm_add_terms" name="terms_of_payment" class="combobox-input" required autocomplete="off" placeholder="Type or select payment terms" onclick="toggleCmTermsDropdown()" oninput="filterCmTerms(this.value)">
@@ -1223,7 +1227,17 @@ function computeAddCommission() {
     const netTcp = parseFloat(document.getElementById('cm_add_net_tcp').value) || 0;
     const pct    = parseFloat(document.getElementById('cm_add_commission_percent').value) || 0;
     const result = netTcp * (pct / 100);
-    document.getElementById('cm_add_commission').value = result > 0 ? Math.round(result) : '';
+    document.getElementById('cm_add_commission').value = result > 0 ? result.toFixed(2) : '';
+    const display = document.getElementById('cm_add_commission_display');
+    if (display) display.value = result > 0 ? result.toFixed(2) : '';
+}
+function computeAddCommissionFromValue() {
+    const netTcp = parseFloat(document.getElementById('cm_add_net_tcp').value) || 0;
+    const val    = parseFloat(document.getElementById('cm_add_commission_display').value) || 0;
+    const pct    = netTcp > 0 ? (val / netTcp) * 100 : 0;
+    document.getElementById('cm_add_commission').value = val > 0 ? val.toFixed(2) : '';
+    const pctEl = document.getElementById('cm_add_commission_percent');
+    if (pctEl) pctEl.value = pct > 0 ? pct.toFixed(4).replace(/\.?0+$/, '') : '';
 }
 
 function toggleCmTermsDropdown() {
