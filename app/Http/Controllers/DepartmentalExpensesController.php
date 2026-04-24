@@ -215,7 +215,7 @@ class DepartmentalExpensesController extends Controller
         
         try {
             $validated = $request->validate([
-                'control_number' => 'required|string|unique:commission_requests,control_number,' . $id,
+                'control_number' => 'required|string|unique:departmental_expenses,control_number,' . $id,
                 'requestor_name' => 'required|string',
                 'department' => 'required|string',
                 'category' => 'required|string',

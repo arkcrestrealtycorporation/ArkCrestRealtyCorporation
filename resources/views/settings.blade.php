@@ -1151,7 +1151,7 @@
       <div class="st-page-header"><div class="st-page-title">Deleted Records</div><div class="st-page-sub">Restore or permanently delete records</div></div>
 
       @php
-        $deletedExpenses = \App\Models\CommissionRequest::onlyTrashed()->orderBy('deleted_at','desc')->get();
+        $deletedExpenses = \App\Models\DepartmentalExpense::onlyTrashed()->orderBy('deleted_at','desc')->get();
         $deletedLogs = $activityLogs->where('action','delete')->filter(fn($l) => $l->module !== 'Departmental Expenses');
       @endphp
 
