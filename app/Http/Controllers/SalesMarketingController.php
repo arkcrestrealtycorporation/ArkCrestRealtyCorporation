@@ -371,8 +371,13 @@ class SalesMarketingController extends Controller
             }
         }
 
-        // Update terms count on parent record
-        CommissionRequestSales::findOrFail($id)->update(['downpayment_terms' => $terms]);
+        // Update terms count and total amount on parent record
+        $updates = ['downpayment_terms' => $terms, 'downpayment_status' => $terms . ' month' . ($terms > 1 ? 's' : '')];
+        if ($request->total_amount) {
+            $updates['downpayment_amount'] = $request->total_amount;
+            $updates['downpayment_per_term'] = round($request->total_amount / $terms, 2);
+        }
+        CommissionRequestSales::findOrFail($id)->update($updates);
 
         return response()->json(\App\Models\DownpaymentInstallment::where('commission_request_sales_id', $id)
             ->orderBy('term_number')->get());

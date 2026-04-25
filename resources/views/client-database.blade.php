@@ -640,16 +640,24 @@ function cdFilter() {
             <h3 style="margin:0;font-size:18px;font-weight:700">Downpayment Installments</h3>
             <button onclick="document.getElementById('dpModal').style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px">✕</button>
         </div>
-        <div style="padding:20px 24px;flex-shrink:0;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;gap:12px">
-            <label style="font-size:13px;font-weight:600;color:#374151;white-space:nowrap">Number of Terms:</label>
-            <select id="dp_terms_select" onchange="setupInstallments()" style="padding:8px 12px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px">
-                @for($i = 1; $i <= 6; $i++)
-                <option value="{{ $i }}">{{ $i }}</option>
-                @endfor
-            </select>
+        <div style="padding:20px 24px;flex-shrink:0;border-bottom:1px solid #e5e7eb;display:flex;gap:16px;align-items:flex-end">
+            <div style="flex:1">
+                <label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Total Downpayment Amount</label>
+                <input type="number" id="dp_total_amount" step="0.01" min="0" placeholder="0.00"
+                    style="width:100%;padding:9px 12px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px;box-sizing:border-box">
+            </div>
+            <div>
+                <label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Terms</label>
+                <select id="dp_terms_select" style="padding:9px 12px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px">
+                    @for($i = 1; $i <= 6; $i++)
+                    <option value="{{ $i }}">{{ $i }}</option>
+                    @endfor
+                </select>
+            </div>
+            <button onclick="setupInstallments()" style="padding:9px 16px;background:#1e4575;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Set Terms</button>
         </div>
-        <div id="dp_installments_list" style="padding:16px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px">
-            <div style="text-align:center;color:#94a3b8;padding:20px;">Loading...</div>
+        <div id="dp_installments_list" style="padding:16px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px;min-height:80px">
+            <div style="text-align:center;color:#94a3b8;padding:20px;font-size:13px;">Set the amount and terms above, then click "Set Terms".</div>
         </div>
         <div style="padding:16px 24px;border-top:1px solid #e5e7eb;flex-shrink:0">
             <button onclick="document.getElementById('dpModal').style.display='none'" style="width:100%;padding:10px;background:#f3f4f6;color:#374151;border:2px solid #d0d5dd;border-radius:8px;font-weight:600;cursor:pointer">Close</button>
@@ -663,6 +671,7 @@ const _dpCsrf = document.querySelector('meta[name=csrf-token]')?.content || '';
 
 function openDPModal(id, amount, terms, perTerm, status) {
     _dpRecordId = id;
+    document.getElementById('dp_total_amount').value = amount || '';
     document.getElementById('dp_terms_select').value = terms || 1;
     document.getElementById('dpModal').style.display = 'flex';
     loadInstallments();
@@ -675,30 +684,31 @@ function loadInstallments() {
 }
 
 function setupInstallments() {
-    const terms = document.getElementById('dp_terms_select').value;
+    const terms  = document.getElementById('dp_terms_select').value;
+    const amount = parseFloat(document.getElementById('dp_total_amount').value) || 0;
     fetch(`/api/client-database/${_dpRecordId}/installments/setup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': _dpCsrf },
-        body: JSON.stringify({ terms })
+        body: JSON.stringify({ terms, total_amount: amount })
     }).then(r => r.json()).then(data => renderInstallments(data));
 }
 
 function renderInstallments(list) {
     const container = document.getElementById('dp_installments_list');
     if (!list.length) {
-        container.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px;">No installments yet. Set number of terms above.</div>';
+        container.innerHTML = '<div style="text-align:center;color:#94a3b8;padding:20px;font-size:13px;">Set the amount and terms above, then click "Set Terms".</div>';
         return;
     }
     container.innerHTML = list.map(inst => `
-        <div id="inst_row_${inst.id}" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:${inst.is_paid ? '#f0fdf4' : '#f8fafc'};border-radius:10px;border:1.5px solid ${inst.is_paid ? '#bbf7d0' : '#e2e8f0'};">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:${inst.is_paid ? '#f0fdf4' : '#f8fafc'};border-radius:10px;border:1.5px solid ${inst.is_paid ? '#bbf7d0' : '#e2e8f0'};">
             <span style="font-size:13px;font-weight:700;color:#1e4575;min-width:60px;">Term ${inst.term_number}</span>
             <input type="number" id="inst_amount_${inst.id}" value="${inst.amount || ''}" placeholder="0.00" step="0.01" min="0"
                 ${inst.is_paid ? 'disabled' : ''}
                 onblur="saveInstallmentAmount(${inst.id})"
                 style="flex:1;padding:8px 10px;border:1.5px solid #d0d5dd;border-radius:7px;font-size:13px;${inst.is_paid ? 'background:#f0fdf4;color:#166534;' : ''}">
             ${inst.is_paid
-                ? `<span style="padding:5px 12px;background:#dcfce7;color:#166534;border-radius:20px;font-size:12px;font-weight:700;">✓ Paid</span>`
-                : `<button onclick="markPaid(${inst.id})" style="padding:6px 14px;background:#1e4575;color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Mark Paid</button>`
+                ? `<span style="padding:5px 12px;background:#dcfce7;color:#166534;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;">✓ Paid</span>`
+                : `<button onclick="markPaid(${inst.id})" style="padding:6px 14px;background:#059669;color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Paid</button>`
             }
         </div>
     `).join('');
@@ -714,12 +724,18 @@ function saveInstallmentAmount(instId) {
 }
 
 function markPaid(instId) {
-    if (!confirm('Mark this installment as paid? This cannot be undone.')) return;
+    if (!confirm('Mark this term as paid? This cannot be undone.')) return;
     fetch(`/api/installments/${instId}/paid`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': _dpCsrf },
         body: JSON.stringify({})
-    }).then(r => r.json()).then(() => loadInstallments());
+    }).then(r => r.json()).then(data => {
+        loadInstallments();
+        // Update button label in table
+        if (data.status) {
+            const btn = document.querySelector(`button[onclick="openDPModal(${_dpRecordId}"]`);
+        }
+    });
 }
 </script>
 
