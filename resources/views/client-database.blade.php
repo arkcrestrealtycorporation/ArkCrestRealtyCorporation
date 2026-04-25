@@ -174,7 +174,7 @@
             <table style="width:100%;border-collapse:collapse;font-size:13px">
                 <thead style="background:linear-gradient(135deg,#1e4575,#2563eb)">
                     <tr>
-                        @foreach(['Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Downpayment Date','Agent','Downpayment Status','Actions'] as $h)
+                        @foreach(['Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Downpayment Date','Downpayment Status','Agent','Status','Actions'] as $h)
                         <th style="padding:14px 12px;text-align:left;font-weight:600;color:white;text-transform:uppercase;font-size:11px;white-space:nowrap">{{ $h }}</th>
                         @endforeach
                     </tr>
@@ -198,6 +198,20 @@
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->terms_of_payment ?? '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->reservation_date ? $req->reservation_date->format('M d, Y') : '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->date_of_downpayment ? $req->date_of_downpayment->format('M d, Y') : '-' }}</td>
+                        <td style="padding:10px 12px;white-space:nowrap">
+                            <form method="POST" action="{{ route('client-database.downpayment-status', $req->id) }}">
+                                @csrf @method('PATCH')
+                                <select name="downpayment_status" onchange="this.form.submit()"
+                                    style="padding:5px 10px;border-radius:20px;font-size:12px;font-weight:600;border:none;cursor:pointer;outline:none;
+                                    background:{{ $req->downpayment_status === 'Paid' ? '#dcfce7' : ($req->downpayment_status === 'Unpaid' ? '#fee2e2' : ($req->downpayment_status === 'Partial' ? '#fef3c7' : '#f1f5f9')) }};
+                                    color:{{ $req->downpayment_status === 'Paid' ? '#166534' : ($req->downpayment_status === 'Unpaid' ? '#991b1b' : ($req->downpayment_status === 'Partial' ? '#92400e' : '#64748b')) }};">
+                                    <option value="" {{ !$req->downpayment_status ? 'selected' : '' }}>— Set Status —</option>
+                                    <option value="Paid" {{ $req->downpayment_status === 'Paid' ? 'selected' : '' }} style="background:#dcfce7;color:#166534;">Paid</option>
+                                    <option value="Partial" {{ $req->downpayment_status === 'Partial' ? 'selected' : '' }} style="background:#fef3c7;color:#92400e;">Partial</option>
+                                    <option value="Unpaid" {{ $req->downpayment_status === 'Unpaid' ? 'selected' : '' }} style="background:#fee2e2;color:#991b1b;">Unpaid</option>
+                                </select>
+                            </form>
+                        </td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->agent_name ?? '-' }}</td>
                         <td style="padding:10px 12px;white-space:nowrap">
                             <form method="POST" action="{{ route('client-database.status', $req->id) }}">

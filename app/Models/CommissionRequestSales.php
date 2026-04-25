@@ -32,6 +32,7 @@ class CommissionRequestSales extends Model
         'date_released',
         'status',
         'client_status',
+        'downpayment_status',
     ];
 
     protected $casts = [

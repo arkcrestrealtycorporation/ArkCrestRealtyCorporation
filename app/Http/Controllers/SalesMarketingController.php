@@ -245,6 +245,7 @@ class SalesMarketingController extends Controller
             'remarks'           => 'nullable|string',
             'date_released'     => 'nullable|date',
             'status'            => 'nullable|string|max:50',
+            'downpayment_status' => 'nullable|string|max:50',
         ];
     }
 
@@ -337,6 +338,13 @@ class SalesMarketingController extends Controller
         }
 
         return back()->with('success', 'Status updated.');
+    }
+
+    public function updateDownpaymentStatus(Request $request, $id)
+    {
+        $record = CommissionRequestSales::findOrFail($id);
+        $record->update(['downpayment_status' => $request->downpayment_status ?: null]);
+        return back()->with('success', 'Downpayment status updated.');
     }
 
     public function destroy($id)

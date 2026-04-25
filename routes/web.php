@@ -138,6 +138,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/client-database', [App\Http\Controllers\SalesMarketingController::class, 'store'])->name('client-database.store');
     Route::put('/client-database/{id}', [App\Http\Controllers\SalesMarketingController::class, 'update'])->name('client-database.update');
     Route::patch('/client-database/{id}/status', [App\Http\Controllers\SalesMarketingController::class, 'updateClientStatus'])->name('client-database.status');
+    Route::patch('/client-database/{id}/downpayment-status', [App\Http\Controllers\SalesMarketingController::class, 'updateDownpaymentStatus'])->name('client-database.downpayment-status');
     Route::delete('/client-database/{id}', [App\Http\Controllers\SalesMarketingController::class, 'destroy'])->name('client-database.destroy');
 
     // Site Visit Database
