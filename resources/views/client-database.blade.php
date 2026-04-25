@@ -174,7 +174,7 @@
             <table style="width:100%;border-collapse:collapse;font-size:13px">
                 <thead style="background:linear-gradient(135deg,#1e4575,#2563eb)">
                     <tr>
-                        @foreach(['Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Downpayment Date','Downpayment Status','Agent','Status','Actions'] as $h)
+                        @foreach(['Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Downpayment Date','Agent','Status','Downpayment Status','Actions'] as $h)
                         <th style="padding:14px 12px;text-align:left;font-weight:600;color:white;text-transform:uppercase;font-size:11px;white-space:nowrap">{{ $h }}</th>
                         @endforeach
                     </tr>
@@ -198,6 +198,21 @@
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->terms_of_payment ?? '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->reservation_date ? $req->reservation_date->format('M d, Y') : '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->date_of_downpayment ? $req->date_of_downpayment->format('M d, Y') : '-' }}</td>
+                        <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->agent_name ?? '-' }}</td>
+                        <td style="padding:10px 12px;white-space:nowrap">
+                            <form method="POST" action="{{ route('client-database.status', $req->id) }}">
+                                @csrf @method('PATCH')
+                                <select name="client_status" onchange="this.form.submit()"
+                                    data-client-status="{{ strtolower($req->client_status ?? '') }}"
+                                    style="padding:5px 10px;border-radius:20px;font-size:12px;font-weight:600;border:none;cursor:pointer;outline:none;
+                                    background:{{ $req->client_status === 'Done' ? '#dcfce7' : ($req->client_status === 'Cancelled' ? '#fee2e2' : '#f1f5f9') }};
+                                    color:{{ $req->client_status === 'Done' ? '#166534' : ($req->client_status === 'Cancelled' ? '#991b1b' : '#64748b') }};">
+                                    <option value="" {{ !$req->client_status ? 'selected' : '' }}>— Set Status —</option>
+                                    <option value="Done" {{ $req->client_status === 'Done' ? 'selected' : '' }} style="background:#dcfce7;color:#166534;">Done</option>
+                                    <option value="Cancelled" {{ $req->client_status === 'Cancelled' ? 'selected' : '' }} style="background:#fee2e2;color:#991b1b;">Cancelled</option>
+                                </select>
+                            </form>
+                        </td>
                         <td style="padding:10px 12px;white-space:nowrap">
                             <form method="POST" action="{{ route('client-database.downpayment-status', $req->id) }}">
                                 @csrf @method('PATCH')
@@ -212,7 +227,6 @@
                                 </select>
                             </form>
                         </td>
-                        <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->agent_name ?? '-' }}</td>
                         <td style="padding:10px 12px;white-space:nowrap">
                             <form method="POST" action="{{ route('client-database.status', $req->id) }}">
                                 @csrf @method('PATCH')
