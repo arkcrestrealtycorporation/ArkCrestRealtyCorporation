@@ -688,7 +688,17 @@ function cdFilter() {
         </div>
 
         <div style="padding:16px 24px;border-top:1px solid #e5e7eb;flex-shrink:0">
-            <button onclick="document.getElementById('dpModal').style.display='none'" style="width:100%;padding:10px;background:#f3f4f6;color:#374151;border:2px solid #d0d5dd;border-radius:8px;font-weight:600;cursor:pointer">Close</button>
+            <div id="dp_footer_type" style="display:flex">
+                <button onclick="document.getElementById('dpModal').style.display='none'" style="width:100%;padding:10px;background:#f3f4f6;color:#374151;border:2px solid #d0d5dd;border-radius:8px;font-weight:600;cursor:pointer">Cancel</button>
+            </div>
+            <div id="dp_footer_spot" style="display:none;gap:10px">
+                <button onclick="selectDPType('spot'); document.getElementById('dp_step_type').style.display='flex';" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:2px solid #d0d5dd;border-radius:8px;font-weight:600;cursor:pointer">Back</button>
+                <button onclick="saveSpotDP()" style="flex:1;padding:10px;background:#059669;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer">Save</button>
+            </div>
+            <div id="dp_footer_installment" style="display:none;gap:10px">
+                <button onclick="document.getElementById('dp_step_type').style.display='flex';document.getElementById('dp_installment_section').style.display='none';" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:2px solid #d0d5dd;border-radius:8px;font-weight:600;cursor:pointer">Back</button>
+                <button onclick="document.getElementById('dpModal').style.display='none'" style="flex:1;padding:10px;background:#1e4575;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer">Done</button>
+            </div>
         </div>
     </div>
 </div>
@@ -707,6 +717,9 @@ function openDPModal(id, amount, terms, perTerm, status) {
     document.getElementById('dp_step_type').style.display = 'flex';
     document.getElementById('dp_spot_section').style.display = 'none';
     document.getElementById('dp_installment_section').style.display = 'none';
+    document.getElementById('dp_footer_type').style.display = 'flex';
+    document.getElementById('dp_footer_spot').style.display = 'none';
+    document.getElementById('dp_footer_installment').style.display = 'none';
 
     // If already has installments, go straight to installment view
     if (terms > 1 || (status && status.includes('month'))) {
@@ -721,12 +734,17 @@ function openDPModal(id, amount, terms, perTerm, status) {
 
 function selectDPType(type) {
     document.getElementById('dp_step_type').style.display = 'none';
+    document.getElementById('dp_footer_type').style.display = 'none';
     if (type === 'spot') {
         document.getElementById('dp_spot_section').style.display = 'flex';
         document.getElementById('dp_installment_section').style.display = 'none';
+        document.getElementById('dp_footer_spot').style.display = 'flex';
+        document.getElementById('dp_footer_installment').style.display = 'none';
     } else {
         document.getElementById('dp_spot_section').style.display = 'none';
         document.getElementById('dp_installment_section').style.display = 'flex';
+        document.getElementById('dp_footer_spot').style.display = 'none';
+        document.getElementById('dp_footer_installment').style.display = 'flex';
         loadInstallments();
     }
 }
