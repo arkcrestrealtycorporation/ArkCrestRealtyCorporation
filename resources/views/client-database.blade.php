@@ -645,10 +645,10 @@ function cdFilter() {
         <div id="dp_step_type" style="padding:24px;display:flex;flex-direction:column;gap:12px;flex-shrink:0">
             <p style="font-size:13px;color:#64748b;margin:0;">Select downpayment type:</p>
             <div style="display:flex;gap:12px">
-                <button onclick="selectDPType('spot')" style="flex:1;padding:14px;border:2px solid #e2e8f0;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#374151;transition:all .2s" onmouseover="this.style.borderColor='#1e4575'" onmouseout="this.style.borderColor='#e2e8f0'">
+                <button onclick="selectDPType('spot')" style="flex:1;padding:14px;border:2px solid #e2e8f0;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#374151;transition:all .2s" onmouseover="this.style.background='#eff6ff';this.style.borderColor='#1e4575'" onmouseout="this.style.background='white';this.style.borderColor='#e2e8f0'">
                     💰 Spot Downpayment
                 </button>
-                <button onclick="selectDPType('installment')" style="flex:1;padding:14px;border:2px solid #e2e8f0;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#374151;transition:all .2s" onmouseover="this.style.borderColor='#1e4575'" onmouseout="this.style.borderColor='#e2e8f0'">
+                <button onclick="selectDPType('installment')" style="flex:1;padding:14px;border:2px solid #e2e8f0;border-radius:10px;background:white;cursor:pointer;font-size:14px;font-weight:600;color:#374151;transition:all .2s" onmouseover="this.style.background='#eff6ff';this.style.borderColor='#1e4575'" onmouseout="this.style.background='white';this.style.borderColor='#e2e8f0'">
                     📅 Installment Downpayment
                 </button>
             </div>
@@ -661,7 +661,7 @@ function cdFilter() {
                 <input type="number" id="dp_spot_amount" step="0.01" min="0" placeholder="0.00"
                     style="width:100%;padding:10px 12px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px;box-sizing:border-box">
             </div>
-            <button onclick="saveSpotDP()" style="padding:11px;background:#059669;color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Mark as Paid (Spot)</button>
+            <button onclick="saveSpotDP()" style="padding:11px;background:linear-gradient(135deg,#1e4575,#2563eb);color:white;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Mark as Paid (Spot)</button>
         </div>
 
         {{-- Installment DP --}}
@@ -680,7 +680,7 @@ function cdFilter() {
                         @endfor
                     </select>
                 </div>
-                <button onclick="setupInstallments()" style="padding:9px 16px;background:#1e4575;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Set Terms</button>
+                <button onclick="setupInstallments()" style="padding:9px 16px;background:linear-gradient(135deg,#1e4575,#2563eb);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Set Terms</button>
             </div>
             <div id="dp_installments_list" style="padding:16px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px;min-height:60px">
                 <div style="text-align:center;color:#94a3b8;padding:20px;font-size:13px;">Set amount and terms, then click "Set Terms".</div>
@@ -691,12 +691,12 @@ function cdFilter() {
             <div id="dp_footer_type" style="display:flex">
             </div>
             <div id="dp_footer_spot" style="display:none;gap:10px">
-                <button onclick="selectDPType('spot'); document.getElementById('dp_step_type').style.display='flex';" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:2px solid #d0d5dd;border-radius:8px;font-weight:600;cursor:pointer">Back</button>
-                <button onclick="saveSpotDP()" style="flex:1;padding:10px;background:#059669;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer">Save</button>
+                <button onclick="selectDPType('spot'); document.getElementById('dp_step_type').style.display='flex';" style="flex:1;padding:10px;background:#f1f5f9;color:#374151;border:1.5px solid #e2e8f0;border-radius:8px;font-weight:600;cursor:pointer">Back</button>
+                <button onclick="saveSpotDP()" style="flex:1;padding:10px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer">Save</button>
             </div>
             <div id="dp_footer_installment" style="display:none;gap:10px">
-                <button onclick="document.getElementById('dp_step_type').style.display='flex';document.getElementById('dp_installment_section').style.display='none';" style="flex:1;padding:10px;background:#f3f4f6;color:#374151;border:2px solid #d0d5dd;border-radius:8px;font-weight:600;cursor:pointer">Back</button>
-                <button onclick="document.getElementById('dpModal').style.display='none'" style="flex:1;padding:10px;background:#1e4575;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer">Done</button>
+                <button onclick="document.getElementById('dp_step_type').style.display='flex';document.getElementById('dp_installment_section').style.display='none';" style="flex:1;padding:10px;background:#f1f5f9;color:#374151;border:1.5px solid #e2e8f0;border-radius:8px;font-weight:600;cursor:pointer">Back</button>
+                <button onclick="document.getElementById('dpModal').style.display='none'" style="flex:1;padding:10px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer">Done</button>
             </div>
         </div>
     </div>
@@ -792,7 +792,7 @@ function renderInstallments(list) {
                 style="flex:1;padding:8px 10px;border:1.5px solid #d0d5dd;border-radius:7px;font-size:13px;${inst.is_paid ? 'background:#f0fdf4;color:#166534;' : ''}">
             ${inst.is_paid
                 ? `<span style="padding:5px 12px;background:#dcfce7;color:#166534;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;">✓ Paid</span>`
-                : `<button onclick="markPaid(${inst.id})" style="padding:6px 14px;background:#059669;color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Paid</button>`
+                : `<button onclick="markPaid(${inst.id})" style="padding:6px 14px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Paid</button>`
             }
         </div>
     `).join('');
