@@ -131,6 +131,32 @@
                         <input type="text" id="cm_add_commission_display" placeholder="0.00" oninput="computeAddCommissionFromValue()" style="color:#374151;">
                     </div>
                     <div class="form-group">
+                        <label>PAYMENT TYPE</label>
+                        <select id="cm_add_payment_type" name="payment_type" onchange="computeValueOfPaymentTerms()">
+                            <option value="">— Select —</option>
+                            <option value="Full Payment">Full Payment</option>
+                            <option value="Partial Payment">Partial Payment</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>VALUE OF PAYMENT TERMS <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>
+                        <input type="text" id="cm_add_vopt_display" placeholder="0.00" readonly style="background:#f3f4f6;cursor:not-allowed;color:#374151;">
+                        <input type="hidden" id="cm_add_value_of_payment_terms" name="value_of_payment_terms">
+                    </div>
+                    <div class="form-group">
+                        <label>PAYMENT TYPE</label>
+                        <select id="cm_add_payment_type" name="payment_type" onchange="computeValueOfPaymentTerms()">
+                            <option value="">— Select —</option>
+                            <option value="Full Payment">Full Payment</option>
+                            <option value="Partial Payment">Partial Payment</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>VALUE OF PAYMENT TERMS <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>
+                        <input type="text" id="cm_add_vopt_display" placeholder="0.00" readonly style="background:#f3f4f6;cursor:not-allowed;color:#374151;">
+                        <input type="hidden" id="cm_add_vopt" name="value_of_payment_terms">
+                    </div>
+                    <div class="form-group">
                         <label>TERMS OF PAYMENT <span class="required">*</span></label>
                         <div class="combobox-wrapper">
                             <input type="text" id="cm_add_terms" name="terms_of_payment" class="combobox-input" required autocomplete="off" placeholder="Type or select payment terms" onclick="toggleCmTermsDropdown()" oninput="filterCmTerms(this.value)">
@@ -282,6 +308,8 @@
                         <th>Commission</th>
                         @endif
                         <th>Date Released</th>
+                        <th>Payment Type</th>
+                        <th>Value of Payment Terms</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -310,6 +338,8 @@
                         <td>{{ $request->commission ? '₱'.number_format($request->commission, 2) : '-' }}</td>
                         @endif
                         <td>{{ $request->date_released ? $request->date_released->format('M d, Y') : '-' }}</td>
+                        <td>{{ $request->payment_type ?? '-' }}</td>
+                        <td>{{ $request->value_of_payment_terms ? '₱'.number_format($request->value_of_payment_terms, 2) : '-' }}</td>
                         <td>
                             <span class="status-badge 
                                 @if($request->status == 'Released') status-released
@@ -1237,6 +1267,7 @@ function computeAddTCP() {
     document.getElementById('cm_add_net_tcp').value = netTcp > 0 ? netTcp.toFixed(2) : '';
     document.getElementById('cm_add_net_tcp_display').value = netTcp > 0 ? fmtComma(netTcp) : '';
     computeAddCommission();
+    computeValueOfPaymentTerms();
 }
 function computeAddNetTCP() {
     const priceSqm = parseFloat(document.getElementById('cm_add_price_sqm').value) || 0;
@@ -1247,6 +1278,29 @@ function computeAddNetTCP() {
     document.getElementById('cm_add_net_tcp').value = netTcp > 0 ? netTcp.toFixed(2) : '';
     document.getElementById('cm_add_net_tcp_display').value = netTcp > 0 ? fmtComma(netTcp) : '';
     computeAddCommission();
+    computeValueOfPaymentTerms();
+}
+function computeValueOfPaymentTerms() {
+    const netTcp   = parseFloat(document.getElementById('cm_add_net_tcp').value) || 0;
+    const type     = document.getElementById('cm_add_payment_type')?.value || '';
+    const base     = netTcp * 0.08;
+    let value      = 0;
+    if (type === 'Full Payment')    value = base;
+    else if (type === 'Partial Payment') value = base / 3;
+    document.getElementById('cm_add_vopt').value        = value > 0 ? value.toFixed(2) : '';
+    document.getElementById('cm_add_vopt_display').value = value > 0 ? fmtComma(value) : '';
+}
+
+function computeValueOfPaymentTerms() {
+    const netTcp   = parseFloat(document.getElementById('cm_add_net_tcp').value) || 0;
+    const commPct  = 8; // fixed 8%
+    const commVal  = netTcp * (commPct / 100);
+    const type     = document.getElementById('cm_add_payment_type').value;
+    let result     = 0;
+    if (type === 'Full Payment')    result = commVal;
+    if (type === 'Partial Payment') result = commVal / 3;
+    document.getElementById('cm_add_value_of_payment_terms').value = result > 0 ? result.toFixed(2) : '';
+    document.getElementById('cm_add_vopt_display').value = result > 0 ? fmtComma(result) : '';
 }
 function computeAddCommission() {
     const netTcp = parseFloat(document.getElementById('cm_add_net_tcp').value) || 0;

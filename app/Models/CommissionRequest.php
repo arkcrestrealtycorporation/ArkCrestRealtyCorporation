@@ -37,6 +37,10 @@ class CommissionRequest extends Model
         'discount',
         'remarks',
         'status',
+        'payment_type',
+        'value_of_payment_terms',
+        'payment_type',
+        'value_of_payment_terms',
     ];
 
     protected $casts = [

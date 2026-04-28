@@ -45,6 +45,10 @@ class CommissionMonitoringController extends Controller
                 'reservation_date'   => 'nullable|date',
                 'date_released'      => 'nullable|date',
                 'status'             => 'nullable|string|max:50',
+                'payment_type'       => 'nullable|string|max:50',
+                'value_of_payment_terms' => 'nullable|numeric',
+                'payment_type'       => 'nullable|string|max:50',
+                'value_of_payment_terms' => 'nullable|numeric',
                 'remarks'            => 'nullable|string',
             ]);
 
@@ -99,6 +103,10 @@ class CommissionMonitoringController extends Controller
                 'reservation_date'  => 'nullable|date',
                 'date_released'     => 'nullable|date',
                 'status'            => 'nullable|string|max:50',
+                'payment_type'      => 'nullable|string|max:50',
+                'value_of_payment_terms' => 'nullable|numeric',
+                'payment_type'      => 'nullable|string|max:50',
+                'value_of_payment_terms' => 'nullable|numeric',
                 'remarks'           => 'nullable|string',
             ]);
             $record->update($validated);
