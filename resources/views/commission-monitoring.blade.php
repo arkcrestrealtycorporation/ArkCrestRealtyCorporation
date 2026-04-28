@@ -1270,8 +1270,10 @@ function computeAddNetTCP() {
 function computeValueOfPaymentTerms() {
     const netTcp   = parseFloat(document.getElementById('cm_add_net_tcp').value) || 0;
     const type     = document.getElementById('cm_add_payment_type')?.value || '';
+    // Use actual commission value if set, else compute from %
+    const commHidden = parseFloat(document.getElementById('cm_add_commission')?.value) || 0;
     const commPct  = parseFloat(document.getElementById('cm_add_commission_percent')?.value) || 0;
-    const commVal  = netTcp * (commPct / 100);
+    const commVal  = commHidden > 0 ? commHidden : netTcp * (commPct / 100);
     let result     = 0;
     if (type === 'Full Payment')    result = commVal;
     if (type === 'Partial Payment') result = commVal / 3;
@@ -1286,6 +1288,7 @@ function computeAddCommission() {
     document.getElementById('cm_add_commission').value = result > 0 ? result.toFixed(2) : '';
     const display = document.getElementById('cm_add_commission_display');
     if (display) display.value = result > 0 ? fmtComma(result) : '0.00';
+    computeValueOfPaymentTerms();
 }
 function computeAddCommissionFromValue() {
     const netTcp = parseFloat(document.getElementById('cm_add_net_tcp').value) || 0;
