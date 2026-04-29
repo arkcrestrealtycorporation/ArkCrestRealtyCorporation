@@ -1736,7 +1736,7 @@
               <td style="padding:11px 8px;color:#cbd5e1;cursor:grab;font-size:16px;text-align:center;" title="Drag to reorder">⠿</td>
               <td style="padding:11px 16px;font-size:13px;font-weight:600;color:#0f172a;">{{ $contact->name }}</td>
               <td style="padding:11px 16px;font-size:13px;color:#374151;">{{ $contact->phone ?: '—' }}</td>
-              <td style="padding:11px 16px;font-size:13px;">@if($contact->email)<a href="mailto:{{ $contact->email }}" style="color:#1e4575;text-decoration:none;">{{ $contact->email }}</a>@else —@endif</td>
+              <td style="padding:11px 16px;font-size:13px;">@if($contact->email)<a href="https://mail.google.com/mail/?view=cm&to={{ urlencode($contact->email) }}" target="_blank" rel="noopener" style="color:#1e4575;text-decoration:none;">{{ $contact->email }}</a>@else —@endif</td>
               <td style="padding:11px 16px;font-size:13px;">@if($contact->facebook)
                 @php $fbUrl = str_starts_with($contact->facebook, 'http') ? $contact->facebook : 'https://facebook.com/' . $contact->facebook; @endphp
                 <a href="{{ $fbUrl }}" target="_blank" rel="noopener" style="color:#1877f2;text-decoration:none;">{{ $contact->facebook }}</a>
