@@ -175,9 +175,13 @@ class SendEventReminders extends Command
             'mail.default'                 => 'smtp',
         ]);
 
-        $html = AdminEmailNotifier::buildPublicHtml($title, $body);
-
         foreach ($emails as $email) {
+            // Get recipient name from users table
+            $user = User::where('email', $email)->first();
+            $recipientName = $user ? $user->name : '';
+
+            $html = AdminEmailNotifier::buildPublicHtml($title, $body, $recipientName);
+
             try {
                 Mail::html($html, fn($msg) => $msg->to($email)->subject($subject)->from($smtpUser, $smtpFromName));
                 $this->info("  → Sent to {$email}");
