@@ -182,11 +182,17 @@ body{display:flex;align-items:center;justify-content:center;background:linear-gr
                 @auth
         <div class="logout-row">
             @if(auth()->check())
-            <a href="{{ url()->previous() !== url()->current() ? url()->previous() : route('dashboard') }}" class="btn-signout" style="color:#1e4575;border-color:#bfdbfe;margin-right:8px;">
+            {{-- Logged in via system: show Back only, no Sign Out --}}
+            <a href="{{ url()->previous() !== url()->current() ? url()->previous() : route('dashboard') }}" class="btn-signout" style="color:#1e4575;border-color:#bfdbfe;">
                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
                 Back
             </a>
             @endif
+        </div>
+        @endauth
+        @guest
+        {{-- Not logged in (external agents): Sign Out only --}}
+        <div class="logout-row">
             <form method="POST" action="{{ route('logout') }}" style="display:inline">
                 @csrf
                 <button type="submit" class="btn-signout">
@@ -195,7 +201,7 @@ body{display:flex;align-items:center;justify-content:center;background:linear-gr
                 </button>
             </form>
         </div>
-        @endauth
+        @endguest
     </div>
 </div>
 <script>
