@@ -55,6 +55,11 @@ class AdminEmailNotifier
 
     private static function buildHtml(string $title, string $body): string
     {
+        return self::buildPublicHtml($title, $body);
+    }
+
+    public static function buildPublicHtml(string $title, string $body): string
+    {
         return "<!DOCTYPE html><html><body style='font-family:Segoe UI,sans-serif;background:#f0f2f5;padding:24px;'>
 <div style='max-width:560px;margin:0 auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.1);'>
 <div style='background:linear-gradient(135deg,#1e4575,#2563eb);padding:20px 24px;'>
