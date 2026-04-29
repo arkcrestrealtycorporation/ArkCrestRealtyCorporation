@@ -107,7 +107,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/users/{id}/reject', [App\Http\Controllers\SettingsController::class, 'rejectUser'])->name('settings.users.reject');
     Route::post('/settings/users/{id}/role', [App\Http\Controllers\SettingsController::class, 'updateRole'])->name('settings.users.role');
     Route::delete('/settings/users/{id}', [App\Http\Controllers\SettingsController::class, 'removeUser'])->name('settings.users.remove');
-    Route::post('/settings/users/{id}/employee-info', [App\Http\Controllers\SettingsController::class, 'updateUserEmployeeInfo'])->name('settings.users.employee-info');
     Route::post('/settings/employee/add', [App\Http\Controllers\SettingsController::class, 'addEmployeeRecord'])->name('settings.employee.add');
 
     // Forms
@@ -198,6 +197,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/personnel-contacts', [App\Http\Controllers\SettingsController::class, 'storePersonnelContact'])->name('settings.personnel-contacts.store');
     Route::put('/settings/personnel-contacts/{id}', [App\Http\Controllers\SettingsController::class, 'updatePersonnelContact'])->name('settings.personnel-contacts.update');
     Route::delete('/settings/personnel-contacts/{id}', [App\Http\Controllers\SettingsController::class, 'destroyPersonnelContact'])->name('settings.personnel-contacts.destroy');
+    Route::post('/api/personnel-contacts/reorder', [App\Http\Controllers\SettingsController::class, 'reorderPersonnelContacts']);
 
     // Notifications
     Route::post('/notifications/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');

@@ -27,6 +27,15 @@ class SettingsController extends Controller
         return view('settings', $this->getSettingsData());
     }
 
+    private function canAccessSetting(string $key): bool
+    {
+        $user = auth()->user();
+        if ($user->isAdmin()) return true;
+        $hidden = \DB::table('app_settings')->where('key', 'hidden_pages')->value('value');
+        $hiddenPages = json_decode($hidden ?? '[]', true) ?: [];
+        return !in_array($key, $hiddenPages);
+    }
+
     public function saveSmtp(Request $request)
     {
         $request->validate([
@@ -132,7 +141,8 @@ class SettingsController extends Controller
 
     public function removeUser($id)
     {
-        if (!auth()->user()->isAdmin()) abort(403);
+        $user = auth()->user();
+        if (!$user->isAdmin() && in_array('settings.employee', $user->hidden_pages ?? [])) abort(403);
         if ($id == auth()->id()) return redirect()->back()->with('error', 'You cannot remove yourself.');
         $u = User::findOrFail($id);
         ActivityLog::log('delete', 'Settings', "Removed user '{$u->name}' ({$u->email})");
@@ -246,7 +256,8 @@ class SettingsController extends Controller
 
     public function updateUserEmployeeInfo(Request $request, $id)
     {
-        if (!auth()->user()->isAdmin()) abort(403);
+        $user = auth()->user();
+        if (!$user->isAdmin() && in_array('settings.employee', $user->hidden_pages ?? [])) abort(403);
         $request->validate([
             'position'    => 'nullable|string|max:255',
             'employee_id' => 'nullable|string|max:100|unique:users,employee_id,' . $id,
@@ -260,7 +271,8 @@ class SettingsController extends Controller
 
     public function addEmployeeRecord(Request $request)
     {
-        if (!auth()->user()->isAdmin()) abort(403);
+        $user = auth()->user();
+        if (!$user->isAdmin() && in_array('settings.employee', $user->hidden_pages ?? [])) abort(403);
         $request->validate([
             'name'        => 'required|string|max:255',
             'employee_id' => 'required|string|max:100|unique:users,employee_id',
@@ -492,6 +504,7 @@ class SettingsController extends Controller
 
     public function updatePersonnelContact(Request $request, $id)
     {
+        if (!auth()->user()->isAdmin() && !$this->canAccessSetting('settings.personnel')) abort(403);
         $data = $request->validate([
             'name'     => 'required|string|max:255',
             'company'  => 'nullable|string|max:255',

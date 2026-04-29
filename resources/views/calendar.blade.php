@@ -226,8 +226,8 @@
             <div class="cal-cell {{ $cls }}">
                 <span class="cal-day-num">{{ $day }}</span>
                 @foreach($events->take(2) as $event)
-                <div class="cal-event" onclick="showEventDetail({{ $event->id }})" title="{{ $event->agent_name }}">
-                    {{ $event->agent_name }}
+                <div class="cal-event" onclick="showEventDetail({{ $event->id }})" title="{{ $event->client_name }}">
+                    {{ $event->client_name }}
                 </div>
                 @endforeach
                 @if($events->count() > 2)
