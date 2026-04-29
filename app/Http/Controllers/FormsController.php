@@ -21,6 +21,11 @@ class FormsController extends Controller
         return view('forms', compact('departments', 'requestorNames'));
     }
 
+    public function siteVisit()
+    {
+        return view('forms-site-visit');
+    }
+
     // Returns next control number: ARCS-MM-NNN-YY
     public function nextControlNumber(Request $request)
     {

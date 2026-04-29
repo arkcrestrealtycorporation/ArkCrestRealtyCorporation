@@ -111,6 +111,7 @@ Route::middleware('auth')->group(function () {
 
     // Forms
     Route::get('/forms', [App\Http\Controllers\FormsController::class, 'index'])->name('forms')->middleware('page.visible');
+    Route::get('/forms/site-visit', [App\Http\Controllers\FormsController::class, 'siteVisit'])->name('forms.site-visit');
     Route::get('/api/forms/control-number', [App\Http\Controllers\FormsController::class, 'nextControlNumber']);
     Route::post('/api/forms/control-number/increment', [App\Http\Controllers\FormsController::class, 'incrementControlNumber']);
 
