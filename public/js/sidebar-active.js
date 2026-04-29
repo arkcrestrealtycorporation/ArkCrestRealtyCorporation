@@ -39,7 +39,9 @@
                 isActive = true;
             } else if (page === 'crm' && currentPath.includes('/crm')) {
                 isActive = true;
-            } else if (page === 'forms' && currentPath.includes('/forms')) {
+            } else if (page === 'forms-site-visit' && currentPath.includes('/forms/site-visit')) {
+                isActive = true;
+            } else if (page === 'forms' && currentPath === '/forms') {
                 isActive = true;
             } else if (page === 'settings' && currentPath.includes('/settings')) {
                 isActive = true;
