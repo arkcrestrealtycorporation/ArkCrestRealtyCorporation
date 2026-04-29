@@ -1737,7 +1737,10 @@
               <td style="padding:11px 16px;font-size:13px;font-weight:600;color:#0f172a;">{{ $contact->name }}</td>
               <td style="padding:11px 16px;font-size:13px;color:#374151;">{{ $contact->phone ?: '—' }}</td>
               <td style="padding:11px 16px;font-size:13px;">@if($contact->email)<a href="mailto:{{ $contact->email }}" style="color:#1e4575;text-decoration:none;">{{ $contact->email }}</a>@else —@endif</td>
-              <td style="padding:11px 16px;font-size:13px;color:#1877f2;">{{ $contact->facebook ?: '—' }}</td>
+              <td style="padding:11px 16px;font-size:13px;">@if($contact->facebook)
+                @php $fbUrl = str_starts_with($contact->facebook, 'http') ? $contact->facebook : 'https://facebook.com/' . $contact->facebook; @endphp
+                <a href="{{ $fbUrl }}" target="_blank" rel="noopener" style="color:#1877f2;text-decoration:none;">{{ $contact->facebook }}</a>
+              @else —@endif</td>
               <td style="padding:11px 16px;white-space:nowrap;">
                 @if($isAdmin || $canSeeS('settings.personnel'))
                 <button type="button" class="st-btn st-btn-primary st-btn-sm" onclick="openContactModal({{ $contact->id }}, '{{ addslashes($contact->name) }}', '{{ addslashes($contact->company) }}', '{{ addslashes($contact->phone) }}', '{{ addslashes($contact->email) }}', '{{ addslashes($contact->facebook) }}', this)">Edit</button>
