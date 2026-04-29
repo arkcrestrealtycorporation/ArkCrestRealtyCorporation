@@ -83,7 +83,8 @@ body{display:flex;align-items:center;justify-content:center;background:linear-gr
             <div class="brand-name">ARCKREST REALTY CORPORATION</div>
         </div>
         <div id="greetingText" style="font-size:16px;font-weight:700;color:white;text-align:center;margin:10px 0 0;padding:0 20px;">
-            Happy ArkCrest Morning@if(auth()->check()), {{ explode(' ', auth()->user()->name)[0] }}@endif!
+            @php $firstName = auth()->check() ? explode(' ', auth()->user()->name)[0] : ''; @endphp
+            Happy ArkCrest Morning{{ $firstName ? ', '.$firstName : '' }}!
         </div>
         <div class="ov-body">
             <div class="ov-tag">Site Visit</div>
@@ -287,7 +288,7 @@ document.getElementById('propertyNameInput').addEventListener('blur',function(){
 document.getElementById('clientNameInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();revealClientFields();checkDuplicate();}});
 document.getElementById('clientNameInput').addEventListener('blur',function(){setTimeout(function(){if(document.getElementById('clientNameInput').value.trim()){revealClientFields();checkDuplicate();}},300);});
 var greetTimer;
-var _defaultGreeting = 'Happy ArkCrest Morning{{ auth()->check() ? ", " . explode(" ", auth()->user()->name)[0] : "" }}!';
+var _defaultGreeting = 'Happy ArkCrest Morning{{ $firstName ? ", ".$firstName : "" }}!';
 function updateGreeting(){
     var empId=document.querySelector('[name="agent_name"]').value.trim();
     var g=document.getElementById('greetingText');
