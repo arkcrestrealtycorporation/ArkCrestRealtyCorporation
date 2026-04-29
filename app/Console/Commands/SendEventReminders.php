@@ -151,12 +151,12 @@ class SendEventReminders extends Command
     {
         if (empty($emails)) return;
 
-        // Load SMTP from DB
+        // Load SMTP — prefer DB settings, fallback to .env
         $s = \DB::table('app_settings')->pluck('value', 'key');
-        $smtpHost     = $s['smtp_host']     ?? null;
-        $smtpPort     = $s['smtp_port']     ?? '587';
-        $smtpUser     = $s['smtp_username'] ?? null;
-        $smtpPass     = $s['smtp_password'] ?? null;
+        $smtpHost     = $s['smtp_host']     ?? config('mail.mailers.smtp.host');
+        $smtpPort     = $s['smtp_port']     ?? config('mail.mailers.smtp.port', '587');
+        $smtpUser     = $s['smtp_username'] ?? config('mail.from.address');
+        $smtpPass     = $s['smtp_password'] ?? config('mail.mailers.smtp.password');
         $smtpFromName = $s['smtp_from_name'] ?? config('app.name');
 
         if (empty($smtpHost) || empty($smtpUser) || empty($smtpPass)) {
