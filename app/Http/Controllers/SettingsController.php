@@ -174,7 +174,9 @@ class SettingsController extends Controller
                 $user = \App\Models\User::where('employee_id', $r->agent_name)->first();
                 if ($user) $r->agent_name = $user->name;
             }),
-            'personnelContacts'  => \App\Models\PersonnelContact::orderBy('sort_order')->orderBy('id')->get(),
+            'personnelContacts'  => \Illuminate\Support\Facades\Schema::hasColumn('personnel_contacts', 'sort_order')
+                ? \App\Models\PersonnelContact::orderBy('sort_order')->orderBy('id')->get()
+                : \App\Models\PersonnelContact::orderBy('id')->get(),
             'onlineUserIds'      => Schema::hasColumn('users', 'last_seen_at')
                 ? User::whereNotNull('last_seen_at')->where('last_seen_at', '>=', now()->subMinutes(2))->pluck('id')->toArray()
                 : [],
