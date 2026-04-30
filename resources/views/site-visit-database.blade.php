@@ -170,7 +170,7 @@
             <th style="width:40px;text-align:center">#</th>
             <th>Name of Client</th><th>Property</th><th>Company</th>
             <th>Name of Agent</th><th>Email</th><th>Mobile Number</th>
-            <th>Tripping Date</th><th>Tripping Time</th><th>Actions</th>
+            <th>Tripping Date</th><th>Tripping Time</th><th>Mode of Visit</th><th>Actions</th>
         </tr></thead>
         <tbody>
         @foreach($confirmed->values() as $i => $r)
@@ -187,6 +187,7 @@
             </td>
             <td><div class="td-name" style="font-size:12px">{{ $r->tripping_date ? $r->tripping_date->format('M j, Y') : '—' }}</div></td>
             <td><div class="td-sub">{{ $r->tripping_time ? \Carbon\Carbon::parse($r->tripping_time)->format('g:i A') : '—' }}</div></td>
+            <td><div class="td-sub">{{ $r->tripping_type ?? '—' }}</div></td>
             <td>
                 <div class="actions">
                     {{-- Reschedule --}}
@@ -258,7 +259,7 @@
             <th style="width:40px;text-align:center">#</th>
             <th>Name of Client</th><th>Property</th><th>Company</th>
             <th>Name of Agent</th><th>Email</th><th>Mobile Number</th>
-            <th>Tripping Date</th><th>Tripping Time</th>
+            <th>Tripping Date</th><th>Tripping Time</th><th>Mode of Visit</th>
             @if(auth()->user()->isAdmin())<th>Actions</th>@endif
         </tr></thead>
         <tbody>
@@ -276,6 +277,7 @@
             </td>
             <td>{{ $r->tripping_date ? $r->tripping_date->format('M j, Y') : '—' }}</td>
             <td><div class="td-sub">{{ $r->tripping_time ? \Carbon\Carbon::parse($r->tripping_time)->format('g:i A') : '—' }}</div></td>
+            <td><div class="td-sub">{{ $r->tripping_type ?? '—' }}</div></td>
             @if(auth()->user()->isAdmin())
             <td>
                 <div class="actions">
