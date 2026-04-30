@@ -183,8 +183,9 @@ body{display:flex;align-items:center;justify-content:center;background:linear-gr
         <div class="logout-row">
             @php
                 $u = auth()->user();
-                // Show Back if user has access to the main system (admin or staff with forms access)
-                $hasSystemAccess = $u->isAdmin() || !in_array('forms', $u->hidden_pages ?? []);
+                $pos = strtolower($u->position ?? '');
+                $isSalesPerson = str_contains($pos, 'sales');
+                $hasSystemAccess = !$isSalesPerson && ($u->isAdmin() || !in_array('forms', $u->hidden_pages ?? []));
             @endphp
             @if($hasSystemAccess)
             {{-- Staff/Admin with system access: Back only --}}
