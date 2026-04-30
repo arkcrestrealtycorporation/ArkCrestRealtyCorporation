@@ -143,7 +143,7 @@
             </div>
             <div style="flex:1">
                 <h3 class="card-title-modern">Top Performers</h3>
-                <p class="card-subtitle-modern">Based on commission monitoring records</p>
+                <p class="card-subtitle-modern">Based on client database records</p>
             </div>
             <form method="GET" action="{{ route('sales-marketing') }}" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
                 <label style="font-size:12px;color:#6b7280;font-weight:500">From</label>
