@@ -46,11 +46,13 @@ class DashboardController extends Controller
         $monthStart = now()->startOfMonth()->toDateString();
         $monthEnd   = now()->endOfMonth()->toDateString();
 
-        // Units = clients who have made a downpayment this month (not cancelled)
+        // Units = distinct block/lot numbers with downpayment made this month (not cancelled)
         $units = CommissionRequestSales::whereNotNull('date_of_downpayment')
             ->whereBetween('date_of_downpayment', [$monthStart, $monthEnd])
             ->where('client_status', '!=', 'Cancelled')
-            ->count();
+            ->whereNotNull('block_lot_number')
+            ->distinct('block_lot_number')
+            ->count('block_lot_number');
 
         // Gross Sales = net_tcp of clients who have made a downpayment this month
         $grossSales = CommissionRequestSales::whereNotNull('date_of_downpayment')
