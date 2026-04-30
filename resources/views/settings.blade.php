@@ -1268,7 +1268,7 @@
 
           @if($pr->record_url)<a href="{{ $pr->record_url }}" target="_blank" class="st-btn st-btn-sm" style="background:#f1f5f9;color:#374151;border:1.5px solid #e2e8f0;text-decoration:none;">View Record</a>@endif
 
-          <form method="POST" action="{{ route('permission-requests.review', $pr->id) }}">@csrf
+          <form method="POST" action="{{ route('permission-requests.review', $pr->id) }}" onsubmit="event.preventDefault();submitPermReview({{ $pr->id }},'approved',this)">@csrf
 
             <input type="hidden" name="status" value="approved">
 
@@ -1278,7 +1278,7 @@
 
           </form>
 
-          <form method="POST" action="{{ route('permission-requests.review', $pr->id) }}">@csrf
+          <form method="POST" action="{{ route('permission-requests.review', $pr->id) }}" onsubmit="event.preventDefault();submitPermReview({{ $pr->id }},'rejected',this)">@csrf
 
             <input type="hidden" name="status" value="rejected">
 
@@ -1926,6 +1926,19 @@ function openContactModal(id, name, company, phone, email, facebook, btn) {
 }
 function closeContactModal() {
     document.getElementById('contactEditModal').style.display = 'none';
+}
+
+function submitPermReview(id, status, form) {
+    const note = document.getElementById('note_' + id)?.value || '';
+    const csrf = form.querySelector('[name=_token]')?.value || document.querySelector('meta[name=csrf-token]')?.content || '';
+    fetch('/api/permission-requests/' + id + '/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+        body: JSON.stringify({ status: status, admin_note: note })
+    })
+    .then(r => r.json())
+    .then(() => { window.location.reload(); })
+    .catch(() => { window.location.reload(); });
 }
 
 // ── ARC Contact List drag-and-drop ──────────────────────────────────────────
