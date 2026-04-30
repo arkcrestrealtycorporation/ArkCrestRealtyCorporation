@@ -124,7 +124,7 @@ $byAgent = $all->groupBy('agent_name')->map(function($rows, $agent) {
             @forelse($byAgent as $i => $a)
             <tr>
                 <td style="color:#cbd5e1;font-weight:600;text-align:center;">{{ $i + 1 }}</td>
-                <td style="font-weight:700;color:#0f172a;">{{ $a['agent'] }}</td>
+                <td style="font-weight:700;color:#0f172a;white-space:nowrap;">{{ $a['agent'] }}</td>
                 <td style="text-align:center;">{{ $a['total'] }}</td>
                 <td style="text-align:center;"><span class="cd-badge cd-badge-released">{{ $a['released'] }}</span></td>
                 <td style="text-align:center;"><span class="cd-badge cd-badge-pending">{{ $a['pending'] }}</span></td>
