@@ -19,6 +19,26 @@ class SalesMarketingController extends Controller
         $totalClients = CommissionRequestSales::whereBetween('date_requested', [$dateFrom, $dateTo])->distinct('client_name')->count('client_name');
         $totalRecords = CommissionRequestSales::whereBetween('date_requested', [$dateFrom, $dateTo])->count();
 
+        // Units, Pending, Cancelled, Total Reservation for the date range
+        $units = CommissionRequestSales::whereNotNull('date_of_downpayment')
+            ->whereBetween('date_of_downpayment', [$dateFrom, $dateTo])
+            ->where('client_status', '!=', 'Cancelled')
+            ->whereNotNull('block_lot_number')
+            ->distinct('block_lot_number')->count('block_lot_number');
+
+        $grossSalesFromClient = CommissionRequestSales::whereNotNull('date_of_downpayment')
+            ->whereBetween('date_of_downpayment', [$dateFrom, $dateTo])
+            ->where('client_status', '!=', 'Cancelled')->sum('net_tcp');
+
+        $pendingReservation = CommissionRequestSales::whereBetween('reservation_date', [$dateFrom, $dateTo])
+            ->where(function($q) { $q->whereNull('downpayment_status')->orWhereNotIn('downpayment_status', ['Paid','Spot Paid']); })
+            ->where(function($q) { $q->whereNull('client_status')->orWhere('client_status','!=','Cancelled'); })->count();
+
+        $cancelledReservation = CommissionRequestSales::whereBetween('reservation_date', [$dateFrom, $dateTo])
+            ->where('client_status','Cancelled')->count();
+
+        $totalReservation = $units + $pendingReservation - $cancelledReservation;
+
         // Get all teams with agents and quotas
         $teams = SalesTeam::with(['agents', 'quotas'])->orderBy('leader_name')->get();
 
@@ -98,7 +118,8 @@ class SalesMarketingController extends Controller
         return view('sales-marketing', compact(
             'totalNetTcp', 'totalClients', 'totalRecords',
             'topPerformers', 'teamPerformance', 'dateFrom', 'dateTo', 'teams',
-            'todayTrips', 'todayReleases', 'todayEvents'
+            'todayTrips', 'todayReleases', 'todayEvents',
+            'units', 'grossSalesFromClient', 'pendingReservation', 'cancelledReservation', 'totalReservation'
         ));
     }
 
