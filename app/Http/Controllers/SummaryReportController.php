@@ -67,21 +67,17 @@ class SummaryReportController extends Controller
             $totalExpenses += $expenses;
         }
         
-        // Units, Pending, Cancelled, Total Reservation for selected month (from Client Database)
-        $monthStart = Carbon::create($selectedYear, $selectedMonth, 1)->startOfMonth()->toDateString();
-        $monthEnd   = Carbon::create($selectedYear, $selectedMonth, 1)->endOfMonth()->toDateString();
+        // Units, Pending, Cancelled, Total Reservation for selected month (from ARC Sales)
+        $monthStart = \Carbon\Carbon::create($selectedYear, $selectedMonth, 1)->startOfMonth()->toDateString();
+        $monthEnd   = \Carbon\Carbon::create($selectedYear, $selectedMonth, 1)->endOfMonth()->toDateString();
 
-        $units = \App\Models\CommissionRequestSales::whereNotNull('date_of_downpayment')
-            ->whereBetween('date_of_downpayment', [$monthStart, $monthEnd])
-            ->where('client_status', '!=', 'Cancelled')
-            ->whereNotNull('block_lot_number')
-            ->distinct('block_lot_number')
-            ->count('block_lot_number');
+        $units = \App\Models\ArkcrestCommissionRate::whereHas('commissionRequest', function($q) use ($monthStart, $monthEnd) {
+            $q->where('status', 'Released')->whereBetween('date_released', [$monthStart, $monthEnd]);
+        })->count();
 
-        $grossSalesFromClient = \App\Models\CommissionRequestSales::whereNotNull('date_of_downpayment')
-            ->whereBetween('date_of_downpayment', [$monthStart, $monthEnd])
-            ->where('client_status', '!=', 'Cancelled')
-            ->sum('net_tcp');
+        $grossSalesFromClient = \App\Models\ArkcrestCommissionRate::whereHas('commissionRequest', function($q) use ($monthStart, $monthEnd) {
+            $q->where('status', 'Released')->whereBetween('date_released', [$monthStart, $monthEnd]);
+        })->sum('arkcrest_commission');
 
         $pendingReservation = \App\Models\CommissionRequestSales::whereBetween('reservation_date', [$monthStart, $monthEnd])
             ->where(function($q) { $q->whereNull('downpayment_status')->orWhereNotIn('downpayment_status', ['Paid', 'Spot Paid']); })

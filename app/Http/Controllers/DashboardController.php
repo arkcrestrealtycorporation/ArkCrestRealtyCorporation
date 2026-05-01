@@ -42,23 +42,19 @@ class DashboardController extends Controller
         $currentYear = now()->format('Y');
         $currentMonthNumber = now()->month;
         
-        // Monthly Performance from Client Database (CommissionRequestSales)
+        // Monthly Performance from ARC Sales (ArkcrestCommissionRate)
         $monthStart = now()->startOfMonth()->toDateString();
         $monthEnd   = now()->endOfMonth()->toDateString();
 
-        // Units = distinct block/lot numbers with downpayment made this month (not cancelled)
-        $units = CommissionRequestSales::whereNotNull('date_of_downpayment')
-            ->whereBetween('date_of_downpayment', [$monthStart, $monthEnd])
-            ->where('client_status', '!=', 'Cancelled')
-            ->whereNotNull('block_lot_number')
-            ->distinct('block_lot_number')
-            ->count('block_lot_number');
+        // Units = count of Released commission records with ArkCrest rate this month
+        $units = \App\Models\ArkcrestCommissionRate::whereHas('commissionRequest', function($q) use ($monthStart, $monthEnd) {
+            $q->where('status', 'Released')->whereBetween('date_released', [$monthStart, $monthEnd]);
+        })->count();
 
-        // Gross Sales = net_tcp of clients who have made a downpayment this month
-        $grossSales = CommissionRequestSales::whereNotNull('date_of_downpayment')
-            ->whereBetween('date_of_downpayment', [$monthStart, $monthEnd])
-            ->where('client_status', '!=', 'Cancelled')
-            ->sum('net_tcp');
+        // Gross Sales = sum of arkcrest_commission this month
+        $grossSales = \App\Models\ArkcrestCommissionRate::whereHas('commissionRequest', function($q) use ($monthStart, $monthEnd) {
+            $q->where('status', 'Released')->whereBetween('date_released', [$monthStart, $monthEnd]);
+        })->sum('arkcrest_commission');
 
         // Pending Reservation = reserved this month, downpayment not yet paid, not cancelled
         $pendingReservation = CommissionRequestSales::whereBetween('reservation_date', [$monthStart, $monthEnd])
