@@ -144,23 +144,14 @@ var arcTotals = {};
 arcTotals[{{ $r->id }}] = {{ $rate ? $rate->arkcrest_commission : 0 }};
 @endforeach
 
-function computeCommission(netTcp, terms) {
-    const full = netTcp * 0.08;
-    if (terms === 'Full Payment')        return full;
-    if (terms === '2 Months Commission') return full / 2;
-    if (terms === '3 Months Commission') return full / 3;
-    return full;
-}
-
 function onTermsChange(id, netTcp) {
     const terms = document.getElementById('terms-' + id).value;
     if (!terms) return;
-    const commission = computeCommission(netTcp, terms);
-    // Save terms + commission to backend
+    const pct = parseFloat(document.getElementById('pct-' + id).value) || 0;
     fetch('/api/arkcrest-sales/' + id + '/rate', {
         method: 'POST',
         headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
-        body: JSON.stringify({arkcrest_percent: document.getElementById('pct-' + id).value || 0, payment_type: terms})
+        body: JSON.stringify({arkcrest_percent: pct, payment_type: terms})
     }).then(r => r.json()).then(data => {
         if (data.success) {
             document.getElementById('arc-' + id).textContent = data.formatted;

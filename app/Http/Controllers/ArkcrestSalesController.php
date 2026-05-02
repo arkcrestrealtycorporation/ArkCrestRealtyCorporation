@@ -54,21 +54,17 @@ class ArkcrestSalesController extends Controller
         $netTcp  = $record->net_tcp ?? 0;
         $terms   = $request->payment_type ?? $record->payment_type ?? 'Full Payment';
 
-        // Formula: Net TCP × 8% then divide by terms
-        $fullCommission = $netTcp * 0.08;
-        if ($terms === '2 Months Commission')      $commission = $fullCommission / 2;
-        elseif ($terms === '3 Months Commission')  $commission = $fullCommission / 3;
-        else                                       $commission = $fullCommission;
-
-        // Apply ARC % on top of the commission
-        $arkcrestCommission = $commission * ($percent / 100);
+        // Full Payment = Net TCP × ARC%
+        $fullCommission = $netTcp * ($percent / 100);
+        if ($terms === '2 Months Commission')      $arkcrestCommission = $fullCommission / 2;
+        elseif ($terms === '3 Months Commission')  $arkcrestCommission = $fullCommission / 3;
+        else                                       $arkcrestCommission = $fullCommission;
 
         ArkcrestCommissionRate::updateOrCreate(
             ['commission_request_id' => $id],
             ['arkcrest_percent' => $percent, 'arkcrest_commission' => $arkcrestCommission]
         );
 
-        // Save payment_type back to the commission request
         if ($request->payment_type) {
             $record->update(['payment_type' => $request->payment_type]);
         }
