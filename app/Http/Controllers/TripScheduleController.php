@@ -17,7 +17,11 @@ class TripScheduleController extends Controller
 
     public function show()
     {
-        $teams = \App\Models\SalesTeam::orderBy('team_name')->pluck('team_name');
+        try {
+            $teams = \App\Models\SalesTeam::orderBy('team_name')->pluck('team_name');
+        } catch (\Exception $e) {
+            $teams = collect();
+        }
         return view('tripping', compact('teams'));
     }
 
@@ -57,10 +61,15 @@ class TripScheduleController extends Controller
             return back()->withErrors(['client_name' => 'This client already has a scheduled or completed site visit for the same property within the last 30 days.'])->withInput();
         }
 
-        TripSchedule::create(array_merge($request->only([
-            'agent_name', 'team_name', 'client_name', 'client_email', 'client_phone', 'client_phone_code', 'client_address',
-            'property_name', 'company_name', 'tripping_date', 'tripping_time', 'tripping_type',
-        ]), ['status' => 'confirmed']));
+        $fields = ['agent_name', 'client_name', 'client_email', 'client_phone', 'client_phone_code', 'client_address',
+            'property_name', 'company_name', 'tripping_date', 'tripping_time', 'tripping_type'];
+
+        // Include team_name only if column exists
+        if (\Schema::hasColumn('tripping_schedules', 'team_name')) {
+            $fields[] = 'team_name';
+        }
+
+        TripSchedule::create(array_merge($request->only($fields), ['status' => 'confirmed']));
 
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json(['success' => true]);

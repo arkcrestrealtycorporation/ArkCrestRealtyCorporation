@@ -117,8 +117,8 @@ body{display:flex;align-items:center;justify-content:center;background:linear-gr
                     <input type="hidden" name="team_name" value="{{ auth()->user()->team_name }}">
                 @else
                     {{-- No team yet — show dropdown, save on submit --}}
-                    <select name="team_name" id="teamSelect" required style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;outline:none;">
-                        <option value="">— Select Team —</option>
+                    <select name="team_name" id="teamSelect" style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;outline:none;">
+                        <option value="">— Select Team (optional) —</option>
                         @foreach($teams as $team)
                             <option value="{{ $team }}" {{ old('team_name') == $team ? 'selected' : '' }}>{{ $team }}</option>
                         @endforeach
