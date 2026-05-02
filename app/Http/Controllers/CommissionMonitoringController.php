@@ -65,8 +65,21 @@ class CommissionMonitoringController extends Controller
             $validated['category']       = $validated['category'] ?? 'Commission';
             $validated['requested_amount'] = $validated['net_tcp'] ?? 0;
 
-            CommissionRequest::create($validated);
+            $record = CommissionRequest::create($validated);
             \App\Models\ActivityLog::log('create', 'Commission Monitoring', "Added commission request for client '{$validated['client_name']}'");
+
+            \App\Services\AdminEmailNotifier::send(
+                'New Commission Entry — ' . $validated['client_name'],
+                'New Commission Entry Added',
+                "<b>Client:</b> {$validated['client_name']}<br>" .
+                "<b>Project:</b> " . ($validated['project_name'] ?? 'N/A') . "<br>" .
+                "<b>Agent:</b> " . ($validated['agent_name'] ?? 'N/A') . "<br>" .
+                "<b>Net TCP:</b> ₱" . number_format($validated['net_tcp'] ?? 0, 2) . "<br>" .
+                "<b>Commission:</b> ₱" . number_format($validated['commission'] ?? 0, 2) . "<br>" .
+                "<b>Commission Terms:</b> " . ($validated['payment_type'] ?? 'N/A') . "<br>" .
+                "<b>Status:</b> " . ($validated['status'] ?? 'Not Yet Released')
+            );
+
             return redirect()->route('commission-monitoring')->with('success', 'Commission request added.');
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()->withErrors($e->errors())->withInput();
@@ -109,8 +122,23 @@ class CommissionMonitoringController extends Controller
                 'value_of_payment_terms' => 'nullable|numeric',
                 'remarks'           => 'nullable|string',
             ]);
+            $oldStatus = $record->status;
             $record->update($validated);
             \App\Models\ActivityLog::log('update', 'Commission Monitoring', "Updated commission request ID: {$id}");
+
+            // Send email if status changed to Released
+            if (isset($validated['status']) && $validated['status'] === 'Released' && $oldStatus !== 'Released') {
+                \App\Services\AdminEmailNotifier::send(
+                    'Commission Released — ' . ($record->client_name ?? ''),
+                    '✅ Commission Marked as Released',
+                    "<b>Client:</b> " . ($record->client_name ?? 'N/A') . "<br>" .
+                    "<b>Project:</b> " . ($record->project_name ?? 'N/A') . "<br>" .
+                    "<b>Agent:</b> " . ($record->agent_name ?? 'N/A') . "<br>" .
+                    "<b>Commission:</b> ₱" . number_format($record->commission ?? 0, 2) . "<br>" .
+                    "<b>Date Released:</b> " . ($record->date_released ? \Carbon\Carbon::parse($record->date_released)->format('F j, Y') : 'N/A')
+                );
+            }
+
             if ($request->expectsJson()) {
                 return response()->json(['success' => true]);
             }
