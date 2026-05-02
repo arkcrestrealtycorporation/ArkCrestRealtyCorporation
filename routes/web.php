@@ -182,6 +182,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/commission-monitoring', [App\Http\Controllers\CommissionMonitoringController::class, 'store'])->name('commission-monitoring.store');
     Route::get('/api/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'show']);
     Route::put('/api/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'update']);
+    Route::put('/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'update'])->name('commission-monitoring.update');
     Route::delete('/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'destroy'])->name('commission-monitoring.destroy');
 
     // Calendar

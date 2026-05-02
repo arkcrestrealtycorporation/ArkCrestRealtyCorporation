@@ -111,7 +111,10 @@ class CommissionMonitoringController extends Controller
             ]);
             $record->update($validated);
             \App\Models\ActivityLog::log('update', 'Commission Monitoring', "Updated commission request ID: {$id}");
-            return response()->json(['success' => true]);
+            if ($request->expectsJson()) {
+                return response()->json(['success' => true]);
+            }
+            return redirect()->route('commission-monitoring')->with('success', 'Record updated successfully.');
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
