@@ -109,6 +109,15 @@ body{display:flex;align-items:center;justify-content:center;background:linear-gr
                 <label>Agent ID</label>
                 <input type="text" name="agent_name" value="{{ old('agent_name', auth()->check() ? auth()->user()->employee_id : '') }}" required placeholder="Enter agent employee ID..." {{ auth()->check() ? 'readonly style=background:#f8fafc;color:#64748b' : '' }}>
             </div>
+            <div class="field">
+                <label>Team</label>
+                <select name="team_name" required style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;outline:none;">
+                    <option value="">— Select Team —</option>
+                    @foreach($teams as $team)
+                        <option value="{{ $team }}" {{ old('team_name') == $team ? 'selected' : '' }}>{{ $team }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="section-label">Client</div>
             <div class="field">
                 <label>Client Name</label>

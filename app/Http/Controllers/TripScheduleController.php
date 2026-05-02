@@ -10,13 +10,15 @@ class TripScheduleController extends Controller
 {
     public function show()
     {
-        return view('tripping');
+        $teams = \App\Models\SalesTeam::orderBy('team_name')->pluck('team_name');
+        return view('tripping', compact('teams'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'agent_name'    => 'required|string|max:255',
+            'team_name'     => 'nullable|string|max:255',
             'client_name'   => 'required|string|max:255',
             'client_email'  => 'nullable|email|max:255',
             'client_phone'  => 'nullable|string|max:50',
@@ -49,7 +51,7 @@ class TripScheduleController extends Controller
         }
 
         TripSchedule::create(array_merge($request->only([
-            'agent_name', 'client_name', 'client_email', 'client_phone', 'client_phone_code', 'client_address',
+            'agent_name', 'team_name', 'client_name', 'client_email', 'client_phone', 'client_phone_code', 'client_address',
             'property_name', 'company_name', 'tripping_date', 'tripping_time', 'tripping_type',
         ]), ['status' => 'confirmed']));
 
