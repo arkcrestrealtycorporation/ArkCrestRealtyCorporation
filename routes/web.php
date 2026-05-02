@@ -30,6 +30,7 @@ Route::get('/', function () {
 // Tripping Schedule Form (public — no login required)
 Route::get('/tripping', [App\Http\Controllers\TripScheduleController::class, 'show'])->name('tripping');
 Route::post('/tripping', [App\Http\Controllers\TripScheduleController::class, 'store'])->name('tripping.store');
+Route::post('/api/tripping/save-team', [App\Http\Controllers\TripScheduleController::class, 'saveTeam'])->name('tripping.save-team')->middleware('auth');
 Route::get('/api/tripping/clients', [App\Http\Controllers\TripScheduleController::class, 'searchClients']);
 Route::get('/api/tripping/client-details', [App\Http\Controllers\TripScheduleController::class, 'clientDetails']);
 Route::get('/api/tripping/agent-details', [App\Http\Controllers\TripScheduleController::class, 'agentDetails']);

@@ -111,12 +111,33 @@ body{display:flex;align-items:center;justify-content:center;background:linear-gr
             </div>
             <div class="field">
                 <label>Team</label>
-                <select name="team_name" required style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;outline:none;">
-                    <option value="">— Select Team —</option>
-                    @foreach($teams as $team)
-                        <option value="{{ $team }}" {{ old('team_name') == $team ? 'selected' : '' }}>{{ $team }}</option>
-                    @endforeach
-                </select>
+                @if(auth()->check() && auth()->user()->team_name)
+                    {{-- Already has a team — show readonly --}}
+                    <input type="text" value="{{ auth()->user()->team_name }}" readonly style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#64748b;background:#f8fafc;outline:none;">
+                    <input type="hidden" name="team_name" value="{{ auth()->user()->team_name }}">
+                @else
+                    {{-- No team yet — show dropdown, save on submit --}}
+                    <select name="team_name" id="teamSelect" required style="width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;color:#1e293b;background:#fff;outline:none;">
+                        <option value="">— Select Team —</option>
+                        @foreach($teams as $team)
+                            <option value="{{ $team }}" {{ old('team_name') == $team ? 'selected' : '' }}>{{ $team }}</option>
+                        @endforeach
+                    </select>
+                    @auth
+                    <script>
+                    document.getElementById('tripForm').addEventListener('submit', function() {
+                        var team = document.getElementById('teamSelect').value;
+                        if (team) {
+                            fetch('{{ route("tripping.save-team") }}', {
+                                method: 'POST',
+                                headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}'},
+                                body: JSON.stringify({team_name: team})
+                            });
+                        }
+                    });
+                    </script>
+                    @endauth
+                @endif
             </div>
             <div class="section-label">Client</div>
             <div class="field">

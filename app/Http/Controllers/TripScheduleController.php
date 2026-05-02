@@ -8,6 +8,13 @@ use App\Models\CommissionRequestSales;
 
 class TripScheduleController extends Controller
 {
+    public function saveTeam(\Illuminate\Http\Request $request)
+    {
+        $request->validate(['team_name' => 'required|string|max:255']);
+        auth()->user()->update(['team_name' => $request->team_name]);
+        return response()->json(['success' => true]);
+    }
+
     public function show()
     {
         $teams = \App\Models\SalesTeam::orderBy('team_name')->pluck('team_name');
