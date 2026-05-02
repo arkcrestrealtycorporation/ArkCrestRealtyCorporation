@@ -5,11 +5,11 @@
 
 <div class="commission-requests-page">
     <!-- Page Banner -->
-    <div class="page-welcome-banner" style="background:linear-gradient(135deg,#1e4575 0%,#2563eb 60%,#1e4575 100%);border-radius:20px;padding:36px 40px;margin-bottom:28px;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(30,69,117,.25);display:flex;align-items:center;justify-content:space-between;">
+    <div class="page-welcome-banner" style="background:linear-gradient(135deg,#1e4575 0%,#2563eb 60%,#1e4575 100%);border-radius:20px;padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(30,69,117,.25);display:flex;align-items:center;justify-content:space-between;">
         <div style="position:relative;z-index:2;">
-            <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Finance</div>
-            <h1 style="font-size:28px;font-weight:700;color:white;margin:0 0 8px;">Departmental Expenses</h1>
-            <p style="font-size:14px;color:rgba(255,255,255,.75);margin:0;">Budget & expense tracking per department</p>
+            <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;">Finance</div>
+            <h1 style="font-size:24px;font-weight:700;color:white;margin:0 0 6px;">Departmental Expenses</h1>
+            <p style="font-size:13px;color:rgba(255,255,255,.75);margin:0;">Budget & expense tracking per department</p>
         </div>
         @if(auth()->user()->isAdmin())
         <button onclick="document.getElementById('addDeptModal').style.display='flex'" style="display:flex;align-items:center;gap:6px;padding:10px 18px;background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;backdrop-filter:blur(4px);position:relative;z-index:2;white-space:nowrap;">
@@ -87,7 +87,7 @@
     });
 
     function deleteDepartment(id, name) {
-        showConfirm('Delete Department', 'Delete "' + name + '" department? This cannot be undone.', function() {
+        showConfirm('Delete "' + name + '" department? This cannot be undone.', function() {
             fetch('/api/departments/' + id + '/delete', {
                 method: 'DELETE',
                 headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}'},
@@ -95,7 +95,7 @@
                 if (d.success) { location.reload(); }
                 else { showToast('error', 'Error', d.message || 'Error deleting department'); }
             });
-        });
+        }, 'Delete Department');
     }
     </script>
 
@@ -1284,9 +1284,9 @@ function addBudgetCategory() {
 }
 
 function removeBudgetCategory(btn, catName) {
-    showConfirm('Remove Category', 'Remove "' + catName + '" category?', function() {
+    showConfirm('Remove "' + catName + '" category?', function() {
         btn.closest('div').remove();
-    });
+    }, 'Remove Category');
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1412,7 +1412,7 @@ function deleteRequest(id) {
 }
 
 function _doDeleteRequest(id) {
-    showConfirm('Delete Record', 'Are you sure you want to delete this record?', function() {
+    showConfirm('Are you sure you want to delete this record?', function() {
         fetch(`/api/departmental-expenses/${id}`, {
             method: 'DELETE',
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
