@@ -84,7 +84,8 @@
                     <th>Client</th>
                     <th>Project</th>
                     <th>Agent</th>
-                    <th>Released Commission</th>
+                    <th>Net TCP</th>
+                    <th>Commission Terms</th>
                     <th>ARC % </th>
                     <th>ARC Commission</th>
                 </tr>
@@ -98,7 +99,8 @@
                 <td style="font-weight:600;color:#0f172a;">{{ $r->client_name ?? '—' }}</td>
                 <td style="color:#64748b;">{{ $r->project_name ?? '—' }}</td>
                 <td>{{ $r->agent_name ?? '—' }}</td>
-                <td style="font-weight:600;color:#1e4575;">₱{{ number_format($r->commission ?? 0, 2) }}</td>
+                <td style="font-weight:600;color:#1e4575;">₱{{ number_format($r->net_tcp ?? 0, 2) }}</td>
+                <td style="color:#64748b;">{{ $r->payment_type ?? '—' }}</td>
                 <td>
                     <div style="display:flex;align-items:center;gap:6px;">
                         <input type="number" class="arc-pct-input" id="pct-{{ $r->id }}"
@@ -116,7 +118,7 @@
             </tbody>
             <tfoot>
                 <tr style="background:#f8fafc;border-top:2px solid #e2e8f0;">
-                    <td colspan="7" style="padding:12px 14px;font-size:13px;font-weight:700;color:#0f172a;text-align:right;">ARC Gross Sales Total:</td>
+                    <td colspan="8" style="padding:12px 14px;font-size:13px;font-weight:700;color:#0f172a;text-align:right;">ARC Gross Sales Total:</td>
                     <td style="padding:12px 14px;font-size:14px;font-weight:800;color:#16a34a;" id="arcFooterTotal">₱{{ number_format($totalArkcrestCommission, 2) }}</td>
                 </tr>
             </tfoot>
