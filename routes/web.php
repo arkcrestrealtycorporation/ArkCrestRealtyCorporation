@@ -115,6 +115,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/employee/add', [App\Http\Controllers\SettingsController::class, 'addEmployeeRecord'])->name('settings.employee.add');
 
     // Forms
+    Route::get('/human-resource', [App\Http\Controllers\HumanResourceController::class, 'index'])->name('human-resource');
     Route::get('/forms', [App\Http\Controllers\FormsController::class, 'index'])->name('forms')->middleware('page.visible');
     Route::get('/forms/site-visit', [App\Http\Controllers\FormsController::class, 'siteVisit'])->name('forms.site-visit');
     Route::get('/api/forms/control-number', [App\Http\Controllers\FormsController::class, 'nextControlNumber']);
