@@ -138,91 +138,116 @@
     @endif
 
     @if(!in_array('sales-marketing.charts', $hiddenSections) && $teamPerformance->isNotEmpty())
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:30px;">
+    <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:20px;">
 
-        {{-- Bar Chart: Team Sales --}}
-        <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-            <div style="font-size:13px;font-weight:700;color:#1e4575;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Team Sales Performance</div>
-            <canvas id="teamBarChart" height="220"></canvas>
+        {{-- Team Overview Charts --}}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+            <svg fill="none" stroke="#1e4575" viewBox="0 0 24 24" style="width:20px;height:20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <span style="font-size:15px;font-weight:700;color:#0f172a;">Team Sales Performance</span>
         </div>
 
-        {{-- Pie Chart: Team Share --}}
-        <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-            <div style="font-size:13px;font-weight:700;color:#1e4575;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Team Sales Share</div>
-            <canvas id="teamPieChart" height="220"></canvas>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;">
+            <div><canvas id="teamBarChart" height="220"></canvas></div>
+            <div><canvas id="teamPieChart" height="220"></canvas></div>
         </div>
 
-    </div>
+        {{-- Team Buttons --}}
+        <div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">View by Team</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;" id="teamBtns">
+            @foreach($teamPerformance as $i => $tp)
+            <button onclick="showTeam({{ $i }})"
+                id="tbtn-{{ $i }}"
+                style="padding:7px 16px;border-radius:20px;border:2px solid #1e4575;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;
+                {{ $i === 0 ? 'background:#1e4575;color:white;' : 'background:white;color:#1e4575;' }}">
+                {{ $tp['team']->team_name }}
+            </button>
+            @endforeach
+        </div>
 
-    {{-- Bar Chart: Top Members per Team --}}
-    <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:30px;">
-        <div style="font-size:13px;font-weight:700;color:#1e4575;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Top Members by Team</div>
-        <canvas id="memberBarChart" height="120"></canvas>
+        {{-- Member Charts --}}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+            <div>
+                <div style="font-size:13px;font-weight:600;color:#64748b;margin-bottom:10px;" id="memberBarLabel">Members — Bar</div>
+                <canvas id="memberBarChart" height="220"></canvas>
+            </div>
+            <div>
+                <div style="font-size:13px;font-weight:600;color:#64748b;margin-bottom:10px;" id="memberPieLabel">Members — Share</div>
+                <canvas id="memberPieChart" height="220"></canvas>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
     (function() {
         const teamData = {!! json_encode($chartTeamData) !!};
+        const palette = ['#1e4575','#A37929','#2563eb','#16a34a','#dc2626','#7c3aed','#0891b2','#d97706','#db2777','#059669'];
 
-        const colors = ['#1e4575','#A37929','#2563eb','#16a34a','#dc2626','#7c3aed','#0891b2','#d97706'];
-
-        // Bar Chart - Teams
+        // Team bar chart
         new Chart(document.getElementById('teamBarChart'), {
             type: 'bar',
             data: {
                 labels: teamData.map(t => t.team),
-                datasets: [{
-                    label: 'Net TCP Sales',
-                    data: teamData.map(t => t.total),
-                    backgroundColor: teamData.map((_, i) => colors[i % colors.length]),
-                    borderRadius: 6,
-                }]
+                datasets: [{ label: 'Net TCP', data: teamData.map(t => t.total),
+                    backgroundColor: teamData.map((_, i) => palette[i % palette.length]), borderRadius: 6 }]
             },
-            options: {
-                responsive: true, maintainAspectRatio: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { ticks: { callback: v => '₱' + Number(v).toLocaleString() } } }
-            }
+            options: { responsive:true, plugins:{ legend:{display:false} },
+                scales:{ y:{ ticks:{ callback: v => '₱'+Number(v).toLocaleString() } } } }
         });
 
-        // Pie Chart - Teams
+        // Team pie chart
         new Chart(document.getElementById('teamPieChart'), {
-            type: 'pie',
+            type: 'doughnut',
             data: {
                 labels: teamData.map(t => t.team),
-                datasets: [{
-                    data: teamData.map(t => t.total),
-                    backgroundColor: teamData.map((_, i) => colors[i % colors.length]),
-                }]
+                datasets: [{ data: teamData.map(t => t.total),
+                    backgroundColor: teamData.map((_, i) => palette[i % palette.length]) }]
             },
-            options: {
-                responsive: true, maintainAspectRatio: true,
-                plugins: { legend: { position: 'right' }, tooltip: { callbacks: { label: ctx => ' ₱' + Number(ctx.raw).toLocaleString() } } }
-            }
+            options: { responsive:true,
+                plugins:{ legend:{ position:'bottom' },
+                    tooltip:{ callbacks:{ label: ctx => ' ₱'+Number(ctx.raw).toLocaleString() } } } }
         });
 
-        // Bar Chart - Members
-        const allMembers = [], allSales = [], allColors = [];
-        teamData.forEach((t, ti) => {
-            t.members.forEach(m => {
-                allMembers.push(m.name + ' (' + t.team + ')');
-                allSales.push(m.sales);
-                allColors.push(colors[ti % colors.length]);
+        // Member charts
+        let memberBar = null, memberPie = null;
+
+        function showTeam(idx) {
+            // Update button styles
+            document.querySelectorAll('[id^="tbtn-"]').forEach(function(b, i) {
+                b.style.background = i === idx ? '#1e4575' : 'white';
+                b.style.color      = i === idx ? 'white'   : '#1e4575';
             });
-        });
-        new Chart(document.getElementById('memberBarChart'), {
-            type: 'bar',
-            data: {
-                labels: allMembers,
-                datasets: [{ label: 'Sales', data: allSales, backgroundColor: allColors, borderRadius: 6 }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { ticks: { callback: v => '₱' + Number(v).toLocaleString() } } }
-            }
-        });
+
+            const team = teamData[idx];
+            const members = team.members;
+            const labels  = members.map(m => m.name);
+            const values  = members.map(m => m.sales);
+            const colors  = members.map((_, i) => palette[i % palette.length]);
+
+            document.getElementById('memberBarLabel').textContent = team.team + ' — Members';
+            document.getElementById('memberPieLabel').textContent = team.team + ' — Share';
+
+            if (memberBar) memberBar.destroy();
+            if (memberPie) memberPie.destroy();
+
+            memberBar = new Chart(document.getElementById('memberBarChart'), {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ label: 'Sales', data: values, backgroundColor: colors, borderRadius: 6 }] },
+                options: { responsive:true, plugins:{ legend:{display:false} },
+                    scales:{ y:{ ticks:{ callback: v => '₱'+Number(v).toLocaleString() } } } }
+            });
+
+            memberPie = new Chart(document.getElementById('memberPieChart'), {
+                type: 'doughnut',
+                data: { labels: labels, datasets: [{ data: values, backgroundColor: colors }] },
+                options: { responsive:true,
+                    plugins:{ legend:{ position:'bottom' },
+                        tooltip:{ callbacks:{ label: ctx => ' ₱'+Number(ctx.raw).toLocaleString() } } } }
+            });
+        }
+
+        window.showTeam = showTeam;
+        if (teamData.length > 0) showTeam(0);
     })();
     </script>
     @endif
