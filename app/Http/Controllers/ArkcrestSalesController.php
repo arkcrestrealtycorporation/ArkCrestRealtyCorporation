@@ -46,21 +46,37 @@ class ArkcrestSalesController extends Controller
     {
         $request->validate([
             'arkcrest_percent' => 'required|numeric|min:0|max:100',
+            'payment_type'     => 'nullable|string|max:50',
         ]);
 
-        $record = CommissionRequest::findOrFail($id);
+        $record  = CommissionRequest::findOrFail($id);
         $percent = $request->arkcrest_percent;
-        $commission = ($record->commission ?? 0) * ($percent / 100);
+        $netTcp  = $record->net_tcp ?? 0;
+        $terms   = $request->payment_type ?? $record->payment_type ?? 'Full Payment';
+
+        // Formula: Net TCP × 8% then divide by terms
+        $fullCommission = $netTcp * 0.08;
+        if ($terms === '2 Months Commission')      $commission = $fullCommission / 2;
+        elseif ($terms === '3 Months Commission')  $commission = $fullCommission / 3;
+        else                                       $commission = $fullCommission;
+
+        // Apply ARC % on top of the commission
+        $arkcrestCommission = $commission * ($percent / 100);
 
         ArkcrestCommissionRate::updateOrCreate(
             ['commission_request_id' => $id],
-            ['arkcrest_percent' => $percent, 'arkcrest_commission' => $commission]
+            ['arkcrest_percent' => $percent, 'arkcrest_commission' => $arkcrestCommission]
         );
 
+        // Save payment_type back to the commission request
+        if ($request->payment_type) {
+            $record->update(['payment_type' => $request->payment_type]);
+        }
+
         return response()->json([
-            'success' => true,
-            'arkcrest_commission' => $commission,
-            'formatted' => '₱' . number_format($commission, 2),
+            'success'             => true,
+            'arkcrest_commission' => $arkcrestCommission,
+            'formatted'           => '₱' . number_format($arkcrestCommission, 2),
         ]);
     }
 }

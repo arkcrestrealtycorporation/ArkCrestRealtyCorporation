@@ -100,14 +100,22 @@
                 <td style="color:#64748b;">{{ $r->project_name ?? '—' }}</td>
                 <td>{{ $r->agent_name ?? '—' }}</td>
                 <td style="font-weight:600;color:#1e4575;">₱{{ number_format($r->net_tcp ?? 0, 2) }}</td>
-                <td style="color:#64748b;">{{ $r->payment_type ?? '—' }}</td>
+                <td>
+                    <select id="terms-{{ $r->id }}" onchange="onTermsChange({{ $r->id }}, {{ $r->net_tcp ?? 0 }})"
+                        style="padding:5px 8px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;color:#374151;background:#fff;outline:none;cursor:pointer;">
+                        <option value="">— Select —</option>
+                        <option value="Full Payment" {{ ($r->payment_type ?? '') == 'Full Payment' ? 'selected' : '' }}>Full Payment</option>
+                        <option value="2 Months Commission" {{ ($r->payment_type ?? '') == '2 Months Commission' ? 'selected' : '' }}>2 Months Commission</option>
+                        <option value="3 Months Commission" {{ ($r->payment_type ?? '') == '3 Months Commission' ? 'selected' : '' }}>3 Months Commission</option>
+                    </select>
+                </td>
                 <td>
                     <div style="display:flex;align-items:center;gap:6px;">
                         <input type="number" class="arc-pct-input" id="pct-{{ $r->id }}"
                             value="{{ $rate ? $rate->arkcrest_percent : '' }}"
                             placeholder="0.00" step="0.01" min="0" max="100">
                         <span style="font-size:12px;color:#94a3b8;">%</span>
-                        <button class="arc-save-btn" onclick="saveRate({{ $r->id }}, {{ $r->commission ?? 0 }})">Save</button>
+                        <button class="arc-save-btn" onclick="saveRate({{ $r->id }}, {{ $r->net_tcp ?? 0 }})">Save</button>
                     </div>
                 </td>
                 <td style="font-weight:700;color:#16a34a;" id="arc-{{ $r->id }}">
@@ -136,12 +144,39 @@ var arcTotals = {};
 arcTotals[{{ $r->id }}] = {{ $rate ? $rate->arkcrest_commission : 0 }};
 @endforeach
 
-function saveRate(id, releasedCommission) {
-    const pct = parseFloat(document.getElementById('pct-' + id).value) || 0;
+function computeCommission(netTcp, terms) {
+    const full = netTcp * 0.08;
+    if (terms === 'Full Payment')        return full;
+    if (terms === '2 Months Commission') return full / 2;
+    if (terms === '3 Months Commission') return full / 3;
+    return full;
+}
+
+function onTermsChange(id, netTcp) {
+    const terms = document.getElementById('terms-' + id).value;
+    if (!terms) return;
+    const commission = computeCommission(netTcp, terms);
+    // Save terms + commission to backend
     fetch('/api/arkcrest-sales/' + id + '/rate', {
         method: 'POST',
         headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
-        body: JSON.stringify({arkcrest_percent: pct})
+        body: JSON.stringify({arkcrest_percent: document.getElementById('pct-' + id).value || 0, payment_type: terms})
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            document.getElementById('arc-' + id).textContent = data.formatted;
+            arcTotals[id] = data.arkcrest_commission;
+            updateTotal();
+        }
+    });
+}
+
+function saveRate(id, netTcp) {
+    const pct   = parseFloat(document.getElementById('pct-' + id).value) || 0;
+    const terms = document.getElementById('terms-' + id)?.value || '';
+    fetch('/api/arkcrest-sales/' + id + '/rate', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
+        body: JSON.stringify({arkcrest_percent: pct, payment_type: terms})
     })
     .then(r => r.json())
     .then(data => {
