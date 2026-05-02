@@ -384,20 +384,26 @@
                                 </svg>
                                 <span class="sidebar-text">Human Resource</span>
                             </a>
-                            <button class="nav-dropdown-btn" onclick="toggleSubmenu('hrSubmenu', this)">
-                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            <button class="dropdown-toggle-btn" type="button" onclick="toggleHRDropdown(event)">
+                                <svg class="dropdown-arrow" id="hrArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
                             </button>
                         </div>
-                        <ul class="nav-submenu" id="hrSubmenu" style="padding-left:12px;">
+                        <ul class="nav-submenu" id="hrSubmenu">
                             <li>
-                                <a href="{{ route('settings') }}?panel=employee" class="nav-subitem" data-page="hr-employee" style="font-size:11px;">
-                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                <a href="{{ route('hr.employee-data') }}" class="nav-subitem" data-page="hr-employee-data">
+                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                    </svg>
                                     <span class="sidebar-text">Employee Data</span>
                                 </a>
                             </li>
                             <li>
-                                <a href="{{ route('settings') }}?panel=personnel" class="nav-subitem" data-page="hr-personnel" style="font-size:11px;">
-                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                                <a href="{{ route('hr.contact-list') }}" class="nav-subitem" data-page="hr-contact-list">
+                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                                    </svg>
                                     <span class="sidebar-text">ARC Contact List</span>
                                 </a>
                             </li>
@@ -598,6 +604,23 @@
             event.stopPropagation();
             const submenu = document.getElementById('commissionSubmenu');
             const arrow   = document.getElementById('commissionArrow');
+            if (submenu && arrow) {
+                const isOpen = submenu.classList.contains('open');
+                if (isOpen) {
+                    submenu.classList.remove('open');
+                    arrow.classList.remove('open');
+                } else {
+                    submenu.classList.add('open');
+                    arrow.classList.add('open');
+                }
+            }
+        }
+
+        function toggleHRDropdown(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const submenu = document.getElementById('hrSubmenu');
+            const arrow   = document.getElementById('hrArrow');
             if (submenu && arrow) {
                 const isOpen = submenu.classList.contains('open');
                 if (isOpen) {
