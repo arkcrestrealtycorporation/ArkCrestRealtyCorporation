@@ -169,7 +169,7 @@
         <thead><tr>
             <th style="width:40px;text-align:center">#</th>
             <th>Name of Client</th><th>Property</th><th>Company</th>
-            <th>Name of Agent</th><th>Email</th><th>Mobile Number</th>
+            <th>Name of Agent</th><th>Email</th><th>Mobile Number</th><th>Address</th>
             <th>Tripping Date</th><th>Tripping Time</th><th>Mode of Visit</th><th>Actions</th>
         </tr></thead>
         <tbody>
@@ -185,6 +185,7 @@
                 <span data-code="{{ $r->client_phone_code ?? '+63' }}"></span>
                 <span class="td-num">{{ $r->client_phone ? ($r->client_phone_code ?? '+63') . ' ' . ltrim($r->client_phone, '0') : '—' }}</span>
             </td>
+            <td><div class="td-sub" style="font-size:12px">{{ $r->client_address ?: '—' }}</div></td>
             <td><div class="td-name" style="font-size:12px">{{ $r->tripping_date ? $r->tripping_date->format('M j, Y') : '—' }}</div></td>
             <td><div class="td-sub">{{ $r->tripping_time ? \Carbon\Carbon::parse($r->tripping_time)->format('g:i A') : '—' }}</div></td>
             <td><div class="td-sub">{{ $r->tripping_type ?? '—' }}</div></td>
@@ -258,7 +259,7 @@
         <thead><tr>
             <th style="width:40px;text-align:center">#</th>
             <th>Name of Client</th><th>Property</th><th>Company</th>
-            <th>Name of Agent</th><th>Email</th><th>Mobile Number</th>
+            <th>Name of Agent</th><th>Email</th><th>Mobile Number</th><th>Address</th>
             <th>Tripping Date</th><th>Tripping Time</th><th>Mode of Visit</th>
             @if(auth()->user()->isAdmin())<th>Actions</th>@endif
         </tr></thead>
@@ -275,6 +276,7 @@
                 <span data-code="{{ $r->client_phone_code ?? '+63' }}"></span>
                 <span class="td-num">{{ $r->client_phone ? ($r->client_phone_code ?? '+63') . ' ' . ltrim($r->client_phone, '0') : '—' }}</span>
             </td>
+            <td><div class="td-sub" style="font-size:12px">{{ $r->client_address ?: '—' }}</div></td>
             <td>{{ $r->tripping_date ? $r->tripping_date->format('M j, Y') : '—' }}</td>
             <td><div class="td-sub">{{ $r->tripping_time ? \Carbon\Carbon::parse($r->tripping_time)->format('g:i A') : '—' }}</div></td>
             <td><div class="td-sub">{{ $r->tripping_type ?? '—' }}</div></td>
