@@ -72,7 +72,7 @@
         <div style="background:#fee2e2;color:#dc2626;padding:12px 16px;border-radius:8px;margin-bottom:12px;font-size:13px;">{{ session('error') }}</div>
         @endif
         @if(session('success'))
-        <div style="background:#dcfce7;color:#166534;padding:12px 16px;border-radius:8px;margin-bottom:12px;font-size:13px;">Γ£ô {{ session('success') }}</div>
+        <div style="background:#dcfce7;color:#166534;padding:12px 16px;border-radius:8px;margin-bottom:12px;font-size:13px;">✔ {{ session('success') }}</div>
         @endif
         @if($errors->any())
         <div style="background:#fee2e2;color:#dc2626;padding:12px 16px;border-radius:8px;margin-bottom:12px;font-size:13px;">
@@ -155,7 +155,7 @@
                         <label>TERMS OF PAYMENT <span class="required">*</span></label>
                         <div class="combobox-wrapper">
                             <input type="text" id="cm_add_terms" name="terms_of_payment" class="combobox-input" required autocomplete="off" placeholder="Type or select payment terms" onclick="toggleCmTermsDropdown()" oninput="filterCmTerms(this.value)">
-                            <button type="button" class="combobox-arrow" onclick="toggleCmTermsDropdown()">Γû╝</button>
+                            <button type="button" class="combobox-arrow" onclick="toggleCmTermsDropdown()">▼</button>
                             <div id="cmTermsDropdown" class="combobox-dropdown" style="display:none;">
                                 <div class="dropdown-item" onclick="selectCmTerm('30% DP - 70% BAL 5 YRS')">30% DP - 70% BAL 5 YRS</div>
                                 <div class="dropdown-item" onclick="selectCmTerm('50% DP - 50% BAL 5 YRS')">50% DP - 50% BAL 5 YRS</div>
@@ -1499,7 +1499,7 @@ function submitCmPermRequest() {
     <div class="modal-box" style="max-width:800px;">
         <div class="modal-header">
             <h3>Commission Request Details</h3>
-            <button class="modal-close" onclick="closeCmModal('cmViewModal')">Γ£ò</button>
+            <button class="modal-close" onclick="closeCmModal('cmViewModal')">✖</button>
         </div>
         <div class="modal-body">
             <div class="modal-grid">
@@ -1534,7 +1534,7 @@ function submitCmPermRequest() {
     <div class="modal-box" style="max-width:800px;">
         <div class="modal-header">
             <h3>Edit Commission Request</h3>
-            <button class="modal-close" onclick="closeCmModal('cmEditModal')">Γ£ò</button>
+            <button class="modal-close" onclick="closeCmModal('cmEditModal')">✖</button>
         </div>
         <form id="cmEditForm" method="POST">
             @csrf
@@ -1638,7 +1638,7 @@ function submitCmPermRequest() {
 @endsection
 
 <script>
-// ΓöÇΓöÇ Prefill form from trip_done / client_done notification ΓöÇΓöÇ
+// ── Prefill form from trip_done / client_done notification ──
 (function() {
     const params = new URLSearchParams(window.location.search);
     const client    = params.get('prefill_client');
@@ -1690,7 +1690,7 @@ function submitCmPermRequest() {
 
         // Show a small toast
         const toast = document.createElement('div');
-        toast.textContent = 'Γ£ô Form pre-filled from client database';
+        toast.textContent = '✔ Form pre-filled from client database';
         toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e4575;color:white;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);animation:fadeIn .3s ease';
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3500);

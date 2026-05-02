@@ -351,19 +351,19 @@ class SalesMarketingController extends Controller
         $record = CommissionRequestSales::findOrFail($id);
         $oldStatus = $record->client_status;
 
-        // Block Done if downpayment is not fully paid
+        // Block Done if no downpayment has been set at all
         if ($request->client_status === 'Done') {
             $dpStatus = $record->downpayment_status;
-            $isFullyPaid = $dpStatus === 'Spot Paid' || $dpStatus === 'Paid';
+            $hasDownpayment = !empty($dpStatus) && $dpStatus !== '— Set —';
 
-            // For installment terms: at least 1 term paid is enough to allow Done
+            // For installments: at least 1 term paid is enough
             $installments = \App\Models\DownpaymentInstallment::where('commission_request_sales_id', $id)->get();
             if ($installments->count() > 0) {
-                $isFullyPaid = $installments->contains(fn($i) => $i->is_paid);
+                $hasDownpayment = $installments->contains(fn($i) => $i->is_paid);
             }
 
-            if (!$isFullyPaid) {
-                return back()->with('error', 'Cannot set to Done — at least 1 downpayment term must be paid first.');
+            if (!$hasDownpayment) {
+                return back()->with('error', 'Cannot set to Done — please set the downpayment status first.');
             }
         }
 
