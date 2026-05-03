@@ -184,7 +184,7 @@
             <table style="width:100%;border-collapse:collapse;font-size:13px">
                 <thead style="background:linear-gradient(135deg,#1e4575,#2563eb)">
                     <tr>
-                        @foreach(['Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Downpayment Date','Agent','Status','Downpayment Status','Actions'] as $h)
+                        @foreach(['Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Units','Downpayment Date','Agent','Status','Downpayment Status','Actions'] as $h)
                         <th style="padding:14px 12px;text-align:left;font-weight:600;color:white;text-transform:uppercase;font-size:11px;white-space:nowrap">{{ $h }}</th>
                         @endforeach
                     </tr>
@@ -207,6 +207,7 @@
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->net_tcp ? '₱'.number_format($req->net_tcp,2) : '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->terms_of_payment ?? '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->reservation_date ? $req->reservation_date->format('M d, Y') : '-' }}</td>
+                        <td style="padding:14px 12px;color:#374151;white-space:nowrap;text-align:center;">{{ $req->number_of_units ?? '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->date_of_downpayment ? $req->date_of_downpayment->format('M d, Y') : '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->agent_name ?? '-' }}</td>
                         <td style="padding:10px 12px;white-space:nowrap">
