@@ -12,10 +12,10 @@
 .hr-banner-deco span { position:absolute;border-radius:50%;background:rgba(255,255,255,.06); }
 
 .hr-card { background:white;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:20px;overflow:hidden; }
-.hr-card-header { padding:18px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between; }
-.hr-card-title { font-size:15px;font-weight:700;color:#0f172a; }
+.hr-card-header { padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between; }
+.hr-card-title { font-size:14px;font-weight:700;color:#0f172a; }
 .hr-card-sub { font-size:12px;color:#94a3b8;margin-top:2px; }
-.hr-card-body { padding:24px; }
+.hr-card-body { padding:16px; }
 
 .hr-form-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px; }
 .hr-form-group label { display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px; }
@@ -24,10 +24,10 @@
 
 .hr-table { width:100%;border-collapse:collapse;font-size:13px; }
 .hr-table thead tr { background:linear-gradient(135deg,#0f2444,#1e4575); }
-.hr-table thead th { padding:12px 16px;text-align:left;font-size:11px;font-weight:700;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.6px; }
+.hr-table thead th { padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.6px; }
 .hr-table tbody tr { border-bottom:1px solid #f1f5f9;transition:background .15s; }
 .hr-table tbody tr:hover { background:#f8fafc; }
-.hr-table tbody td { padding:13px 16px;color:#374151; }
+.hr-table tbody td { padding:9px 12px;color:#374151; }
 .hr-table tbody tr.edit-row { background:#eff6ff; }
 
 .hr-badge { display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700; }
@@ -117,8 +117,8 @@
                 <tr id="emp-view-{{ $u->id }}">
                     <td style="color:#cbd5e1;font-weight:600;">{{ $i + 1 }}</td>
                     <td style="font-weight:700;color:#0f172a;">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1e4575,#2563eb);display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:700;flex-shrink:0;">{{ strtoupper(substr($u->name,0,1)) }}</div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#1e4575,#2563eb);display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;flex-shrink:0;">{{ strtoupper(substr($u->name,0,1)) }}</div>
                             {{ $u->name }}
                         </div>
                     </td>

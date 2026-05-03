@@ -11,19 +11,19 @@
 .hr-banner-deco span { position:absolute;border-radius:50%;background:rgba(255,255,255,.06); }
 
 .hr-card { background:white;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:20px;overflow:hidden; }
-.hr-card-header { padding:18px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between; }
+.hr-card-header { padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between; }
 .hr-card-title { font-size:15px;font-weight:700;color:#0f172a; }
 .hr-card-sub { font-size:12px;color:#94a3b8;margin-top:2px; }
 
-.hr-group-header { background:linear-gradient(135deg,#0f2444,#1a3a6b);padding:14px 20px;display:flex;align-items:center;justify-content:space-between; }
+.hr-group-header { background:linear-gradient(135deg,#0f2444,#1a3a6b);padding:10px 16px;display:flex;align-items:center;justify-content:space-between; }
 .hr-group-title { font-size:12px;font-weight:700;color:#d4a03a;text-transform:uppercase;letter-spacing:1px; }
 
 .hr-table { width:100%;border-collapse:collapse;font-size:13px; }
 .hr-table thead tr { background:#f8fafc; }
-.hr-table thead th { padding:10px 16px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;border-bottom:1.5px solid #e2e8f0; }
+.hr-table thead th { padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;border-bottom:1.5px solid #e2e8f0; }
 .hr-table tbody tr { border-bottom:1px solid #f1f5f9;transition:background .15s; }
 .hr-table tbody tr:hover { background:#f8fafc; }
-.hr-table tbody td { padding:12px 16px;color:#374151; }
+.hr-table tbody td { padding:9px 12px;color:#374151; }
 
 .hr-btn { padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .2s; }
 .hr-btn-primary { background:linear-gradient(135deg,#1e4575,#2563eb);color:white; }
@@ -93,8 +93,8 @@
             @foreach($contacts as $contact)
             <tr>
                 <td>
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#A37929,#d4a03a);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:700;flex-shrink:0;">{{ strtoupper(substr($contact->name,0,1)) }}</div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#A37929,#d4a03a);display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;flex-shrink:0;">{{ strtoupper(substr($contact->name,0,1)) }}</div>
                         <span style="font-weight:600;color:#0f172a;">{{ $contact->name }}</span>
                     </div>
                 </td>
