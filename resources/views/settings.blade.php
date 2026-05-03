@@ -1403,13 +1403,29 @@
                     </div>
                   </td>
                   <td style="padding:10px 12px;text-align:center;">
-                    <button type="button" onclick="toggleAgentStatus({{ $agent->id }}, this)"
-                      data-active="{{ $agent->is_active ? '1' : '0' }}"
-                      style="padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;border:none;cursor:pointer;
-                      background:{{ $agent->is_active ? '#dcfce7' : '#fee2e2' }};
-                      color:{{ $agent->is_active ? '#166534' : '#991b1b' }};">
-                      {{ $agent->is_active ? 'Active' : 'Inactive' }}
-                    </button>
+                    <div style="position:relative;display:inline-block;" id="status-wrap-{{ $agent->id }}">
+                      <button type="button"
+                        onclick="openAgentStatusDropdown({{ $agent->id }}, this)"
+                        data-active="{{ $agent->is_active ? '1' : '0' }}"
+                        id="status-btn-{{ $agent->id }}"
+                        style="padding:3px 10px 3px 12px;border-radius:20px;font-size:11px;font-weight:700;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;
+                        background:{{ $agent->is_active ? '#dcfce7' : '#fee2e2' }};
+                        color:{{ $agent->is_active ? '#166534' : '#991b1b' }};">
+                        <span id="status-label-{{ $agent->id }}">{{ $agent->is_active ? 'Active' : 'Inactive' }}</span>
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M2 3.5l3 3 3-3"/></svg>
+                      </button>
+                      <div id="status-dropdown-{{ $agent->id }}"
+                        style="display:none;position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);background:white;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:999;min-width:110px;overflow:hidden;">
+                        <button type="button" onclick="setAgentStatus({{ $agent->id }}, true)"
+                          style="display:block;width:100%;padding:8px 14px;text-align:left;font-size:12px;font-weight:700;color:#166534;background:#f0fdf4;border:none;cursor:pointer;border-bottom:1px solid #e2e8f0;">
+                          ✓ Active
+                        </button>
+                        <button type="button" onclick="setAgentStatus({{ $agent->id }}, false)"
+                          style="display:block;width:100%;padding:8px 14px;text-align:left;font-size:12px;font-weight:700;color:#991b1b;background:#fff5f5;border:none;cursor:pointer;">
+                          ✗ Inactive
+                        </button>
+                      </div>
+                    </div>
                   </td>
                   <td style="padding:10px 12px;text-align:right;white-space:nowrap;">
                     <button type="button" onclick="openEditAgent({{ $agent->id }}, '{{ addslashes($agent->name) }}')"
@@ -1936,23 +1952,34 @@ function saveEditAgent() {
         }
     });
 }
-function toggleAgentStatus(id, btn) {
+function openAgentStatusDropdown(id, btn) {
+    // Close any other open dropdowns first
+    document.querySelectorAll('[id^="status-dropdown-"]').forEach(function(d) {
+        if (d.id !== 'status-dropdown-' + id) d.style.display = 'none';
+    });
+    var dd = document.getElementById('status-dropdown-' + id);
+    dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+}
+function setAgentStatus(id, active) {
+    var btn = document.getElementById('status-btn-' + id);
+    var dd  = document.getElementById('status-dropdown-' + id);
+    dd.style.display = 'none';
     btn.disabled = true;
     btn.style.opacity = '0.6';
     var csrf = document.querySelector('meta[name=csrf-token]').content;
     fetch('/settings/agents/' + id + '/toggle', {
         method: 'POST',
         headers: {'Content-Type':'application/json','X-CSRF-TOKEN': csrf},
-        body: '{}'
+        body: JSON.stringify({set_active: active})
     })
     .then(function(r){ return r.json(); })
     .then(function(d){
         if (d.success) {
-            var active = d.is_active;
-            btn.setAttribute('data-active', active ? '1' : '0');
-            btn.textContent = active ? 'Active' : 'Inactive';
-            btn.style.background = active ? '#dcfce7' : '#fee2e2';
-            btn.style.color = active ? '#166534' : '#991b1b';
+            var isActive = d.is_active;
+            btn.setAttribute('data-active', isActive ? '1' : '0');
+            document.getElementById('status-label-' + id).textContent = isActive ? 'Active' : 'Inactive';
+            btn.style.background = isActive ? '#dcfce7' : '#fee2e2';
+            btn.style.color = isActive ? '#166534' : '#991b1b';
         }
         btn.disabled = false;
         btn.style.opacity = '1';
@@ -1962,6 +1989,12 @@ function toggleAgentStatus(id, btn) {
         btn.style.opacity = '1';
     });
 }
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('[id^="status-wrap-"]')) {
+        document.querySelectorAll('[id^="status-dropdown-"]').forEach(function(d){ d.style.display = 'none'; });
+    }
+});
 function openContactModal(id, name, company, phone, email, facebook, btn) {
     document.getElementById('contactEditForm').action = '/settings/personnel-contacts/' + id;
     document.getElementById('edit_name').value = name;

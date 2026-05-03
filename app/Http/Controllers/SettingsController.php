@@ -270,11 +270,15 @@ class SettingsController extends Controller
         return response()->json(['success' => true, 'is_active' => (bool) $agent->fresh()->is_active]);
     }
 
-    public function toggleAgentStatus($id)
+    public function toggleAgentStatus(Request $request, $id)
     {
         if (!auth()->user()->isAdmin()) abort(403);
         $agent = \App\Models\SalesAgent::findOrFail($id);
-        $agent->update(['is_active' => !$agent->is_active]);
+        if ($request->has('set_active')) {
+            $agent->update(['is_active' => filter_var($request->input('set_active'), FILTER_VALIDATE_BOOLEAN)]);
+        } else {
+            $agent->update(['is_active' => !$agent->is_active]);
+        }
         return response()->json(['success' => true, 'is_active' => (bool) $agent->fresh()->is_active]);
     }
 
