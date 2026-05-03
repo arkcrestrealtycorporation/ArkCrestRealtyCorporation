@@ -15,7 +15,10 @@ class HumanResourceController extends Controller
             ->whereNotNull('employee_id')
             ->count();
 
-        $totalAgents = SalesAgent::count();
+        $totalAgents = User::whereNotIn('status', ['pre_registered', 'deleted'])
+            ->whereNotNull('position')
+            ->whereRaw('LOWER(position) LIKE ?', ['%sales%'])
+            ->count();
 
         return view('human-resource', compact('totalEmployees', 'totalAgents'));
     }

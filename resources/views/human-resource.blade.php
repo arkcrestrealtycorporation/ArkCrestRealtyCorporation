@@ -39,7 +39,7 @@
         <div>
             <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Total Agents</div>
             <div style="font-size:32px;font-weight:800;color:#0f172a;line-height:1;">{{ $totalAgents }}</div>
-            <div style="font-size:12px;color:#94a3b8;margin-top:4px;">Sales agents on record</div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:4px;">Users with sales-related positions</div>
         </div>
     </div>
 
