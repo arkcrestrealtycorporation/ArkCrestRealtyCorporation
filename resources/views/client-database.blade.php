@@ -122,6 +122,10 @@
                     <input type="date" name="reservation_date">
                 </div>
                 <div class="form-group">
+                    <label>NUMBER OF UNITS</label>
+                    <input type="number" name="number_of_units" min="1" value="1" placeholder="1">
+                </div>
+                <div class="form-group">
                     <label>DATE OF DOWNPAYMENT</label>
                     <input type="date" name="date_of_downpayment">
                 </div>
@@ -139,7 +143,7 @@
                 </div>
             </div>
             <input type="hidden" name="date_requested" value="{{ date('Y-m-d') }}">
-            <input type="hidden" name="number_of_units" value="1">
+            
             <input type="hidden" name="property_details" value="">
             <input type="hidden" name="commission" value="">
             <input type="hidden" name="remarks" value="">
@@ -316,6 +320,7 @@
                 <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase">Net TCP</label><input type="number" id="edit_net_tcp" name="net_tcp" step="0.01" style="padding:10px 14px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px"></div>
                 <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase">Terms of Payment *</label><input type="text" id="edit_terms_of_payment" name="terms_of_payment" required style="padding:10px 14px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px"></div>
                 <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase">Reservation Date</label><input type="date" id="edit_reservation_date" name="reservation_date" style="padding:10px 14px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px"></div>
+                <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase">Number of Units</label><input type="number" id="edit_number_of_units" name="number_of_units" min="1" value="1" style="padding:10px 14px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px"></div>
                 <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase">Date of Downpayment</label><input type="date" id="edit_date_of_downpayment" name="date_of_downpayment" style="padding:10px 14px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px"></div>
                 <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase">Agent's Name *</label><input type="text" id="edit_agent_name" name="agent_name" required style="padding:10px 14px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px"></div>
                 <div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase">Client Status</label>
@@ -492,6 +497,7 @@ function editRow(id){
         document.getElementById('edit_net_tcp').value=d.net_tcp??'';
         document.getElementById('edit_terms_of_payment').value=d.terms_of_payment??'';
         document.getElementById('edit_reservation_date').value=d.reservation_date?d.reservation_date.split('T')[0]:'';
+        document.getElementById('edit_number_of_units').value=d.number_of_units??1;
         document.getElementById('edit_date_of_downpayment').value=d.date_of_downpayment?d.date_of_downpayment.split('T')[0]:'';
         document.getElementById('edit_agent_name').value=d.agent_name??'';
         document.getElementById('edit_client_status').value=d.status??'';
