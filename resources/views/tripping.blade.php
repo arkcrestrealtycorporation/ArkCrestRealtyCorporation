@@ -214,7 +214,8 @@ body{display:flex;align-items:center;justify-content:center;background:linear-gr
             @php
                 $u = auth()->user();
                 $pos = strtolower($u->position ?? '');
-                $isSalesPerson = str_contains($pos, 'sales');
+                $salesPositions = ['sales agent', 'sales manager', 'sales person', 'salesperson', 'sales team leader', 'sales personnel'];
+                $isSalesPerson = in_array($pos, $salesPositions);
                 $hasSystemAccess = !$isSalesPerson && ($u->isAdmin() || !in_array('forms', $u->hidden_pages ?? []));
             @endphp
             @if($hasSystemAccess)

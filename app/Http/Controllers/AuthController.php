@@ -89,7 +89,7 @@ class AuthController extends Controller
         }
 
         // Sales positions (non-admin) → redirect to site visit form only
-        $salesPositions = ['sales agent', 'sales manager', 'sales person', 'sales team leader'];
+        $salesPositions = ['sales agent', 'sales manager', 'sales person', 'salesperson', 'sales team leader', 'sales personnel'];
         if (!$user->isAdmin() && in_array(strtolower(trim($user->position ?? '')), $salesPositions)) {
             return redirect()->route('tripping');
         }
