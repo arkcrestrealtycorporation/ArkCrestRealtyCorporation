@@ -162,26 +162,7 @@ body{display:flex;align-items:center;justify-content:center;background:linear-gr
       @if(session('inactive_agent'))
       <div style="background:#fff7ed;border-left:3px solid #f97316;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:12px;color:#9a3412;">
         <div style="font-weight:700;margin-bottom:4px;">⚠ Account Inactive</div>
-        <div style="margin-bottom:8px;">Your account has been set to inactive. Please contact the executives to reactivate your access:</div>
-        <div style="background:white;border-radius:6px;padding:8px 10px;border:1px solid #fed7aa;">
-          @php
-            $execTeam = \App\Models\SalesTeam::where('team_name','like','%executive%')->orWhere('team_name','like','%Executive%')->first();
-            $execContacts = \App\Models\PersonnelContact::orderBy('sort_order')->limit(4)->get();
-          @endphp
-          @if($execTeam)
-            <div style="font-weight:700;color:#7c2d12;font-size:11px;margin-bottom:4px;">{{ $execTeam->team_name }} — {{ $execTeam->leader_name }}</div>
-          @endif
-          @foreach($execContacts as $contact)
-            <div style="font-size:11px;color:#374151;margin-bottom:2px;">
-              <span style="font-weight:600;">{{ $contact->name }}</span>
-              @if($contact->phone) — {{ $contact->phone }}@endif
-              @if($contact->email) &bull; {{ $contact->email }}@endif
-            </div>
-          @endforeach
-          @if($execContacts->isEmpty())
-            <div style="font-size:11px;color:#64748b;">Please contact your system administrator.</div>
-          @endif
-        </div>
+        <div>Your account has been set to inactive. Please contact the executives to reactivate your access.</div>
       </div>
       @endif
       @if($errors->any() && !old('name'))<div class="alert-error">{{ $errors->first() }}</div>@endif
