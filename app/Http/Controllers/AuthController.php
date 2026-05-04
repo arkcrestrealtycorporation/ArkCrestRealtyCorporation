@@ -36,6 +36,21 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Your account is pending admin approval.'])->withInput($request->only('email', 'remember'));
         }
 
+        // Check if user is an inactive sales agent in team management
+        if (\Schema::hasColumn('sales_agents', 'is_active')) {
+            $inactiveAgent = \App\Models\SalesAgent::where('name', $user->name)
+                ->where('is_active', false)
+                ->first();
+            if ($inactiveAgent) {
+                // Get executives contact info
+                $executives = \App\Models\SalesTeam::where('team_name', 'like', '%executive%')
+                    ->with('agents')
+                    ->first();
+                Auth::logout();
+                return back()->with('inactive_agent', true)->withInput($request->only('email'));
+            }
+        }
+
         Auth::login($user, $request->boolean('remember'));
         $user->update(['last_login_at' => now()]);
         $request->session()->regenerate();
