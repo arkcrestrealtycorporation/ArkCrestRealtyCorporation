@@ -11,7 +11,30 @@ class TripScheduleController extends Controller
     public function saveTeam(\Illuminate\Http\Request $request)
     {
         $request->validate(['team_name' => 'required|string|max:255']);
-        auth()->user()->update(['team_name' => $request->team_name]);
+        $user = auth()->user();
+
+        // Only save if user doesn't already have a team
+        if ($user->team_name) {
+            return response()->json(['success' => true]);
+        }
+
+        $user->update(['team_name' => $request->team_name]);
+
+        // Auto-add user as agent in the selected team (if not already there)
+        $team = \App\Models\SalesTeam::where('team_name', $request->team_name)->first();
+        if ($team) {
+            $alreadyAgent = \App\Models\SalesAgent::where('team_id', $team->id)
+                ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($user->name))])
+                ->exists();
+            if (!$alreadyAgent) {
+                \App\Models\SalesAgent::create([
+                    'team_id'   => $team->id,
+                    'name'      => $user->name,
+                    'is_active' => true,
+                ]);
+            }
+        }
+
         return response()->json(['success' => true]);
     }
 
