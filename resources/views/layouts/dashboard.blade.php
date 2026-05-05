@@ -8,6 +8,32 @@
     <title>{{ config('app.name', 'ARCKREST REALTY CORPORATION') }} - @yield('title', 'Dashboard')</title>
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}?v={{ time() }}{{ rand(1000, 9999) }}">
     <link rel="stylesheet" href="{{ asset('css/optimized-global.css') }}?v={{ time() }}">
+    <style>
+    /* Global horizontal scrollbar for all table wrappers */
+    .tbl-wrap, .table-wrapper, .table-container, .tbl-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .tbl-wrap::-webkit-scrollbar,
+    .table-wrapper::-webkit-scrollbar,
+    .table-container::-webkit-scrollbar,
+    .tbl-scroll::-webkit-scrollbar,
+    .svd-table-wrap::-webkit-scrollbar { height: 8px; }
+    .tbl-wrap::-webkit-scrollbar-track,
+    .table-wrapper::-webkit-scrollbar-track,
+    .table-container::-webkit-scrollbar-track,
+    .tbl-scroll::-webkit-scrollbar-track,
+    .svd-table-wrap::-webkit-scrollbar-track { background:#f1f5f9; border-radius:4px; }
+    .tbl-wrap::-webkit-scrollbar-thumb,
+    .table-wrapper::-webkit-scrollbar-thumb,
+    .table-container::-webkit-scrollbar-thumb,
+    .tbl-scroll::-webkit-scrollbar-thumb,
+    .svd-table-wrap::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:4px; }
+    .tbl-wrap::-webkit-scrollbar-thumb:hover,
+    .table-wrapper::-webkit-scrollbar-thumb:hover,
+    .table-container::-webkit-scrollbar-thumb:hover,
+    .tbl-scroll::-webkit-scrollbar-thumb:hover { background:#64748b; }
+    </style>
 </head>
 <body>
     <div class="dashboard-container">
@@ -1478,5 +1504,16 @@
         @csrf
     </form>
 
+<script>
+// Auto-add tbl-scroll class to all overflow-x:auto divs for scrollbar styling
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('div').forEach(function(el) {
+        var s = el.style.overflowX;
+        if (s === 'auto' || s === 'scroll') {
+            el.classList.add('tbl-scroll');
+        }
+    });
+});
+</script>
 </body>
 </html>
