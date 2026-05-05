@@ -261,7 +261,7 @@
             <th>Name of Client</th><th>Property</th><th>Company</th>
             <th>Name of Agent</th><th>Email</th><th>Mobile Number</th><th>Address</th>
             <th>Tripping Date</th><th>Tripping Time</th><th>Mode of Visit</th>
-            @if(auth()->user()->isAdmin())<th>Actions</th>@endif
+            <th>Actions</th>
         </tr></thead>
         <tbody>
         @foreach($grp->values() as $i => $r)
@@ -280,7 +280,6 @@
             <td>{{ $r->tripping_date ? $r->tripping_date->format('M j, Y') : '—' }}</td>
             <td><div class="td-sub">{{ $r->tripping_time ? \Carbon\Carbon::parse($r->tripping_time)->format('g:i A') : '—' }}</div></td>
             <td><div class="td-sub">{{ $r->tripping_type ?? '—' }}</div></td>
-            @if(auth()->user()->isAdmin())
             <td>
                 <div class="actions">
                     @if($status === 'done')
@@ -294,20 +293,20 @@
                         <button type="submit" class="btn-reject">&#10005; Cancel</button>
                     </form>
                     @endif
-                    {{-- Delete --}}
+                    {{-- Delete (admin only) --}}
+                    @if(auth()->user()->isAdmin())
                     <form method="POST" action="{{ route('site-visit-database.destroy', $r->id) }}" onsubmit="return confirm('Delete this record?')">
                         @csrf @method('DELETE')
                         <button type="submit" class="btn-delete">Delete</button>
                     </form>
+                    @endif
                     {{-- Print --}}
                     <button class="btn-print" onclick="window.print()">
                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                         Print
                     </button>
                 </div>
-                </div>
             </td>
-            @endif
         </tr>
         @endforeach
         </tbody>
