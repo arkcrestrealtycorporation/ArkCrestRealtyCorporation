@@ -283,7 +283,40 @@ class SettingsController extends Controller
     {
         if (!auth()->user()->isAdmin()) abort(403);
         $request->validate(['team_id' => 'required|exists:sales_teams,id', 'name' => 'required|string|max:255']);
-        \App\Models\SalesAgent::create(['team_id' => $request->team_id, 'name' => $request->name]);
+
+        $name = trim($request->name);
+
+        // Check for duplicate in same team
+        $exists = \App\Models\SalesAgent::where('team_id', $request->team_id)
+            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($name)])
+            ->exists();
+
+        if ($exists) {
+            return redirect()->route('settings')
+                ->with('error', "'{$name}' is already in this team.")
+                ->with('open_section', 'teams');
+        }
+
+        // Auto-link user by name match
+        $user = \App\Models\User::whereRaw('LOWER(TRIM(name)) = ?', [strtolower($name)])->first();
+
+        $data = [
+            'team_id'   => $request->team_id,
+            'name'      => $name,
+            'is_active' => true,
+        ];
+
+        if ($user) {
+            if (\Schema::hasColumn('sales_agents', 'user_id'))     $data['user_id']     = $user->id;
+            if (\Schema::hasColumn('sales_agents', 'employee_id')) $data['employee_id'] = $user->employee_id;
+            // Also sync team_name on the user
+            if (!$user->team_name) {
+                $team = \App\Models\SalesTeam::find($request->team_id);
+                if ($team) $user->update(['team_name' => $team->team_name]);
+            }
+        }
+
+        \App\Models\SalesAgent::create($data);
         return redirect()->route('settings')->with('success', 'Agent added.')->with('open_section', 'teams');
     }
 

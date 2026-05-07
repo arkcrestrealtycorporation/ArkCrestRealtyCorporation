@@ -494,6 +494,7 @@
   <div class="st-content">
 
     @if(session('success'))<div class="st-alert">&#10003; {{ session('success') }}</div>@endif
+    @if(session('error'))<div class="st-alert" style="border-color:#ef4444;background:#fef2f2;color:#dc2626;">&#9888; {{ session('error') }}</div>@endif
 
     {{-- PROFILE PANEL --}}
 
