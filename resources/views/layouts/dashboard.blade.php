@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/png" href="{{ asset('images/ArkCrest_Logo.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    @if(session('tab_authorized'))
-    <meta name="tab-auth" content="1">
-    @php session()->forget('tab_authorized'); @endphp
-    @endif
     <title>{{ config('app.name', 'ARCKREST REALTY CORPORATION') }} - @yield('title', 'Dashboard')</title>
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}?v={{ time() }}{{ rand(1000, 9999) }}">
     <link rel="stylesheet" href="{{ asset('css/optimized-global.css') }}?v={{ time() }}">
@@ -37,22 +33,6 @@
     </style>
 </head>
 <body>
-<script>
-// Tab security: only allow access if this tab was opened via login
-(function() {
-    var tabMeta = document.querySelector('meta[name="tab-auth"]');
-    if (tabMeta) {
-        // Just logged in — authorize this tab
-        sessionStorage.setItem('arc_tab_auth', '1');
-    } else {
-        // Check if this tab is authorized
-        if (!sessionStorage.getItem('arc_tab_auth')) {
-            // Not authorized — redirect to login
-            window.location.replace('/login');
-        }
-    }
-})();
-</script>
     <div class="dashboard-container">
         <!-- Header - Full Width -->
         <header class="header">

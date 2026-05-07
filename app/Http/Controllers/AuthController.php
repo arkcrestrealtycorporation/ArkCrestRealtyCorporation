@@ -61,7 +61,6 @@ class AuthController extends Controller
         Auth::login($user, $request->boolean('remember'));
         $user->update(['last_login_at' => now()]);
         $request->session()->regenerate();
-        $request->session()->put('tab_authorized', true);
         ActivityLog::log('login', 'Auth', "User '{$user->name}' logged in");
 
         // Push login-time notifications for all users
