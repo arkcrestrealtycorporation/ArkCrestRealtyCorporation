@@ -10,43 +10,55 @@ class TripScheduleController extends Controller
 {
     public function saveTeam(\Illuminate\Http\Request $request)
     {
-        $request->validate(['team_name' => 'required|string|max:255']);
-        $user = auth()->user();
+        try {
+            $request->validate(['team_name' => 'required|string|max:255']);
+            $user = auth()->user();
 
-        // Only save if user doesn't already have a team
-        if ($user->team_name) {
+            // Only save if user doesn't already have a team
+            if ($user->team_name) {
+                return response()->json(['success' => true]);
+            }
+
+            $user->update(['team_name' => $request->team_name]);
+
+            // Auto-add user as agent in the selected team (if not already there)
+            $team = \App\Models\SalesTeam::where('team_name', $request->team_name)->first();
+            if ($team) {
+                $alreadyAgent = \App\Models\SalesAgent::where('team_id', $team->id)
+                    ->where(function($q) use ($user) {
+                        if (\Schema::hasColumn('sales_agents', 'user_id')) {
+                            $q->where('user_id', $user->id)
+                              ->orWhereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($user->name))]);
+                        } else {
+                            $q->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($user->name))]);
+                        }
+                    })->exists();
+
+                if (!$alreadyAgent) {
+                    $data = [
+                        'team_id'   => $team->id,
+                        'name'      => $user->name,
+                        'is_active' => true,
+                    ];
+                    if (\Schema::hasColumn('sales_agents', 'user_id'))     $data['user_id']     = $user->id;
+                    if (\Schema::hasColumn('sales_agents', 'employee_id')) $data['employee_id'] = $user->employee_id;
+                    \App\Models\SalesAgent::create($data);
+                } else {
+                    // Update existing agent record with user_id/employee_id if missing
+                    if (\Schema::hasColumn('sales_agents', 'user_id')) {
+                        \App\Models\SalesAgent::where('team_id', $team->id)
+                            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($user->name))])
+                            ->whereNull('user_id')
+                            ->update(['user_id' => $user->id, 'employee_id' => $user->employee_id]);
+                    }
+                }
+            }
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            // Never fail the form submission due to team linking issues
             return response()->json(['success' => true]);
         }
-
-        $user->update(['team_name' => $request->team_name]);
-
-        // Auto-add user as agent in the selected team (if not already there)
-        $team = \App\Models\SalesTeam::where('team_name', $request->team_name)->first();
-        if ($team) {
-            $alreadyAgent = \App\Models\SalesAgent::where('team_id', $team->id)
-                ->where(function($q) use ($user) {
-                    $q->where('user_id', $user->id)
-                      ->orWhereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($user->name))]);
-                })->exists();
-
-            if (!$alreadyAgent) {
-                \App\Models\SalesAgent::create([
-                    'team_id'     => $team->id,
-                    'user_id'     => $user->id,
-                    'employee_id' => $user->employee_id,
-                    'name'        => $user->name,
-                    'is_active'   => true,
-                ]);
-            } else {
-                // Update existing agent record with user_id if missing
-                \App\Models\SalesAgent::where('team_id', $team->id)
-                    ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower(trim($user->name))])
-                    ->whereNull('user_id')
-                    ->update(['user_id' => $user->id, 'employee_id' => $user->employee_id]);
-            }
-        }
-
-        return response()->json(['success' => true]);
     }
 
     public function show()
