@@ -44,25 +44,31 @@ class SummaryReportController extends Controller
             ['units' => 0, 'gross_sales' => 0, 'coh' => 0]
         );
         
-        // Get expenses by department for selected month/year
-        $departments = [
-            'Administrative' => 'Administrative Expenses',
-            'Sales & Marketing' => 'Sales & Marketing Expenses',
-            'Human Resource' => 'Human Resource Expenses',
-            'Finance' => 'Finance Expenses',
-            'Executive' => 'Executive Expenses',
-            'CAPEX' => 'CAPEX'
-        ];
-        
+        // Get expenses by department for selected month/year — dynamic from Department model
+        $allDepts = \App\Models\Department::orderBy('name')->get();
+        $departments = $allDepts->pluck('name', 'name')->toArray();
+
+        // Also include any departments found in expenses that may not be in Department table
+        $expenseDepts = DepartmentalExpense::whereYear('date_requested', $selectedYear)
+            ->whereMonth('date_requested', $selectedMonth)
+            ->whereNotNull('department')
+            ->distinct()
+            ->pluck('department');
+        foreach ($expenseDepts as $d) {
+            if (!isset($departments[$d])) {
+                $departments[$d] = $d;
+            }
+        }
+
         $departmentExpenses = [];
         $totalExpenses = 0;
-        
-        foreach ($departments as $deptKey => $deptName) {
+
+        foreach (array_keys($departments) as $deptKey) {
             $expenses = DepartmentalExpense::where('department', $deptKey)
                 ->whereYear('date_requested', $selectedYear)
                 ->whereMonth('date_requested', $selectedMonth)
                 ->sum('total_expenses');
-            
+
             $departmentExpenses[$deptKey] = $expenses;
             $totalExpenses += $expenses;
         }
@@ -173,14 +179,16 @@ class SummaryReportController extends Controller
         
         // Get all months data for the selected year
         $monthlyData = [];
-        $departments = [
-            'Administrative' => 'Administrative Expenses',
-            'Sales & Marketing' => 'Sales & Marketing Expenses',
-            'Human Resource' => 'Human Resource Expenses',
-            'Finance' => 'Finance Expenses',
-            'Executive' => 'Executive Expenses',
-            'CAPEX' => 'CAPEX'
-        ];
+
+        // Dynamic departments
+        $allDepts = \App\Models\Department::orderBy('name')->get();
+        $departments = $allDepts->pluck('name', 'name')->toArray();
+        // Also include any departments found in expenses
+        $expenseDepts = DepartmentalExpense::whereYear('date_requested', $selectedYear)
+            ->whereNotNull('department')->distinct()->pluck('department');
+        foreach ($expenseDepts as $d) {
+            if (!isset($departments[$d])) $departments[$d] = $d;
+        }
         
         // Initialize totals
         $yearlyTotals = [
