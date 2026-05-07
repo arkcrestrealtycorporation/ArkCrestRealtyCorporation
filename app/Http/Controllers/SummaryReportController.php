@@ -67,7 +67,8 @@ class SummaryReportController extends Controller
             $expenses = DepartmentalExpense::where('department', $deptKey)
                 ->whereYear('date_requested', $selectedYear)
                 ->whereMonth('date_requested', $selectedMonth)
-                ->sum('total_expenses');
+                ->selectRaw('SUM(COALESCE(total_expenses, requested_amount, 0)) as total')
+                ->value('total') ?? 0;
 
             $departmentExpenses[$deptKey] = $expenses;
             $totalExpenses += $expenses;
@@ -227,7 +228,8 @@ class SummaryReportController extends Controller
                 $expenses = DepartmentalExpense::where('department', $deptKey)
                     ->whereYear('date_requested', $selectedYear)
                     ->whereMonth('date_requested', $month)
-                    ->sum('total_expenses');
+                    ->selectRaw('SUM(COALESCE(total_expenses, requested_amount, 0)) as total')
+                    ->value('total') ?? 0;
                 
                 $departmentExpenses[$deptKey] = $expenses;
                 $monthTotalExpenses += $expenses;
