@@ -397,8 +397,8 @@
                     </li>
                     @endif
                     
-                    <!-- Forms -->
-                    @if($canSee('forms'))
+                    <!-- Human Resource -->
+                    @if($canSee('human-resource'))
                     <li class="nav-item-wrapper">
                         <div class="nav-item-container">
                             <a href="{{ route('human-resource') }}" class="nav-item nav-item-with-dropdown" data-page="human-resource" onclick="event.stopPropagation();">
