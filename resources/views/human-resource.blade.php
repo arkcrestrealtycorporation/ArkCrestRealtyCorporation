@@ -132,41 +132,68 @@ function printHrForm() {
     win.document.close(); win.focus(); setTimeout(function(){win.print();},400);
 }
 function _ul(w){return '<span style="display:inline-block;min-width:'+(w||160)+'px;border-bottom:1px solid #111;margin-left:4px;">&nbsp;</span>';}
+
+function _dayOffCopy(){
+    return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">'+
+        '<img src="'+_hrLogo+'" style="width:48px;height:48px;object-fit:contain;">'+
+        '<h2 style="font-size:20px;font-weight:bold;margin:0;flex:1;text-align:center;">Change Day-Off Form</h2></div>'+
+        '<table class="nb" style="margin-bottom:8px;font-size:12px;"><tr>'+
+        '<td>Name:'+_ul(180)+'</td><td>Position:'+_ul(130)+'</td></tr><tr>'+
+        '<td>Previous Day-Off Schedule:'+_ul(110)+'</td><td>Department:'+_ul(130)+'</td></tr><tr>'+
+        '<td>New Day-Off Schedule:'+_ul(120)+'</td><td>Date (Week):'+_ul(130)+'</td></tr></table>'+
+        '<div style="margin-bottom:4px;font-size:12px;">Reason:</div>'+
+        '<div style="border:1px solid #111;height:70px;margin-bottom:16px;"></div>'+
+        '<table class="nb" style="font-size:12px;"><tr>'+
+        '<td style="width:50%;">Approved by : <strong><u>Mr. Edwin Mojica</u></strong><br><small>(Chief Operating Officer)</small></td>'+
+        '<td>Acknowledged by : <strong><u>Mr. Jossen Fernandez</u></strong><br><small>(President)</small></td></tr></table>';
+}
+
 function hrFormDayOff(){
-    return '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;"><img src="'+_hrLogo+'" style="width:56px;height:56px;object-fit:contain;"><h2 style="font-size:22px;font-weight:bold;margin:0;flex:1;text-align:center;">Change Day-Off Form</h2></div>'+
-    '<table class="nb" style="margin-bottom:10px;"><tr><td>Name:'+_ul(200)+'</td><td>Position:'+_ul(150)+'</td></tr>'+
-    '<tr><td>Previous Day-Off Schedule:'+_ul(130)+'</td><td>Department:'+_ul(150)+'</td></tr>'+
-    '<tr><td>New Day-Off Schedule:'+_ul(140)+'</td><td>Date (Week):'+_ul(150)+'</td></tr></table>'+
-    '<div style="margin-bottom:5px;">Reason:</div><div style="border:1px solid #111;height:90px;margin-bottom:24px;"></div>'+
-    '<table class="nb"><tr><td style="width:50%;">Approved by : <strong><u>Mr. Edwin Mojica</u></strong><br><small>(Chief Operating Officer)</small></td>'+
-    '<td>Acknowledged by : <strong><u>Mr. Jossen Fernandez</u></strong><br><small>(President)</small></td></tr></table>';
+    return _dayOffCopy()+
+        '<hr style="margin:18px 0;border:none;border-top:1px dashed #999;">'+
+        _dayOffCopy();
 }
+
 function hrFormAbsences(){
-    return '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;"><img src="'+_hrLogo+'" style="width:56px;height:56px;object-fit:contain;"><h2 style="font-size:22px;font-weight:bold;margin:0;flex:1;text-align:center;">Absences Report Form</h2></div>'+
-    '<table class="nb" style="margin-bottom:10px;"><tr><td>Name:'+_ul(200)+'</td><td>Department:'+_ul(160)+'</td></tr>'+
-    '<tr><td>Date today:'+_ul(200)+'</td><td></td></tr></table>'+
-    '<div style="margin:12px 0 5px;">Explanation:</div><div style="border:1px solid #111;height:200px;margin-bottom:24px;"></div>'+
-    '<table class="nb"><tr><td style="width:50%;">Assessed by:'+_ul(160)+'</td><td>Acknowledged by:'+_ul(160)+'</td></tr></table>';
+    return '<div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">'+
+        '<img src="'+_hrLogo+'" style="width:56px;height:56px;object-fit:contain;">'+
+        '<h2 style="font-size:22px;font-weight:bold;margin:0;flex:1;text-align:center;">Absences Report Form</h2></div>'+
+        '<table class="nb" style="margin-bottom:10px;"><tr>'+
+        '<td>Name:'+_ul(200)+'</td><td>Department:'+_ul(160)+'</td></tr><tr>'+
+        '<td>Date today:'+_ul(200)+'</td><td></td></tr></table>'+
+        '<div style="margin:12px 0 5px;">Explanation:</div>'+
+        '<div style="border:1px solid #111;height:340px;margin-bottom:32px;"></div>'+
+        '<table class="nb"><tr>'+
+        '<td style="width:50%;">Assessed by:'+_ul(160)+'</td>'+
+        '<td>Acknowledged by:'+_ul(160)+'</td></tr></table>';
 }
+
 function hrFormVoucher(){
     var c=function(label){
-        return '<p style="font-style:italic;margin:0 0 4px;">'+label+'</p>'+
-        '<table style="margin-bottom:16px;font-size:12px;"><tr><td colspan="4" style="text-align:center;padding:6px;">'+
-        '<div style="display:flex;align-items:center;justify-content:center;gap:8px;"><img src="'+_hrLogo+'" style="width:26px;height:26px;object-fit:contain;">'+
+        return '<p style="font-style:italic;margin:0 0 4px;font-size:12px;">'+label+'</p>'+
+        '<table style="margin-bottom:14px;font-size:12px;"><tr>'+
+        '<td colspan="4" style="text-align:center;padding:6px;">'+
+        '<div style="display:flex;align-items:center;justify-content:center;gap:8px;">'+
+        '<img src="'+_hrLogo+'" style="width:26px;height:26px;object-fit:contain;">'+
         '<div><strong>ArkCrest Realty Corporation</strong><br>Allowance Voucher ARCS &nbsp;&nbsp; (36-2026)</div></div></td></tr>'+
         '<tr><td>Employee Name:</td><td>'+_ul(110)+'</td><td>Designation:</td><td>'+_ul(90)+'</td></tr>'+
         '<tr><td>Pay Period:</td><td>'+_ul(110)+'</td><td>Department:</td><td>'+_ul(90)+'</td></tr>'+
         '<tr><td><strong>Earnings</strong></td><td><strong>Amount</strong></td><td><strong>Deductions</strong></td><td><strong>Amount</strong></td></tr>'+
         '<tr><td>Basic Pay:</td><td></td><td>Number of Absences:</td><td></td></tr>'+
-        '<tr><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td></tr>'+
+        '<tr><td></td><td></td><td></td><td></td></tr>'+
+        '<tr><td></td><td></td><td></td><td></td></tr>'+
+        '<tr><td></td><td></td><td></td><td></td></tr>'+
         '<tr><td colspan="2" style="text-align:right;font-weight:bold;">Total Earnings:</td>'+
-        '<td colspan="2" style="text-align:right;font-weight:bold;">Total Deductions: &nbsp; Net Pay: ₱</td></tr></table>'+
-        '<table class="nb" style="font-size:12px;margin-bottom:8px;"><tr>'+
+        '<td style="font-weight:bold;text-align:right;">Total Deductions:</td><td></td></tr>'+
+        '<tr><td colspan="3" style="text-align:right;font-weight:bold;">Net Pay:</td><td style="font-weight:bold;">&#8369;</td></tr></table>'+
+        '<table class="nb" style="font-size:12px;margin-bottom:6px;"><tr>'+
         '<td style="width:33%;">Prepared by:<br><br><u>Mr. Lourd Thristan Lobendino</u><br><small>Human Resource Associate</small></td>'+
         '<td style="width:33%;">Approved by:<br><br><u>Mr. Edwin Mojica</u><br><small>Chief Operating Officer</small></td>'+
         '<td>Received by:<br><br>'+_ul(120)+'<br><small>&nbsp;</small></td></tr></table>';
     };
-    return c("Employer's Copy")+'<hr style="margin:20px 0;border:1px dashed #999;">'+c("Employee's Copy");
+    return c("Employer\'s Copy")+
+        '<hr style="margin:16px 0;border:none;border-top:1px dashed #999;">'+
+        c("Employee\'s Copy");
 }
 </script>
 
