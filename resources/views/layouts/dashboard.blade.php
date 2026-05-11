@@ -432,6 +432,9 @@
                             </li>
                         </ul>
                     </li>
+                    @endif
+
+                    <!-- Site Visit Form & Forms -->
                     <li>
                         <a href="{{ route('tripping') }}" class="nav-item" data-page="forms-site-visit" target="_self">
                             <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -449,7 +452,6 @@
                             <span class="sidebar-text">Forms</span>
                         </a>
                     </li>
-                    @endif
                     @endif
                     
                     <!-- Settings -->
