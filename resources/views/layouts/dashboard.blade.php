@@ -14,7 +14,23 @@
         overflow-x: scroll !important;
         -webkit-overflow-scrolling: touch;
     }
-    .tbl-wrap::-webkit-scrollbar,
+
+    /* Global table row hover — highlight + subtle expand */
+    table tbody tr {
+        transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+        cursor: default;
+    }
+    table tbody tr:hover {
+        background: #eff6ff !important;
+        transform: scaleY(1.03);
+        box-shadow: 0 2px 8px rgba(30,69,117,.10);
+        position: relative;
+        z-index: 1;
+    }
+    table tbody tr:hover td {
+        color: #1e3a5f !important;
+        font-weight: 600;
+    }    .tbl-wrap::-webkit-scrollbar,
     .table-wrapper::-webkit-scrollbar,
     .table-container::-webkit-scrollbar,
     .tbl-scroll::-webkit-scrollbar { height: 8px; }
