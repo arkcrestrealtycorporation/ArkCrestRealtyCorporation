@@ -682,6 +682,10 @@ function cdFilter() {
                     <button onclick="saveSpotDP()" style="padding:10px 16px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Paid</button>
                 </div>
             </div>
+            <div>
+                <label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Date of Payment</label>
+                <input type="date" id="dp_spot_date" style="width:100%;padding:10px 12px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+            </div>
         </div>
 
         {{-- Installment DP --}}
@@ -798,16 +802,11 @@ function selectDPType(type) {
 
 function saveSpotDP() {
     const amount = document.getElementById('dp_spot_amount').value;
-    fetch(`/client-database/${_dpRecordId}/downpayment-status`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': _dpCsrf },
-        body: JSON.stringify({ _method: 'PATCH', downpayment_status: 'Spot Paid', downpayment_amount: amount })
-    }).then(() => {
-        const form = document.createElement('form');
-        form.method = 'POST'; form.action = `/client-database/${_dpRecordId}/downpayment-status`;
-        form.innerHTML = `<input name="_token" value="${_dpCsrf}"><input name="_method" value="PATCH"><input name="downpayment_status" value="Spot Paid"><input name="downpayment_amount" value="${amount}">`;
-        document.body.appendChild(form); form.submit();
-    });
+    const date   = document.getElementById('dp_spot_date').value;
+    const form = document.createElement('form');
+    form.method = 'POST'; form.action = `/client-database/${_dpRecordId}/downpayment-status`;
+    form.innerHTML = `<input name="_token" value="${_dpCsrf}"><input name="_method" value="PATCH"><input name="downpayment_status" value="Spot Paid"><input name="downpayment_amount" value="${amount}"><input name="downpayment_date" value="${date}">`;
+    document.body.appendChild(form); form.submit();
 }
 
 function saveOthersDP() {
@@ -844,31 +843,32 @@ function renderInstallments(list) {
     container.innerHTML = list.map(inst => {
         const border = inst.is_paid ? '#bbf7d0' : '#e2e8f0';
         const bg     = inst.is_paid ? '#f0fdf4' : '#f8fafc';
+        const paidDate = inst.paid_date ? `<span style="font-size:10px;color:#16a34a;margin-left:6px;">${inst.paid_date}</span>` : '';
 
-        if (_isAdmin) {
-            // Admin: amount input (always editable) + Paid/Undo button
-            const actionBtn = inst.is_paid
+        const actionBtn = inst.is_paid
+            ? (_isAdmin
                 ? `<button onclick="unmarkPaid(${inst.id})" style="padding:10px 14px;background:#dcfce7;color:#166534;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border-left:1.5px solid #bbf7d0;" title="Click to undo">✓ Paid ↩</button>`
-                : `<button onclick="markPaid(${inst.id})" style="padding:10px 16px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Paid</button>`;
-            return `
-                <div style="display:flex;align-items:center;gap:0;border:1.5px solid ${border};border-radius:10px;overflow:hidden;background:${bg};">
-                    <span style="font-size:13px;font-weight:700;color:#1e4575;padding:10px 14px;white-space:nowrap;border-right:1.5px solid ${border};">Term ${inst.term_number}</span>
-                    <input type="number" id="inst_amount_${inst.id}" value="${inst.amount || ''}" placeholder="Enter amount here" step="0.01" min="0"
-                        onblur="saveInstallmentAmount(${inst.id})"
-                        style="flex:1;padding:10px 12px;border:none;outline:none;font-size:13px;background:transparent;${inst.is_paid ? 'color:#166534;' : ''}">
-                    ${actionBtn}
-                </div>`;
-        } else {
-            // Staff: no amount input, just term label + Paid button (locked if already paid)
-            const actionBtn = inst.is_paid
-                ? `<span style="padding:10px 14px;background:#dcfce7;color:#166534;font-size:12px;font-weight:700;white-space:nowrap;border-left:1.5px solid #bbf7d0;">✓ Paid</span>`
-                : `<button onclick="markPaid(${inst.id})" style="padding:10px 16px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Paid</button>`;
-            return `
-                <div style="display:flex;align-items:center;gap:0;border:1.5px solid ${border};border-radius:10px;overflow:hidden;background:${bg};">
-                    <span style="font-size:13px;font-weight:700;color:#1e4575;padding:10px 14px;white-space:nowrap;border-right:1.5px solid ${border};flex:1;">Term ${inst.term_number}${inst.amount ? ' — ₱' + Number(inst.amount).toLocaleString() : ''}</span>
-                    ${actionBtn}
-                </div>`;
-        }
+                : `<span style="padding:10px 14px;background:#dcfce7;color:#166534;font-size:12px;font-weight:700;white-space:nowrap;border-left:1.5px solid #bbf7d0;">✓ Paid</span>`)
+            : `<button onclick="markPaidWithDate(${inst.id}, this)" style="padding:10px 16px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Paid</button>`;
+
+        // Amount input — editable for both admin and staff BEFORE paid; locked after paid
+        const amountInput = inst.is_paid
+            ? `<span style="flex:1;padding:10px 12px;font-size:13px;color:#166534;font-weight:600;">₱${Number(inst.amount||0).toLocaleString()}${paidDate}</span>`
+            : `<input type="number" id="inst_amount_${inst.id}" value="${inst.amount || ''}" placeholder="Enter amount" step="0.01" min="0"
+                onblur="saveInstallmentAmount(${inst.id})"
+                style="flex:1;padding:10px 12px;border:none;outline:none;font-size:13px;background:transparent;">`;
+
+        // Date input — only show when not yet paid
+        const dateInput = inst.is_paid ? '' :
+            `<input type="date" id="inst_date_${inst.id}" style="padding:8px 10px;border:none;border-left:1.5px solid #e2e8f0;outline:none;font-size:12px;background:transparent;color:#374151;" title="Date of payment">`;
+
+        return `
+            <div style="display:flex;align-items:center;gap:0;border:1.5px solid ${border};border-radius:10px;overflow:hidden;background:${bg};">
+                <span style="font-size:13px;font-weight:700;color:#1e4575;padding:10px 14px;white-space:nowrap;border-right:1.5px solid ${border};">Term ${inst.term_number}</span>
+                ${amountInput}
+                ${dateInput}
+                ${actionBtn}
+            </div>`;
     }).join('');
 }
 
@@ -887,6 +887,17 @@ function markPaid(instId) {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': _dpCsrf },
         body: JSON.stringify({})
+    }).then(r => r.json()).then(() => loadInstallments());
+}
+
+function markPaidWithDate(instId, btn) {
+    var dateEl = document.getElementById('inst_date_'+instId);
+    var date = dateEl ? dateEl.value : '';
+    if (!confirm('Mark this term as paid?')) return;
+    fetch(`/api/installments/${instId}/paid`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': _dpCsrf },
+        body: JSON.stringify({ paid_date: date })
     }).then(r => r.json()).then(() => loadInstallments());
 }
 

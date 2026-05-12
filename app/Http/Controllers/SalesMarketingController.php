@@ -454,7 +454,16 @@ class SalesMarketingController extends Controller
     {
         $installments = \App\Models\DownpaymentInstallment::where('commission_request_sales_id', $id)
             ->orderBy('term_number')->get();
-        return response()->json($installments);
+        return response()->json($installments->map(function($inst) {
+            return [
+                'id'          => $inst->id,
+                'term_number' => $inst->term_number,
+                'amount'      => $inst->amount,
+                'is_paid'     => $inst->is_paid,
+                'paid_at'     => $inst->paid_at,
+                'paid_date'   => $inst->paid_date ?? ($inst->paid_at ? \Carbon\Carbon::parse($inst->paid_at)->format('Y-m-d') : null),
+            ];
+        }));
     }
 
     public function setupInstallments(Request $request, $id)
@@ -504,7 +513,15 @@ class SalesMarketingController extends Controller
     public function markInstallmentPaid(Request $request, $id)
     {
         $inst = \App\Models\DownpaymentInstallment::findOrFail($id);
-        $inst->update(['is_paid' => true, 'paid_at' => now()]);
+        $updates = ['is_paid' => true, 'paid_at' => now()];
+        if ($request->filled('paid_date')) {
+            $updates['paid_date'] = $request->paid_date;
+        }
+        // Auto-create paid_date column if missing
+        if (!empty($updates['paid_date']) && !\Schema::hasColumn('downpayment_installments', 'paid_date')) {
+            try { \Schema::table('downpayment_installments', fn($t) => $t->date('paid_date')->nullable()->after('paid_at')); } catch (\Exception $e) {}
+        }
+        $inst->update($updates);
 
         // Update parent downpayment_status
         $parentId = $inst->commission_request_sales_id;
@@ -549,7 +566,18 @@ class SalesMarketingController extends Controller
     public function updateDownpaymentStatus(Request $request, $id)
     {
         $record = CommissionRequestSales::findOrFail($id);
-        $record->update(['downpayment_status' => $request->downpayment_status ?: null]);
+        $updates = ['downpayment_status' => $request->downpayment_status ?: null];
+        if ($request->filled('downpayment_amount')) {
+            $updates['downpayment_amount'] = $request->downpayment_amount;
+        }
+        if ($request->filled('downpayment_date')) {
+            // Auto-create column if missing
+            if (!\Schema::hasColumn('commission_requests_sales', 'downpayment_date')) {
+                try { \DB::statement("ALTER TABLE commission_requests_sales ADD COLUMN downpayment_date DATE NULL"); } catch (\Exception $e) {}
+            }
+            $updates['downpayment_date'] = $request->downpayment_date;
+        }
+        $record->update($updates);
         return back()->with('success', 'Downpayment status updated.');
     }
 
