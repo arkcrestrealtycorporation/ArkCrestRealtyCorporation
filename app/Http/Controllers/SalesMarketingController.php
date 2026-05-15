@@ -427,18 +427,26 @@ class SalesMarketingController extends Controller
 
         // Fire notification when status is set to Done (downpayment received)
         if ($request->client_status === 'Done' && $oldStatus !== 'Done') {
-            $recipients = \App\Models\User::where('role', 'admin')
-                ->orWhere(fn($q) => $q->whereRaw('LOWER(position) LIKE ?', ['%sales admin%']))
-                ->get();
-
             $clientName  = $record->client_name ?? 'Unknown Client';
             $projectName = $record->project_name ?? 'Unknown Project';
+
+            // Finance positions to notify
+            $financePositions = ['chief in finance', 'finance secretary', 'finance officer', 'finance'];
+
+            $recipients = \App\Models\User::where('status', 'active')
+                ->where(function($q) use ($financePositions) {
+                    $q->where('role', 'admin');
+                    foreach ($financePositions as $pos) {
+                        $q->orWhereRaw('LOWER(TRIM(position)) LIKE ?', ["%{$pos}%"]);
+                    }
+                })
+                ->get();
 
             foreach ($recipients as $user) {
                 \App\Models\SystemNotification::create([
                     'user_id'     => $user->id,
                     'type'        => 'client_done',
-                    'title'       => 'Downpayment Received',
+                    'title'       => 'Client Marked as Done',
                     'message'     => "{$clientName} — {$projectName} is marked Done. Please encode in Commission Monitoring.",
                     'is_read'     => false,
                     'notified_at' => now(),
