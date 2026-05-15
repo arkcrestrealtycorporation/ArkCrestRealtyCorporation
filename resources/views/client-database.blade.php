@@ -225,7 +225,7 @@
                             </form>
                         </td>
                         <td style="padding:10px 12px;white-space:nowrap">
-                            <button onclick="openDPModal({{ $req->id }}, {{ $req->downpayment_amount ?? 0 }}, {{ $req->downpayment_terms ?? 1 }}, {{ $req->downpayment_per_term ?? 0 }}, '{{ $req->downpayment_status ?? '' }}')"
+                            <button onclick="openDPModal({{ $req->id }}, {{ $req->downpayment_amount ?? 0 }}, {{ $req->downpayment_terms ?? 1 }}, {{ $req->downpayment_per_term ?? 0 }}, '{{ $req->downpayment_status ?? '' }}', '{{ $req->downpayment_date ? $req->downpayment_date->format('Y-m-d') : '' }}')"
                                 style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:none;cursor:pointer;
                                 background:{{ $req->downpayment_status === 'Paid' || $req->downpayment_status === 'Spot Paid' ? '#dcfce7' : ($req->downpayment_status && $req->downpayment_status !== '— Set —' ? '#fef3c7' : '#f1f5f9') }};
                                 color:{{ $req->downpayment_status === 'Paid' || $req->downpayment_status === 'Spot Paid' ? '#166534' : ($req->downpayment_status && $req->downpayment_status !== '— Set —' ? '#92400e' : '#64748b') }};">
@@ -761,12 +761,12 @@ let _dpRecordId = null;
 const _dpCsrf = document.querySelector('meta[name=csrf-token]')?.content || '';
 const _isAdmin = {{ auth()->user()->isAdmin() ? 'true' : 'false' }};
 
-function openDPModal(id, amount, terms, perTerm, status) {
+function openDPModal(id, amount, terms, perTerm, status, dpDate) {
     _dpRecordId = id;
     document.getElementById('dp_total_amount').value = amount || '';
     document.getElementById('dp_terms_select').value = Math.min(terms || 1, 6);
     document.getElementById('dp_spot_amount').value = amount || '';
-    document.getElementById('dp_spot_date').value = '';
+    document.getElementById('dp_spot_date').value = dpDate || '';
     document.getElementById('dp_others_amount').value = amount || '';
     document.getElementById('dp_others_terms').value = '';
 
