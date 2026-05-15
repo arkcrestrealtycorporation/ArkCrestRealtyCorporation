@@ -36,12 +36,14 @@ class CommissionRequestSales extends Model
         'downpayment_amount',
         'downpayment_terms',
         'downpayment_per_term',
+        'downpayment_date',
     ];
 
     protected $casts = [
         'date_requested' => 'date',
         'reservation_date' => 'date',
         'date_of_downpayment' => 'date',
+        'downpayment_date' => 'date',
         'date_released' => 'date',
         'lot_area' => 'decimal:4',
         'price_sqm' => 'decimal:2',

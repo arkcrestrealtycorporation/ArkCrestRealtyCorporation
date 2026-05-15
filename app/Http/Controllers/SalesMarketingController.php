@@ -570,10 +570,11 @@ class SalesMarketingController extends Controller
         if ($request->filled('downpayment_amount')) {
             $updates['downpayment_amount'] = $request->input('downpayment_amount');
         }
+        // Always ensure downpayment_date column exists
+        if (!\Schema::hasColumn('commission_requests_sales', 'downpayment_date')) {
+            try { \DB::statement("ALTER TABLE commission_requests_sales ADD COLUMN downpayment_date DATE NULL"); } catch (\Exception $e) {}
+        }
         if ($request->filled('downpayment_date')) {
-            if (!\Schema::hasColumn('commission_requests_sales', 'downpayment_date')) {
-                try { \DB::statement("ALTER TABLE commission_requests_sales ADD COLUMN downpayment_date DATE NULL"); } catch (\Exception $e) {}
-            }
             $updates['downpayment_date'] = $request->input('downpayment_date');
         }
         $record->update($updates);
