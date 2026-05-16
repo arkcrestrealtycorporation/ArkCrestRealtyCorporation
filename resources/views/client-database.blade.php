@@ -716,12 +716,15 @@ function cdFilter() {
 
         {{-- Spot DP --}}
         <div id="dp_spot_section" style="display:none;padding:0 24px 24px;flex-direction:column;gap:12px">
+            <div id="dp_spot_locked_notice" style="display:none;background:#fef3c7;border-left:3px solid #f59e0b;padding:10px 14px;border-radius:6px;font-size:12px;color:#92400e;">
+                🔒 This downpayment has been finalized. Only admin can modify it.
+            </div>
             <div>
                 <label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Amount</label>
                 <div style="display:flex;align-items:center;border:2px solid #d0d5dd;border-radius:8px;overflow:hidden;background:white;">
                     <input type="number" id="dp_spot_amount" step="0.01" min="0" placeholder="Enter amount here"
                         style="flex:1;padding:10px 12px;border:none;outline:none;font-size:14px;background:transparent;">
-                    <button onclick="saveSpotDP()" style="padding:10px 16px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Paid</button>
+                    <button id="dp_spot_paid_btn" onclick="saveSpotDP()" style="padding:10px 16px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Paid</button>
                 </div>
             </div>
             <div>
@@ -779,7 +782,7 @@ function cdFilter() {
             </div>
             <div id="dp_footer_spot" style="display:none;gap:10px">
                 <button onclick="selectDPType('spot'); document.getElementById('dp_step_type').style.display='flex';" style="flex:1;padding:10px;background:#f1f5f9;color:#374151;border:1.5px solid #e2e8f0;border-radius:8px;font-weight:600;cursor:pointer">Back</button>
-                <button onclick="saveSpotDP()" style="flex:1;padding:10px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer">Save</button>
+                <button id="dp_footer_spot_save" onclick="saveSpotDP()" style="flex:1;padding:10px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer">Save</button>
             </div>
             <div id="dp_footer_installment" style="display:none;gap:10px">
                 <button onclick="document.getElementById('dp_step_type').style.display='flex';document.getElementById('dp_installment_section').style.display='none';" style="flex:1;padding:10px;background:#f1f5f9;color:#374151;border:1.5px solid #e2e8f0;border-radius:8px;font-weight:600;cursor:pointer">Back</button>
@@ -800,48 +803,47 @@ const _isAdmin = {{ auth()->user()->isAdmin() ? 'true' : 'false' }};
 
 function openDPModal(id, amount, terms, perTerm, status, dpDate) {
     _dpRecordId = id;
-    document.getElementById('dp_total_amount').value = amount || '';
-    document.getElementById('dp_terms_select').value = Math.min(terms || 1, 6);
-    document.getElementById('dp_spot_amount').value = amount || '';
-    document.getElementById('dp_spot_date').value = dpDate || '';
+
+    const isSpotPaid = status === 'Spot Paid';
+    const locked     = isSpotPaid && !_isAdmin;
+
+    // Populate fields
+    document.getElementById('dp_total_amount').value  = amount || '';
+    document.getElementById('dp_terms_select').value  = Math.min(terms || 1, 6);
+    document.getElementById('dp_spot_amount').value   = amount || '';
+    document.getElementById('dp_spot_date').value     = dpDate || '';
     document.getElementById('dp_others_amount').value = amount || '';
-    document.getElementById('dp_others_terms').value = '';
+    document.getElementById('dp_others_terms').value  = '';
 
-    // Lock spot DP fields for non-admin when already Spot Paid
-    const spotAmountEl = document.getElementById('dp_spot_amount');
-    const spotDateEl   = document.getElementById('dp_spot_date');
-    const spotPaidBtn  = document.querySelector('#dp_spot_section button[onclick="saveSpotDP()"]');
-    const isSpotPaid   = status === 'Spot Paid';
-    const locked       = isSpotPaid && !_isAdmin;
+    // Apply lock/unlock to spot DP fields
+    var amountEl  = document.getElementById('dp_spot_amount');
+    var dateEl    = document.getElementById('dp_spot_date');
+    var paidBtn   = document.getElementById('dp_spot_paid_btn');
+    var saveBtn   = document.getElementById('dp_footer_spot_save');
+    var lockNotice= document.getElementById('dp_spot_locked_notice');
 
-    if (spotAmountEl) {
-        spotAmountEl.readOnly = locked;
-        spotAmountEl.style.background = locked ? '#f3f4f6' : 'transparent';
-        spotAmountEl.style.color      = locked ? '#6b7280' : '';
-    }
-    if (spotDateEl) {
-        spotDateEl.disabled = locked;
-        spotDateEl.style.background = locked ? '#f3f4f6' : '';
-        spotDateEl.style.color      = locked ? '#6b7280' : '';
-    }
-    if (spotPaidBtn) spotPaidBtn.style.display = locked ? 'none' : '';
+    amountEl.readOnly  = locked;
+    amountEl.style.background = locked ? '#f3f4f6' : 'transparent';
+    amountEl.style.cursor     = locked ? 'not-allowed' : '';
+    dateEl.disabled    = locked;
+    dateEl.style.background   = locked ? '#f3f4f6' : '';
+    dateEl.style.cursor       = locked ? 'not-allowed' : '';
+    paidBtn.style.display     = locked ? 'none' : '';
+    saveBtn.style.display     = locked ? 'none' : '';
+    lockNotice.style.display  = locked ? 'block' : 'none';
 
-    // Show/hide Save button in footer for non-admin when locked
-    const footerSaveBtn = document.querySelector('#dp_footer_spot button[onclick="saveSpotDP()"]');
-    if (footerSaveBtn) footerSaveBtn.style.display = locked ? 'none' : '';
-
-    // Reset all sections first
-    document.getElementById('dp_step_type').style.display = 'flex';
-    document.getElementById('dp_spot_section').style.display = 'none';
-    document.getElementById('dp_installment_section').style.display = 'none';
-    document.getElementById('dp_others_section').style.display = 'none';
-    document.getElementById('dp_footer_type').style.display = 'flex';
-    document.getElementById('dp_footer_spot').style.display = 'none';
+    // Reset all sections
+    document.getElementById('dp_step_type').style.display          = 'flex';
+    document.getElementById('dp_spot_section').style.display       = 'none';
+    document.getElementById('dp_installment_section').style.display= 'none';
+    document.getElementById('dp_others_section').style.display     = 'none';
+    document.getElementById('dp_footer_type').style.display        = 'flex';
+    document.getElementById('dp_footer_spot').style.display        = 'none';
     document.getElementById('dp_footer_installment').style.display = 'none';
-    document.getElementById('dp_footer_others').style.display = 'none';
+    document.getElementById('dp_footer_others').style.display      = 'none';
 
-    // Route to correct view based on current status
-    if (status === 'Spot Paid') {
+    // Route to correct view
+    if (isSpotPaid) {
         selectDPType('spot');
     } else if (status && (status.includes('month') || status === 'Partial' || status === 'Paid')) {
         selectDPType('installment');
@@ -853,7 +855,6 @@ function openDPModal(id, amount, terms, perTerm, status, dpDate) {
         selectDPType('installment');
         loadInstallments();
     }
-    // else: show type selection screen
 
     document.getElementById('dpModal').style.display = 'flex';
 }
