@@ -100,7 +100,7 @@ class PermissionRequestController extends Controller
     {
         $perm = PermissionRequest::where('user_id', auth()->id())
             ->where('action', $request->action)
-            ->where('record_id', $request->record_id)
+            ->where('record_id', (int) $request->record_id)
             ->where('status', 'approved')
             ->latest()
             ->first();

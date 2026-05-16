@@ -345,9 +345,10 @@
 const IS_ADMIN = {{ (auth()->check() && auth()->user()->isAdmin()) ? 'true' : 'false' }};
 
 let _localPermAction = '', _localPermModule = 'Client Database', _localPermRecordId = null, _localPermRecordLabel = '';
+let _pendingDeleteForm = null;
 
 function requireAdmin(cb, recordId, recordLabel, action) {
-    if (IS_ADMIN) { cb(); return; }
+    if (IS_ADMIN) { if (cb) cb(); return; }
     // Check if already approved for this specific record+action
     fetch(`/api/permission-requests/check?action=${action || 'edit'}&record_id=${recordId}`)
         .then(r => r.json())
@@ -369,12 +370,41 @@ function requireAdmin(cb, recordId, recordLabel, action) {
 }
 
 function requireAdminSync(e, recordId, recordLabel) {
-    if (!IS_ADMIN) {
-        e.preventDefault();
-        requireAdmin(null, recordId, recordLabel, 'delete');
-        return false;
+    if (IS_ADMIN) {
+        return confirm('Delete this record?');
     }
-    return confirm('Delete this record?');
+    e.preventDefault();
+    // Check if already approved
+    fetch(`/api/permission-requests/check?action=delete&record_id=${recordId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.approved) {
+                if (confirm('Delete this record?')) {
+                    // Find and submit the delete form for this record
+                    var form = document.querySelector('tr[data-id="' + recordId + '"] form[action*="DELETE"], tr[data-id="' + recordId + '"] form[method="POST"]');
+                    // Find the delete form specifically (has DELETE method input)
+                    var allForms = document.querySelectorAll('tr[data-id="' + recordId + '"] form');
+                    for (var f of allForms) {
+                        var methodInput = f.querySelector('input[name="_method"]');
+                        if (methodInput && methodInput.value === 'DELETE') {
+                            f.submit();
+                            return;
+                        }
+                    }
+                }
+            } else {
+                _localPermAction = 'delete';
+                _localPermRecordId = recordId || null;
+                _localPermRecordLabel = recordLabel || '';
+                document.getElementById('localPermTitle').textContent = 'Request to Delete Record';
+                document.getElementById('localPermRecord').textContent = recordLabel || 'Record #' + recordId;
+                document.getElementById('localPermReason').value = '';
+                document.getElementById('localPermError').style.display = 'none';
+                document.getElementById('permissionModal').style.display = 'flex';
+                setTimeout(() => document.getElementById('localPermReason').focus(), 100);
+            }
+        });
+    return false;
 }
 
 function closeLocalPermModal() {
@@ -561,6 +591,13 @@ document.addEventListener('DOMContentLoaded',function(){
                 scroller.scrollTo({ top: scrollTo, behavior: 'smooth' });
             } else {
                 row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // If approved + edit action → auto-open edit modal
+            if (isApproved && hlAction === 'edit') {
+                setTimeout(function() {
+                    editRow(parseInt(highlightId));
+                }, 600);
             }
 
             setTimeout(function() {
