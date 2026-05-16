@@ -316,29 +316,31 @@ class SalesMarketingController extends Controller
     private function validationRules(): array
     {
         return [
-            'developer_name'    => 'nullable|string|max:255',
-            'date_requested'    => 'nullable|date',
-            'reservation_date'  => 'nullable|date',
+            'developer_name'      => 'nullable|string|max:255',
+            'date_requested'      => 'nullable|date',
+            'reservation_date'    => 'nullable|date',
             'date_of_downpayment' => 'nullable|date',
-            'project_name'      => 'required|string|max:255',
-            'property_details'  => 'nullable|string|max:255',
-            'block_lot_number'  => 'nullable|string|max:255',
-            'client_name'       => 'required|string|max:255',
-            'lot_area'          => 'nullable|numeric',
-            'price_sqm'         => 'nullable|numeric',
-            'tcp'               => 'nullable|numeric',
-            'discount'          => 'nullable|numeric',
-            'net_tcp'           => 'nullable|numeric',
-            'terms_of_payment'  => 'required|string|max:255',
-            'agent_name'        => 'required|string|max:255',
-            'number_of_units'   => 'nullable|integer|min:1',
-            'commission_percent'=> 'nullable|numeric|min:0|max:100',
-            'commission'        => 'nullable|numeric',
-            'mode_of_payment'   => 'nullable|string|max:255',
-            'remarks'           => 'nullable|string',
-            'date_released'     => 'nullable|date',
-            'status'            => 'nullable|string|max:50',
-            'downpayment_status' => 'nullable|string|max:50',
+            'project_name'        => 'required|string|max:255',
+            'property_details'    => 'nullable|string|max:255',
+            'block_lot_number'    => 'nullable|string|max:255',
+            'client_name'         => 'required|string|max:255',
+            'lot_area'            => 'nullable|numeric',
+            'price_sqm'           => 'nullable|numeric',
+            'tcp'                 => 'nullable|numeric',
+            'discount'            => 'nullable|numeric',
+            'net_tcp'             => 'nullable|numeric',
+            'terms_of_payment'    => 'required|string|max:255',
+            'agent_name'          => 'required|string|max:255',
+            'number_of_units'     => 'nullable|integer|min:1',
+            'commission_percent'  => 'nullable|numeric|min:0|max:100',
+            'commission'          => 'nullable|numeric',
+            'mode_of_payment'     => 'nullable|string|max:255',
+            'remarks'             => 'nullable|string',
+            'date_released'       => 'nullable|date',
+            'status'              => 'nullable|string|max:50',
+            // downpayment_status, downpayment_amount, downpayment_terms,
+            // downpayment_per_term, downpayment_date are managed separately
+            // via the downpayment modal — never overwritten by the edit form
         ];
     }
 
@@ -391,6 +393,16 @@ class SalesMarketingController extends Controller
         $commissionRequest = CommissionRequestSales::findOrFail($id);
         $oldStatus = $commissionRequest->status;
         $validated = $request->validate($this->validationRules());
+
+        // Preserve downpayment fields — never overwrite from the edit form
+        unset(
+            $validated['downpayment_status'],
+            $validated['downpayment_amount'],
+            $validated['downpayment_terms'],
+            $validated['downpayment_per_term'],
+            $validated['downpayment_date']
+        );
+
         $commissionRequest->update($validated);
         ActivityLog::log('update', 'Sales & Marketing', "Updated sale entry for client '{$validated['client_name']}' (ID: {$id})");
 
