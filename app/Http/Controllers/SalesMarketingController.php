@@ -379,10 +379,10 @@ class SalesMarketingController extends Controller
 
         // Allow if admin OR has an approved permission request for this record
         if (!$user->isAdmin()) {
-            // Block editing if downpayment has already been paid (Paid or Spot Paid)
+            // Block editing if downpayment has already been paid (Paid or Spot Paid) AND amount is set
             $record = CommissionRequestSales::findOrFail($id);
             $lockedStatuses = ['Paid', 'Spot Paid'];
-            if (in_array($record->downpayment_status, $lockedStatuses)) {
+            if (in_array($record->downpayment_status, $lockedStatuses) && $record->downpayment_amount > 0) {
                 return response()->json(['error' => 'This record is locked. Downpayment has already been marked as paid and cannot be edited by staff.'], 403);
             }
 

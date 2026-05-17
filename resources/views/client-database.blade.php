@@ -242,7 +242,7 @@
                                     <button type="submit" style="width:60px;height:28px;background:#ef4444;color:white;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">DELETE</button>
                                 </form>
                                 @else
-                                @php $dpLocked = in_array($req->downpayment_status, ['Paid', 'Spot Paid']); @endphp
+                                @php $dpLocked = in_array($req->downpayment_status, ['Paid', 'Spot Paid']) && $req->downpayment_amount > 0; @endphp
                                 @if($dpLocked)
                                 <button disabled title="Locked — downpayment has been paid. Only admin can edit." style="width:60px;height:28px;background:#9ca3af;color:white;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:not-allowed;opacity:0.7;">🔒 EDIT</button>
                                 @else
