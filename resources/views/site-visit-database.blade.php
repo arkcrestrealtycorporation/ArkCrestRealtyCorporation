@@ -178,7 +178,7 @@
         </tr></thead>
         <tbody>
         @foreach($confirmed->values() as $i => $r)
-        <tr>
+        <tr id="trip-{{ $r->id }}" data-id="{{ $r->id }}">
             <td class="row-num">{{ $i + 1 }}</td>
             <td><div class="td-name">{{ $r->client_name }}</div></td>
             <td><div class="td-name" style="font-size:12px">{{ $r->property_name ?? '—' }}</div></td>
@@ -270,7 +270,7 @@
         </tr></thead>
         <tbody>
         @foreach($grp->values() as $i => $r)
-        <tr>
+        <tr id="trip-{{ $r->id }}" data-id="{{ $r->id }}">
             <td class="row-num">{{ $i + 1 }}</td>
             <td><div class="td-name">{{ $r->client_name }}</div></td>
             <td><div class="td-name" style="font-size:12px">{{ $r->property_name ?? '—' }}</div></td>

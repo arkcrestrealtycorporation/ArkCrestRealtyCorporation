@@ -11,13 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('summary_reports', function (Blueprint $table) {
-            // Drop the old unique constraint that references report_type
-            $table->dropUnique('summary_reports_report_type_year_month_unique');
-            
-            // Add new unique constraint for year and month only
-            $table->unique(['year', 'month'], 'summary_reports_year_month_unique');
-        });
+        // Drop the old unique constraint if it still exists (may have been removed by a prior migration)
+        try {
+            Schema::table('summary_reports', function (Blueprint $table) {
+                $table->dropUnique('summary_reports_report_type_year_month_unique');
+            });
+        } catch (\Exception $e) {
+            // Already dropped — safe to ignore
+        }
+
+        // Add new unique constraint for year and month only (if not already present)
+        try {
+            Schema::table('summary_reports', function (Blueprint $table) {
+                $table->unique(['year', 'month'], 'summary_reports_year_month_unique');
+            });
+        } catch (\Exception $e) {
+            // Already exists — safe to ignore
+        }
     }
 
     /**

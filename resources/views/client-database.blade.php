@@ -225,7 +225,7 @@
                             </form>
                         </td>
                         <td style="padding:10px 12px;white-space:nowrap">
-                            <button onclick="openDPModal({{ $req->id }}, {{ $req->downpayment_amount ?? 0 }}, {{ $req->downpayment_terms ?? 1 }}, {{ $req->downpayment_per_term ?? 0 }}, '{{ $req->downpayment_status ?? '' }}', '{{ $req->downpayment_date ? $req->downpayment_date->format('Y-m-d') : '' }}')"
+                            <button onclick="openDPModal({{ $req->id }}, {{ $req->downpayment_amount ?? 0 }}, {{ $req->downpayment_terms ?? 1 }}, {{ $req->downpayment_per_term ?? 0 }}, '{{ addslashes($req->downpayment_status ?? '') }}', '{{ $req->downpayment_date ? $req->downpayment_date->format('Y-m-d') : '' }}')"
                                 style="padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;border:none;cursor:pointer;
                                 background:{{ $req->downpayment_status === 'Paid' || $req->downpayment_status === 'Spot Paid' ? '#dcfce7' : ($req->downpayment_status && $req->downpayment_status !== '— Set —' ? '#fef3c7' : '#f1f5f9') }};
                                 color:{{ $req->downpayment_status === 'Paid' || $req->downpayment_status === 'Spot Paid' ? '#166534' : ($req->downpayment_status && $req->downpayment_status !== '— Set —' ? '#92400e' : '#64748b') }};">
@@ -235,11 +235,19 @@
                         <td style="padding:14px 12px;white-space:nowrap">
                             <div style="display:flex;gap:6px">
                                 <button onclick="viewRow({{ $req->id }})" style="width:60px;height:28px;background:#1e4575;color:white;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">VIEW</button>
-                                <button onclick="requireAdmin(() => editRow({{ $req->id }}), {{ $req->id }}, '{{ addslashes($req->client_name ?? '') }} - {{ addslashes($req->project_name ?? '') }}', 'edit')" style="width:60px;height:28px;background:#f59e0b;color:white;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">EDIT</button>
-                                <form action="{{ route('client-database.destroy', $req->id) }}" method="POST" style="display:inline" onsubmit="return requireAdminSync(event, {{ $req->id }}, '{{ addslashes($req->client_name ?? '') }} - {{ addslashes($req->project_name ?? '') }}')">
+                                @if(auth()->user()->isAdmin())
+                                <button onclick="editRow({{ $req->id }})" style="width:60px;height:28px;background:#f59e0b;color:white;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">EDIT</button>
+                                <form action="{{ route('client-database.destroy', $req->id) }}" method="POST" style="display:inline" onsubmit="return confirm('Delete this record?')">
                                     @csrf @method('DELETE')
                                     <button type="submit" style="width:60px;height:28px;background:#ef4444;color:white;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">DELETE</button>
                                 </form>
+                                @else
+                                <button onclick="staffEditRow({{ $req->id }}, '{{ addslashes($req->client_name ?? '') }} - {{ addslashes($req->project_name ?? '') }}')" style="width:60px;height:28px;background:#f59e0b;color:white;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">EDIT</button>
+                                <form action="{{ route('client-database.destroy', $req->id) }}" method="POST" style="display:inline" onsubmit="return staffDeleteConfirm(event, {{ $req->id }}, '{{ addslashes($req->client_name ?? '') }} - {{ addslashes($req->project_name ?? '') }}')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" style="width:60px;height:28px;background:#ef4444;color:white;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">DELETE</button>
+                                </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -350,6 +358,7 @@ let _pendingDeleteForm = null;
 
 function requireAdmin(cb, recordId, recordLabel, action) {
     if (IS_ADMIN) { if (cb) cb(); return; }
+    var btn = document.getElementById('editSaveBtn');
     // Check if already approved for this specific record+action
     fetch(`/api/permission-requests/check?action=${action || 'edit'}&record_id=${recordId}`)
         .then(r => r.json())
@@ -367,6 +376,17 @@ function requireAdmin(cb, recordId, recordLabel, action) {
                 document.getElementById('permissionModal').style.display = 'flex';
                 setTimeout(() => document.getElementById('localPermReason').focus(), 100);
             }
+        })
+        .catch(() => {
+            // On fetch error, still show permission request modal
+            _localPermAction = action || 'edit';
+            _localPermRecordId = recordId || null;
+            _localPermRecordLabel = recordLabel || '';
+            document.getElementById('localPermTitle').textContent = 'Request to ' + (_localPermAction.charAt(0).toUpperCase() + _localPermAction.slice(1)) + ' Record';
+            document.getElementById('localPermRecord').textContent = recordLabel || 'Record #' + recordId;
+            document.getElementById('localPermReason').value = '';
+            document.getElementById('localPermError').style.display = 'none';
+            document.getElementById('permissionModal').style.display = 'flex';
         });
 }
 
@@ -542,6 +562,66 @@ function editRow(id){
         alert('Failed to load record. Please try again.');
         console.error(err);
     });
+}
+
+// Staff edit — check permission first, if approved open edit modal, else show request modal
+function staffEditRow(id, label) {
+    fetch(`/api/permission-requests/check?action=edit&record_id=${id}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.approved) {
+                editRow(id);
+            } else {
+                _localPermAction = 'edit';
+                _localPermRecordId = id;
+                _localPermRecordLabel = label;
+                document.getElementById('localPermTitle').textContent = 'Request to Edit Record';
+                document.getElementById('localPermRecord').textContent = label;
+                document.getElementById('localPermReason').value = '';
+                document.getElementById('localPermError').style.display = 'none';
+                document.getElementById('permissionModal').style.display = 'flex';
+                setTimeout(() => document.getElementById('localPermReason').focus(), 100);
+            }
+        })
+        .catch(() => {
+            // On error, just open edit modal — server will reject if no permission
+            editRow(id);
+        });
+}
+
+// Staff delete — check permission first
+function staffDeleteConfirm(e, id, label) {
+    e.preventDefault();
+    fetch(`/api/permission-requests/check?action=delete&record_id=${id}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.approved) {
+                if (confirm('Delete this record?')) {
+                    var rows = document.querySelectorAll('tr[data-id="' + id + '"] form');
+                    for (var f of rows) {
+                        var m = f.querySelector('input[name="_method"]');
+                        if (m && m.value === 'DELETE') { f.submit(); return; }
+                    }
+                }
+            } else {
+                _localPermAction = 'delete';
+                _localPermRecordId = id;
+                _localPermRecordLabel = label;
+                document.getElementById('localPermTitle').textContent = 'Request to Delete Record';
+                document.getElementById('localPermRecord').textContent = label;
+                document.getElementById('localPermReason').value = '';
+                document.getElementById('localPermError').style.display = 'none';
+                document.getElementById('permissionModal').style.display = 'flex';
+                setTimeout(() => document.getElementById('localPermReason').focus(), 100);
+            }
+        })
+        .catch(() => {
+            _localPermAction = 'delete';
+            _localPermRecordId = id;
+            _localPermRecordLabel = label;
+            document.getElementById('permissionModal').style.display = 'flex';
+        });
+    return false;
 }
 
 function submitEditForm() {
