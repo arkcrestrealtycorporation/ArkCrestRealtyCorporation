@@ -419,6 +419,11 @@ class SalesMarketingController extends Controller
         $commissionRequest->update($validated);
         ActivityLog::log('update', 'Sales & Marketing', "Updated sale entry for client '{$validated['client_name']}' (ID: {$id})");
 
+        // Consume the one-time permission after successful edit
+        if (!$user->isAdmin()) {
+            \App\Http\Controllers\PermissionRequestController::consume($user->id, 'edit', (int) $id);
+        }
+
         // Email admins when commission is marked as Released
         if (!empty($validated['status']) && $validated['status'] === 'Released' && $oldStatus !== 'Released') {
             $body = "<b>Client:</b> {$validated['client_name']}<br>
@@ -697,6 +702,12 @@ class SalesMarketingController extends Controller
             'client_status'       => $record->client_status,
         ]);
         $record->delete();
+
+        // Consume the one-time permission after successful delete
+        if (!$user->isAdmin()) {
+            \App\Http\Controllers\PermissionRequestController::consume($user->id, 'delete', (int) $id);
+        }
+
         return redirect()->route('client-database')->with('success', 'Commission request deleted successfully!');
     }
 }

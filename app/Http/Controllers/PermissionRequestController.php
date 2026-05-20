@@ -100,19 +100,16 @@ class PermissionRequestController extends Controller
     {
         $recordId = $request->record_id !== null && $request->record_id !== '' ? (int) $request->record_id : null;
 
-        $query = PermissionRequest::where('user_id', auth()->id())
-            ->where('action', $request->action)
-            ->where('status', 'approved')
-            ->latest();
-
-        // Match by record_id if provided, otherwise match any approved permission for this action
-        if ($recordId) {
-            $query->where(function($q) use ($recordId) {
-                $q->where('record_id', $recordId)->orWhereNull('record_id');
-            });
+        if (!$recordId) {
+            return response()->json(['approved' => false, 'perm_id' => null]);
         }
 
-        $perm = $query->first();
+        $perm = PermissionRequest::where('user_id', auth()->id())
+            ->where('action', $request->action)
+            ->where('record_id', $recordId)
+            ->where('status', 'approved')
+            ->latest()
+            ->first();
 
         return response()->json(['approved' => (bool) $perm, 'perm_id' => $perm?->id]);
     }
@@ -168,5 +165,15 @@ class PermissionRequestController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
         return response()->json($requests);
+    }
+
+    // Consume (delete) an approved permission after it has been used
+    public static function consume(int $userId, string $action, int $recordId): void
+    {
+        PermissionRequest::where('user_id', $userId)
+            ->where('action', $action)
+            ->where('record_id', $recordId)
+            ->where('status', 'approved')
+            ->delete();
     }
 }
