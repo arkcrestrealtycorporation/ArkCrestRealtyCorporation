@@ -98,12 +98,21 @@ class PermissionRequestController extends Controller
     // Check if a specific permission is approved for the current user
     public function check(Request $request)
     {
-        $perm = PermissionRequest::where('user_id', auth()->id())
+        $recordId = $request->record_id !== null && $request->record_id !== '' ? (int) $request->record_id : null;
+
+        $query = PermissionRequest::where('user_id', auth()->id())
             ->where('action', $request->action)
-            ->where('record_id', (int) $request->record_id)
             ->where('status', 'approved')
-            ->latest()
-            ->first();
+            ->latest();
+
+        // Match by record_id if provided, otherwise match any approved permission for this action
+        if ($recordId) {
+            $query->where(function($q) use ($recordId) {
+                $q->where('record_id', $recordId)->orWhereNull('record_id');
+            });
+        }
+
+        $perm = $query->first();
 
         return response()->json(['approved' => (bool) $perm, 'perm_id' => $perm?->id]);
     }
@@ -142,7 +151,10 @@ class PermissionRequestController extends Controller
         ];
 
         $base = $moduleUrls[$perm->module] ?? '/dashboard';
-        $url = $base . '?highlight=' . $perm->record_id . '&status=' . $perm->status . '&action=' . $perm->action;
+        $url = $base . '?highlight=' . ($perm->record_id ?? '') . '&status=' . $perm->status . '&action=' . $perm->action;
+        if ($perm->record_id) {
+            $url .= '&record_id=' . $perm->record_id;
+        }
 
         return response()->json(['url' => $url]);
     }

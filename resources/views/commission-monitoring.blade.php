@@ -1456,8 +1456,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const _hlId     = _hlParams.get('highlight');
     const _hlStatus = _hlParams.get('status');
     const _hlAction = _hlParams.get('action');
-    if (_hlId && _hlStatus === 'approved') {
+    if (_hlStatus === 'approved') {
+        // Show toast so staff knows they can now edit
+        setTimeout(() => {
+            if (typeof showToast === 'function') showToast('Your request was approved. You can now ' + (_hlAction || 'edit') + ' the record.', 'success', 'Request Approved');
+        }, 500);
         function doCmHighlight() {
+            if (!_hlId) return;
             const row = document.getElementById('cm-' + _hlId) || document.querySelector('[data-id="' + _hlId + '"]');
             if (!row) return;
             row.style.background = 'rgba(22,163,74,.12)';
