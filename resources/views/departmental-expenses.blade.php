@@ -329,7 +329,7 @@
                 </thead>
                 <tbody id="requestsTableBody">
                     @foreach($requests as $req)
-                    <tr id="expense-{{ $req->id }}" data-id="{{ $req->id }}" data-department="{{ $req->department }}" data-date-released="{{ $req->date_released ? $req->date_released->format('Y-m-d') : ' }}" data-control="{{ $req->control_number }}">
+                    <tr id="expense-{{ $req->id }}" data-id="{{ $req->id }}" data-department="{{ $req->department }}" data-date-released="{{ $req->date_released ? $req->date_released->format('Y-m-d') : '' }}" data-control="{{ $req->control_number }}">
                         <td>{{ $req->control_number }}</td>
                         <td>{{ $req->requestor_name }}</td>
                         <td class="department-cell">{{ $req->department }}</td>
