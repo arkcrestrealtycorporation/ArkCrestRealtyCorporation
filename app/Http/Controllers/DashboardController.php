@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -106,8 +106,8 @@ class DashboardController extends Controller
             // Use case-insensitive comparison and trim whitespace
             // Filter by date_requested month
             $deptExpenses = DepartmentalExpense::whereRaw('LOWER(TRIM(department)) = ?', [strtolower(trim($dept->name))])
-                ->whereMonth('date_requested', $currentMonthNumber)
-                ->whereYear('date_requested', $currentYear)
+                ->whereMonth('date_released', $currentMonthNumber)
+                ->whereYear('date_released', $currentYear)
                 ->sum('requested_amount');
             
             $remaining = $dept->allowable_budget - $deptExpenses;
@@ -123,8 +123,8 @@ class DashboardController extends Controller
             // Get expense breakdown by category for this department (current month only)
             $categories = [];
             $requests = DepartmentalExpense::whereRaw('LOWER(TRIM(department)) = ?', [strtolower(trim($dept->name))])
-                ->whereMonth('date_requested', $currentMonthNumber)
-                ->whereYear('date_requested', $currentYear)
+                ->whereMonth('date_released', $currentMonthNumber)
+                ->whereYear('date_released', $currentYear)
                 ->whereNotNull('requested_amount')
                 ->where('requested_amount', '>', 0)
                 ->get();

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers;
 
@@ -16,8 +16,8 @@ class SummaryReportController extends Controller
         $currentYear = date('Y');
         
         // Get available years from commission_requests and summary_reports
-        $availablePeriods = DepartmentalExpense::selectRaw('MONTH(date_requested) as month, YEAR(date_requested) as year')
-            ->whereNotNull('date_requested')
+        $availablePeriods = DepartmentalExpense::selectRaw('MONTH(date_released) as month, YEAR(date_released) as year')
+            ->whereNotNull('date_released')
             ->groupBy('year', 'month')
             ->orderBy('year', 'desc')
             ->orderBy('month', 'desc')
@@ -49,8 +49,8 @@ class SummaryReportController extends Controller
         $departments = $allDepts->pluck('name', 'name')->toArray();
 
         // Also include any departments found in expenses that may not be in Department table
-        $expenseDepts = DepartmentalExpense::whereYear('date_requested', $selectedYear)
-            ->whereMonth('date_requested', $selectedMonth)
+        $expenseDepts = DepartmentalExpense::whereYear('date_released', $selectedYear)
+            ->whereMonth('date_released', $selectedMonth)
             ->whereNotNull('department')
             ->distinct()
             ->pluck('department');
@@ -65,8 +65,8 @@ class SummaryReportController extends Controller
 
         foreach (array_keys($departments) as $deptKey) {
             $expenses = DepartmentalExpense::where('department', $deptKey)
-                ->whereYear('date_requested', $selectedYear)
-                ->whereMonth('date_requested', $selectedMonth)
+                ->whereYear('date_released', $selectedYear)
+                ->whereMonth('date_released', $selectedMonth)
                 ->selectRaw('SUM(COALESCE(total_expenses, requested_amount, 0)) as total')
                 ->value('total') ?? 0;
 
@@ -167,8 +167,8 @@ class SummaryReportController extends Controller
         $selectedYear = $request->get('year', $currentYear);
 
         // Get distinct years from data
-        $availableYears = DepartmentalExpense::selectRaw('YEAR(date_requested) as year')
-            ->whereNotNull('date_requested')
+        $availableYears = DepartmentalExpense::selectRaw('YEAR(date_released) as year')
+            ->whereNotNull('date_released')
             ->distinct()
             ->orderBy('year', 'desc')
             ->pluck('year');
@@ -185,7 +185,7 @@ class SummaryReportController extends Controller
         $allDepts = \App\Models\Department::orderBy('name')->get();
         $departments = $allDepts->pluck('name', 'name')->toArray();
         // Also include any departments found in expenses
-        $expenseDepts = DepartmentalExpense::whereYear('date_requested', $selectedYear)
+        $expenseDepts = DepartmentalExpense::whereYear('date_released', $selectedYear)
             ->whereNotNull('department')->distinct()->pluck('department');
         foreach ($expenseDepts as $d) {
             if (!isset($departments[$d])) $departments[$d] = $d;
@@ -226,8 +226,8 @@ class SummaryReportController extends Controller
             
             foreach ($departments as $deptKey => $deptName) {
                 $expenses = DepartmentalExpense::where('department', $deptKey)
-                    ->whereYear('date_requested', $selectedYear)
-                    ->whereMonth('date_requested', $month)
+                    ->whereYear('date_released', $selectedYear)
+                    ->whereMonth('date_released', $month)
                     ->selectRaw('SUM(COALESCE(total_expenses, requested_amount, 0)) as total')
                     ->value('total') ?? 0;
                 

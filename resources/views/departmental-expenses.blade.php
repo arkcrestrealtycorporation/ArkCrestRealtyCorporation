@@ -329,7 +329,7 @@
                 </thead>
                 <tbody id="requestsTableBody">
                     @foreach($requests as $req)
-                    <tr id="expense-{{ $req->id }}" data-id="{{ $req->id }}" data-department="{{ $req->department }}" data-date-requested="{{ $req->date_requested ? $req->date_requested->format('Y-m-d') : '' }}" data-control="{{ $req->control_number }}">
+                    <tr id="expense-{{ $req->id }}" data-id="{{ $req->id }}" data-department="{{ $req->department }}" data-date-released="{{ $req->date_released ? $req->date_released->format('Y-m-d') : ' }}" data-control="{{ $req->control_number }}">
                         <td>{{ $req->control_number }}</td>
                         <td>{{ $req->requestor_name }}</td>
                         <td class="department-cell">{{ $req->department }}</td>
@@ -1418,7 +1418,7 @@ if (searchInput) {
             let visibleCount = 0;
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
-                const dateRequested = row.getAttribute('data-date-requested') || '';
+                const dateRequested = row.getAttribute('data-date-released') || '';
                 
                 // Check if text matches search
                 const allWordsFound = searchWords.every(word => text.includes(word));
@@ -1478,7 +1478,7 @@ function applyMonthYearFilters() {
             return;
         }
         
-        const dateCell = row.cells[4].textContent.trim();
+        const dateCell = row.cells[7].textContent.trim();
         
         if (dateCell === '-' || !dateCell) {
             row.style.display = 'none';
@@ -1525,7 +1525,7 @@ function populateYearFilter() {
     
     rows.forEach(row => {
         if (row.cells.length > 4) {
-            const dateCell = row.cells[4].textContent.trim();
+            const dateCell = row.cells[7].textContent.trim();
             if (dateCell && dateCell !== '-' && dateCell.includes('/')) {
                 const parts = dateCell.split('/');
                 if (parts.length === 3) {
