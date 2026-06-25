@@ -31,7 +31,6 @@ class SendEventReminders extends Command
         $this->info('Done.');
     }
 
-    // ── 1. Commission Releases → all admins (email + in-app) ─────────────────
     private function handleCommissionReleases(string $date, string $displayDate, string $when): void
     {
         $releases = collect();
@@ -64,7 +63,6 @@ class SendEventReminders extends Command
         $this->info("Commission release reminder sent ({$releases->count()} record/s).");
     }
 
-    // ── 2. Downpayments → all admins + admin sales (email + in-app) ──────────
     private function handleDownpayments(string $date, string $displayDate, string $when): void
     {
         $downpayments = CommissionRequestSales::whereDate('date_of_downpayment', $date)
@@ -92,7 +90,6 @@ class SendEventReminders extends Command
         $this->info("Downpayment reminder sent ({$downpayments->count()} record/s).");
     }
 
-    // ── 3. Trippings → all admins + admin sales + the agent (email + in-app) ──
     private function handleTrippings(string $date, string $displayDate, string $when): void
     {
         $trips = TripSchedule::whereDate('tripping_date', $date)
@@ -103,7 +100,6 @@ class SendEventReminders extends Command
         $adminSalesUsers = $this->getAdminAndSalesAdminUsers();
         $adminSalesIds   = $adminSalesUsers->pluck('id')->toArray();
 
-        // Full list for admins/sales admins
         $adminRows = $trips->map(function($t) use ($when) {
             $time = $t->tripping_time ? Carbon::parse($t->tripping_time)->format('g:i A') : 'Time TBD';
             return "<b>🏠 Site Visit {$when}</b><br>" .
@@ -117,7 +113,6 @@ class SendEventReminders extends Command
             SystemNotification::notify($user->id, 'tripping_reminder', "🏠 Site Visit {$when}", $notifMsg);
         }
 
-        // Per-agent: their own trips only
         $tripsByAgent = $trips->groupBy('agent_name');
         foreach ($tripsByAgent as $agentName => $agentTrips) {
             $agentUser = User::where('name', $agentName)
@@ -142,7 +137,6 @@ class SendEventReminders extends Command
         $this->info("Site visit reminder sent ({$trips->count()} trip/s).");
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
     private function getAdminUsers()
     {
         return User::where('role', 'admin')
