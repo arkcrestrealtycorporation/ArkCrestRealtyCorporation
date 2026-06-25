@@ -11,7 +11,6 @@ class FormsController extends Controller
     public function index()
     {
         $departments = Department::with('categories')->get();
-        // Get unique requestor names from past commission requests
         $requestorNames = \App\Models\CommissionRequest::whereNotNull('requestor_name')
             ->where('requestor_name', '!=', '')
             ->distinct()
@@ -26,7 +25,6 @@ class FormsController extends Controller
         return view('forms-site-visit');
     }
 
-    // Returns next control number: ARCS-MM-NNN-YY
     public function nextControlNumber(Request $request)
     {
         $month = now()->format('m');
@@ -39,7 +37,6 @@ class FormsController extends Controller
         return response()->json(['control_number' => "ARCS-{$month}-{$seq}-{$year}"]);
     }
 
-    // Increments the counter (called on print/download)
     public function incrementControlNumber(Request $request)
     {
         $key = 'ctrl_num_' . now()->format('Y_m');
