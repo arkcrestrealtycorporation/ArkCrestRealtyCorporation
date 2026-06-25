@@ -13,25 +13,21 @@ class ArkcrestSalesController extends Controller
         $month = $request->get('month', date('n'));
         $year  = $request->get('year', date('Y'));
 
-        // All Released commission requests for selected month/year
         $released = CommissionRequest::where('status', 'Released')
             ->whereYear('date_released', $year)
             ->whereMonth('date_released', $month)
             ->orderBy('date_released')
             ->get();
 
-        // Load existing ArkCrest rates
         $rates = ArkcrestCommissionRate::whereIn('commission_request_id', $released->pluck('id'))
             ->get()->keyBy('commission_request_id');
 
-        // Available years
         $years = CommissionRequest::where('status', 'Released')
             ->whereNotNull('date_released')
             ->selectRaw('YEAR(date_released) as y')
             ->distinct()->pluck('y')->sortDesc();
         if (!$years->contains((int)$year)) $years->prepend((int)$year);
 
-        // Totals
         $totalReleasedCommission = $released->sum('commission');
         $totalNetTcp = $released->sum('net_tcp');
         $totalArkcrestCommission = $rates->sum('arkcrest_commission');
@@ -54,7 +50,6 @@ class ArkcrestSalesController extends Controller
         $netTcp  = $record->net_tcp ?? 0;
         $terms   = $request->payment_type ?? $record->payment_type ?? 'Full Payment';
 
-        // Full Payment = Net TCP × ARC%
         $fullCommission = $netTcp * ($percent / 100);
         if ($terms === '2 Months Commission')      $arkcrestCommission = $fullCommission / 2;
         elseif ($terms === '3 Months Commission')  $arkcrestCommission = $fullCommission / 3;
