@@ -13,27 +13,24 @@ class CalendarController extends Controller
     {
         $month = (int) $request->get('month', date('n'));
         $year  = (int) $request->get('year', date('Y'));
-        $view  = $request->get('view', 'month'); // month | list
+        $view  = $request->get('view', 'month'); 
 
         $dateFrom = sprintf('%04d-%02d-01', $year, $month);
         $dateTo   = date('Y-m-t', strtotime($dateFrom));
 
-        // Commission sales (downpayments only)
         $sales = CommissionRequestSales::where(function($q) use ($dateFrom, $dateTo) {
             $q->whereBetween('date_of_downpayment', [$dateFrom, $dateTo]);
         })->get();
 
-        // Site visits / tripping schedules — confirmed and pending only
         $trips = TripSchedule::whereBetween('tripping_date', [$dateFrom, $dateTo])
             ->whereIn('status', ['confirmed', 'pending'])
             ->orderBy('tripping_date')
             ->get();
 
-        // Build events array keyed by day
         $eventsByDay = collect();
 
         foreach ($sales as $s) {
-            // Downpayment event — only if not yet Done
+
             if ($s->date_of_downpayment && $s->date_of_downpayment->month == $month && $s->date_of_downpayment->year == $year && $s->client_status !== 'Done') {
                 $day = $s->date_of_downpayment->day;
                 if (!$eventsByDay->has($day)) $eventsByDay->put($day, collect());
@@ -66,23 +63,19 @@ class CalendarController extends Controller
             ]);
         }
 
-        // Available years
         $salesYears = CommissionRequestSales::selectRaw('YEAR(date_requested) as y')->whereNotNull('date_requested')->distinct()->pluck('y');
         $tripYears  = TripSchedule::selectRaw('YEAR(tripping_date) as y')->whereNotNull('tripping_date')->distinct()->pluck('y');
         $availableYears = $salesYears->merge($tripYears)->unique()->sort()->values();
         if (!$availableYears->contains($year)) $availableYears->prepend($year);
         $availableYears = $availableYears->sortDesc()->values();
 
-        // Stats
         $totalSales    = $sales->filter(fn($s) => $s->date_requested && $s->date_requested->format('Y-m') === sprintf('%04d-%02d', $year, $month))->count();
         $totalReleases = $sales->filter(fn($s) => $s->date_released && $s->date_released->format('Y-m') === sprintf('%04d-%02d', $year, $month))->count();
         $totalTrips    = $trips->count();
         $totalNetTcp   = $sales->filter(fn($s) => $s->date_requested && $s->date_requested->format('Y-m') === sprintf('%04d-%02d', $year, $month))->sum('net_tcp');
 
-        // All events flat for list view
         $allEvents = $eventsByDay->flatten(1)->sortBy('date')->values();
 
-        // This week's trippings and downpayments
         $weekStart = now()->startOfWeek(\Carbon\Carbon::MONDAY)->format('Y-m-d');
         $weekEnd   = now()->endOfWeek(\Carbon\Carbon::SUNDAY)->format('Y-m-d');
 
@@ -110,7 +103,6 @@ class CalendarController extends Controller
         $year  = $request->get('year', date('Y'));
         $view  = $request->get('view', 'month');
 
-        // All releases for the selected month/year (from both Client Database and Commission Monitoring)
         $clientReleases = CommissionRequestSales::whereNotNull('date_released')
             ->whereYear('date_released', $year)
             ->whereMonth('date_released', $month)
@@ -125,10 +117,8 @@ class CalendarController extends Controller
 
         $releases = $clientReleases->merge($commissionReleases)->sortBy('date_released');
 
-        // Group by day for easy lookup in the view
         $releasesByDay = $releases->groupBy(fn($r) => $r->date_released->day);
 
-        // Available years from data
         $clientYears = CommissionRequestSales::whereNotNull('date_released')
             ->selectRaw('YEAR(date_released) as year')
             ->distinct()
