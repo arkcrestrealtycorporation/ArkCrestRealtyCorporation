@@ -53,8 +53,7 @@ class DepartmentController extends Controller
         
         return view('departments.executive', compact('department', 'categories', 'expenses'));
     }
-    
-    // API Methods
+
     public function deleteDepartment($id)
     {
         if (!auth()->user()->isAdmin()) abort(403);
@@ -74,7 +73,6 @@ class DepartmentController extends Controller
         }
         $dept = Department::create(['name' => $name, 'slug' => $slug, 'allowable_budget' => 0]);
         
-        // Add categories if provided
         if ($request->categories && is_array($request->categories)) {
             foreach ($request->categories as $catName) {
                 if (trim($catName)) {
@@ -94,9 +92,7 @@ class DepartmentController extends Controller
         $department->budget_to = $request->budget_to ?: null;
         $department->save();
 
-        // Sync categories if provided
         if ($request->has('categories') && is_array($request->categories)) {
-            // Add new ones
             foreach ($request->categories as $cat) {
                 if (trim($cat)) {
                     ExpenseCategory::firstOrCreate(
@@ -104,7 +100,6 @@ class DepartmentController extends Controller
                     );
                 }
             }
-            // Remove ones not in the list
             ExpenseCategory::where('department_id', $id)
                 ->whereNotIn('name', array_filter(array_map('trim', $request->categories)))
                 ->delete();
@@ -120,7 +115,6 @@ class DepartmentController extends Controller
     
     public function addCategory(Request $request, $id)
     {
-        // Check if category already exists (case-insensitive)
         $exists = ExpenseCategory::where('department_id', $id)
             ->whereRaw('LOWER(name) = ?', [strtolower($request->name)])
             ->exists();
@@ -142,37 +136,31 @@ class DepartmentController extends Controller
     
     public function addCategoryWithAmount(Request $request, $id)
     {
-        // Check if category already exists (case-insensitive)
         $existingCategory = ExpenseCategory::where('department_id', $id)
             ->whereRaw('LOWER(name) = ?', [strtolower($request->name)])
             ->first();
-        
-        // If category doesn't exist, create it
+
         if (!$existingCategory) {
             $category = ExpenseCategory::create([
                 'department_id' => $id,
                 'name' => $request->name
             ]);
         }
-        
-        // Check if expense row exists for this date
+
         $expense = Expense::where('department_id', $id)
             ->where('expense_date', $request->date)
             ->first();
         
         if ($expense) {
-            // Update existing row - add/update category amount
             $categoriesData = $expense->categories_data;
             $categoriesData[$request->name] = $request->amount;
             
-            // Recalculate total
             $total = array_sum($categoriesData);
             
             $expense->categories_data = $categoriesData;
             $expense->total_amount = $total;
             $expense->save();
         } else {
-            // Create new row with this category
             $categoriesData = [$request->name => $request->amount];
             
             $expense = Expense::create([
@@ -220,7 +208,6 @@ class DepartmentController extends Controller
         $categoryName = $category->name;
         $departmentId = $category->department_id;
         
-        // Remove this category from all expenses in this department
         $expenses = Expense::where('department_id', $departmentId)->get();
         foreach ($expenses as $expense) {
             $categoriesData = $expense->categories_data;
@@ -231,8 +218,7 @@ class DepartmentController extends Controller
                 $expense->save();
             }
         }
-        
-        // Delete the category
+
         $category->delete();
         
         return response()->json(['success' => true]);
