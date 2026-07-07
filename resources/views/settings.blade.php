@@ -402,7 +402,7 @@
 
 <div class="st-page-wrap">
   @php
-    $sHidden = $hiddenSections ?? []; $isAdmin = auth()->user()->isAdmin(); $canSeeS = fn($k) => $isAdmin || !in_array($k, $sHidden);
+    $isAdmin = auth()->user()->isAdmin(); $sHidden = $isAdmin ? [] : (auth()->user()->hidden_pages ?? []); $canSeeS = fn($k) => $isAdmin || !in_array($k, $sHidden);
     $activePanel = request('panel') ?: session('open_section', 'profile');
     $panelClass = fn($key) => 'st-panel' . ($activePanel === $key ? ' active' : '');
   @endphp
@@ -946,14 +946,41 @@
         @endphp
 
         {{-- User selector --}}
+        {{-- User selector --}}
         <div style="margin-bottom:20px;">
           <label style="font-weight:700;font-size:13px;color:#1e4575;display:block;margin-bottom:8px;">Page Visibility — Select User</label>
           @if($staffUsers->isEmpty())
             <div style="color:#6b7280;font-size:13px;padding:10px 0;">No users yet. Click "Add User" to add one.</div>
           @else
+
+          {{-- Department filter + name search --}}
+          <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+            <select id="visDeptFilter" onchange="filterVisUsers()" style="padding:8px 12px;border:1.5px solid #d0d5dd;border-radius:8px;font-size:13px;font-weight:600;color:#374151;background:#fff;cursor:pointer;">
+              <option value="">All Departments</option>
+              <option value="finance">Finance</option>
+              <option value="sales">Sales &amp; Marketing</option>
+              <option value="hr">Human Resource</option>
+            </select>
+            <div style="position:relative;flex:1;min-width:200px;max-width:320px;">
+              <input type="text" id="visNameSearch" oninput="filterVisUsers()" placeholder="Search staff by name..."
+                style="width:100%;padding:8px 12px 8px 34px;border:1.5px solid #d0d5dd;border-radius:8px;font-size:13px;color:#374151;box-sizing:border-box;">
+              <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+          </div>
+
           <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;" id="vis-user-tabs">
             @foreach($staffUsers as $u)
+              @php
+                $pos = strtolower($u->position ?? '');
+                $dept = '';
+                if (str_contains($pos, 'financ')) $dept = 'finance';
+                elseif (str_contains($pos, 'sales') || str_contains($pos, 'market')) $dept = 'sales';
+                elseif (str_contains($pos, 'hr') || str_contains($pos, 'human resource')) $dept = 'hr';
+              @endphp
               <button type="button" onclick="selectVisUser({{ $u->id }}, this, '{{ addslashes($u->name) }}')"
+                data-name="{{ strtolower($u->name) }}" data-dept="{{ $dept }}"
                 style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 18px;border-radius:12px;cursor:pointer;border:2px solid {{ $selectedUserId == $u->id ? '#1e4575' : '#e5e7eb' }};background:{{ $selectedUserId == $u->id ? '#1e4575' : '#fff' }};color:{{ $selectedUserId == $u->id ? '#fff' : '#374151' }};width:110px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
                 <div style="position:relative;">
                 @if($u->avatar)
@@ -972,6 +999,7 @@
               </button>
             @endforeach
           </div>
+          <div id="visNoUsersFound" style="display:none;color:#9ca3af;font-size:13px;padding:16px 0;text-align:center;">No staff found matching your filters.</div>
           @endif
         </div>
 
@@ -1936,7 +1964,7 @@
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         }[c]));
     }
-
+    
     function drPopulateMonthFilter() {
     const sel = document.getElementById('drFilterMonth');
     if (!sel) return;
@@ -2260,8 +2288,14 @@
 function showPanel(name) {
     document.querySelectorAll('.st-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.st-nav-btn').forEach(b => b.classList.remove('active'));
-    const panel = document.getElementById('panel-' + name);
-    const btn   = document.getElementById('nav-' + name);
+    let panel = document.getElementById('panel-' + name);
+    let btn   = document.getElementById('nav-' + name);
+    if (!panel) {
+        // Requested panel doesn't exist (bad/stale ?panel= value, or hidden by
+        // permissions) — fall back to Profile instead of leaving everything blank.
+        panel = document.getElementById('panel-profile');
+        btn   = document.getElementById('nav-profile');
+    }
     if (panel) panel.classList.add('active');
     if (btn)   btn.classList.add('active');
 }
@@ -2269,7 +2303,24 @@ function showPanel(name) {
 function selectAllGroup(groupId, checked) {
     document.querySelectorAll('#' + groupId + ' input[type=checkbox]').forEach(cb => cb.checked = checked);
 }
-
+function filterVisUsers() {
+    const dept = document.getElementById('visDeptFilter').value.toLowerCase();
+    const search = document.getElementById('visNameSearch').value.toLowerCase().trim();
+    const buttons = document.querySelectorAll('#vis-user-tabs button');
+    let visibleCount = 0;
+    buttons.forEach(btn => {
+        const matchesDept = !dept || btn.getAttribute('data-dept') === dept;
+        const matchesName = !search || btn.getAttribute('data-name').includes(search);
+        if (matchesDept && matchesName) {
+            btn.style.display = '';
+            visibleCount++;
+        } else {
+            btn.style.display = 'none';
+        }
+    });
+    const noResults = document.getElementById('visNoUsersFound');
+    if (noResults) noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+}
 function selectVisUser(userId, btn, userName) {
     document.getElementById('vis_user_id').value = userId;
     document.querySelectorAll('#vis-user-tabs button').forEach(b => {

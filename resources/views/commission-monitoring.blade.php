@@ -92,20 +92,20 @@
                         <input type="text" name="client_name" placeholder="Enter client name" required>
                     </div>
                     <div class="form-group">
-                        <label>RESERVATION DATE</label>
-                        <input type="date" name="reservation_date">
+                        <label>RESERVATION DATE <span class="required">*</span></label>
+                        <input type="date" name="reservation_date" required>
                     </div>
                     <div class="form-group">
                         <label>PROJECT NAME <span class="required">*</span></label>
                         <input type="text" name="project_name" placeholder="Enter project name" required>
                     </div>
                     <div class="form-group">
-                        <label>PROPERTY DETAILS (BLOCK & LOT NO.)</label>
-                        <input type="text" name="property_details" placeholder="e.g., Block 3 Lot 12, Tower A">
+                        <label>PROPERTY DETAILS (BLOCK & LOT NO.) <span class="required">*</span></label>
+                        <input type="text" name="property_details" placeholder="e.g., Block 3 Lot 12, Tower A" required>
                     </div>
                     <div class="form-group">
-                        <label>PRICE / SQM</label>
-                        <input type="number" id="cm_add_price_sqm" name="price_sqm" placeholder="0.00" step="0.01" min="0" oninput="computeAddTCP()">
+                        <label>PRICE / SQM <span class="required">*</span></label>
+                        <input type="number" id="cm_add_price_sqm" name="price_sqm" placeholder="0.00" step="0.01" min="0" oninput="computeAddTCP()" required>
                     </div>
                     <div class="form-group">
                         <label>LOT AREA</label>
@@ -129,8 +129,8 @@
                     </div>
                     @if($isAdmin)
                     <div class="form-group">
-                        <label>% OF COMMISSION</label>
-                        <input type="number" id="cm_add_commission_percent" name="commission_percent" placeholder="e.g. 5" step="0.0001" min="0" max="100" oninput="computeAddCommission()">
+                        <label>% OF COMMISSION <span class="required">*</span></label>
+                        <input type="number" id="cm_add_commission_percent" name="commission_percent" placeholder="e.g. 5" step="0.0001" min="0" max="100" oninput="computeAddCommission()" required>
                     </div>
                     @endif
                     <div class="form-group">
@@ -138,8 +138,8 @@
                         <input type="text" id="cm_add_commission_display" placeholder="0.00" oninput="computeAddCommissionFromValue()" style="color:#374151;">
                     </div>
                     <div class="form-group">
-                        <label>COMMISSION TERMS</label>
-                        <select id="cm_add_payment_type" name="payment_type" onchange="computeValueOfPaymentTerms()">
+                        <label>COMMISSION TERMS <span class="required">*</span></label>
+                        <select id="cm_add_payment_type" name="payment_type" onchange="computeValueOfPaymentTerms()" required>
                             <option value="">— Select —</option>
                             <option value="Full Payment">Full Payment</option>
                             <option value="2 Months Commission">2 Months Commission</option>
@@ -2225,12 +2225,12 @@ function submitCmPermRequest() {
                         <input type="number" id="cm_edit_price_sqm" name="price_sqm" step="0.01" min="0" placeholder="0.00">
                     </div>
                     <div class="modal-field">
-                        <label>Lot Area</label>
-                        <input type="number" id="cm_edit_lot_area" name="lot_area" step="0.0001" min="0" placeholder="0.0000">
+                        <label>LOT AREA <span class="required">*</span></label>
+                        <input type="number" id="cm_add_lot_area" name="lot_area" placeholder="0.0000" step="0.0001" min="0" oninput="computeAddTCP()" required>
                     </div>
                     <div class="modal-field">
                         <label style="display:flex;align-items:center;gap:8px;">
-                            Discount
+                            DISCOUNT <span class="required">*</span>
                             <span style="display:inline-flex;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;font-size:11px;font-weight:700;">
                                 <button type="button" id="cm_edit_disc_pct_btn" onclick="setEditDiscountType('percent')" style="padding:2px 10px;background:#1e457c;color:#fff;border:none;cursor:pointer;">%</button>
                                 <button type="button" id="cm_edit_disc_val_btn" onclick="setEditDiscountType('value')" style="padding:2px 10px;background:#fff;color:#374151;border:none;cursor:pointer;">VALUE</button>

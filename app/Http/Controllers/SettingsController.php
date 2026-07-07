@@ -14,13 +14,20 @@ class SettingsController extends Controller
 {
     // Finance pages hidden by default for staff role
     const STAFF_DEFAULT_HIDDEN = [
-        'dashboard',
-        'departments',
-        'summary-report',
-        'commission-monitoring',
-        'commission-monitoring.dashboard',
-        'calendar',
-    ];
+    'dashboard',
+    'departments',
+    'summary-report',
+    'commission-monitoring',
+    'commission-monitoring.dashboard',
+    'calendar',
+    'settings.users',
+    'settings.visibility',
+    'settings.activity',
+    'settings.deleted',
+    'settings.permissions',
+    'settings.teams',
+    'settings.period-lock',
+];
 
     public function index()
     {

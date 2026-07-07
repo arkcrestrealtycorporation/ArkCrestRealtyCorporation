@@ -553,7 +553,7 @@
                             </li>
                             @php
                                 $isAdminUser = auth()->check() && auth()->user()->isAdmin();
-                                $sHiddenGlobal = array_values(json_decode(\DB::table('app_settings')->where('key', 'hidden_pages')->value('value') ?? '[]', true) ?: []);
+                                $sHiddenGlobal = $isAdminUser ? [] : (auth()->user()->hidden_pages ?? []);
                                 $canSeeSetting = fn($k) => $isAdminUser || !in_array($k, $sHiddenGlobal);
                             @endphp
                             @if($isAdminUser || array_filter(['settings.users','settings.visibility','settings.activity','settings.deleted','settings.permissions','settings.teams','settings.period-lock'], fn($k) => !in_array($k, $sHiddenGlobal)))

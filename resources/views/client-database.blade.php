@@ -86,9 +86,9 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
             <div class="section-title-bar"><span>📋</span> COMMISSION REQUEST INFORMATION</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>DEVELOPER'S NAME</label>
+                    <label>DEVELOPER'S NAME <span class="required">*</span></label>
                     <div style="position:relative;">
-                        <input type="text" name="developer_name" id="dev_name_input" placeholder="Type or select developer" autocomplete="off"
+                        <input type="text" name="developer_name" id="dev_name_input" placeholder="Type or select developer" autocomplete="off" required
                             onclick="toggleDevDropdown()" oninput="filterDev(this.value)"
                             style="width:100%;padding:12px 40px 12px 16px;border:2px solid #1e4575;border-radius:8px;font-size:14px;font-weight:500;background:white;color:#344054;box-sizing:border-box;">
                         <button type="button" onclick="toggleDevDropdown()" style="position:absolute;right:2px;top:50%;transform:translateY(-50%);width:36px;height:calc(100% - 4px);background:linear-gradient(135deg,#1e4575,#2563eb);color:white;border:none;border-radius:0 6px 6px 0;cursor:pointer;font-size:12px;">▼</button>
@@ -123,8 +123,8 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                     <input type="text" name="project_name" placeholder="Enter project name" required>
                 </div>
                 <div class="form-group">
-                    <label>BLOCK & LOT NUMBER</label>
-                    <input type="text" name="block_lot_number" placeholder="e.g., Block 3 Lot 12">
+                    <label>BLOCK & LOT NUMBER <span class="required">*</span></label>
+                    <input type="text" name="block_lot_number" placeholder="e.g., Block 3 Lot 12" required>
                 </div>
                 <div class="form-group">
                     <label>CLIENT'S NAME <span class="required">*</span></label>
@@ -136,7 +136,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                 </div>
                 <div class="form-group">
                     <label>PRICE PER SQM <span class="required">*</span></label>
-                    <input type="text" id="f_price_sqm_display" placeholder="0.00" oninput="onPriceSqmInput(this)" style="color:#374151;">
+                    <input type="text" id="f_price_sqm_display" placeholder="0.00" oninput="onPriceSqmInput(this)" style="color:#374151;" required>
                     <input type="hidden" name="price_sqm" id="f_price_sqm">
                 </div>
                 <div class="form-group">
@@ -145,8 +145,8 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                     <input type="hidden" name="tcp" id="f_tcp">
                 </div>
                 <div class="form-group">
-                    <label>DISCOUNT (%) <span class="required">*</span></label>
-                    <input type="number" name="discount" id="f_discount_pct" placeholder="0.00" step="0.0000000001" min="0" max="100" oninput="computeDiscount()" required>
+                    <label>DISCOUNT (%)</label>
+                    <input type="number" name="discount" id="f_discount_pct" placeholder="0.00" step="0.0000000001" min="0" max="100" oninput="computeDiscount()">
                 </div>
                 <div class="form-group">
                     <label>DISCOUNT VALUE <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>
@@ -170,16 +170,16 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>RESERVATION DATE</label>
-                    <input type="date" name="reservation_date">
+                    <label>RESERVATION DATE <span class="required">*</span></label>
+                    <input type="date" name="reservation_date" id="f_reservation_date" required onchange="validateDownpaymentDate()">
                 </div>
                 <div class="form-group">
-                    <label>NUMBER OF UNITS</label>
-                    <input type="number" name="number_of_units" min="1" value="1" placeholder="1">
+                    <label>NUMBER OF UNITS <span class="required">*</span></label>
+                    <input type="number" name="number_of_units" min="1" value="1" placeholder="1" required>
                 </div>
                 <div class="form-group">
-                    <label>DATE OF DOWNPAYMENT</label>
-                    <input type="date" name="date_of_downpayment">
+                    <label>DATE OF DOWNPAYMENT <span class="required">*</span></label>
+                    <input type="date" name="date_of_downpayment" id="f_date_of_downpayment" required onchange="validateDownpaymentDate()">
                 </div>
                 <div class="form-group">
                     <label>AGENT'S NAME <span class="required">*</span></label>
@@ -624,16 +624,39 @@ function onPriceSqmInput(el) {
     var num = parseFloat(raw);
     // Store raw numeric in hidden field
     document.getElementById('f_price_sqm').value = isNaN(num) ? '' : num;
+    el.setCustomValidity((!isNaN(num) && num < 0) ? 'Price per SQM cannot be negative.' : '');
     // Format display with commas (only if user has finished typing a valid number)
     // Use a small delay so cursor doesn't jump while typing
     clearTimeout(el._fmt);
     el._fmt = setTimeout(function() {
         if (!isNaN(num) && raw !== '') {
-            el.value = fmtComma(num);
+            // Comma-separate thousands, but never force trailing zeroes —
+            // only show the decimals the user actually typed.
+            el.value = num.toLocaleString('en-US', { maximumFractionDigits: 10 });
         }
     }, 800);
     computeTCP();
 }
+
+// ── Downpayment Date must be on/after Reservation Date ──
+// Uses setCustomValidity so the browser shows the same native tooltip
+// style as `required`/`min`, instead of an alert() or custom banner.
+function validateDownpaymentDate() {
+    var resInput = document.getElementById('f_reservation_date');
+    var dpInput  = document.getElementById('f_date_of_downpayment');
+
+    if (!resInput.value || !dpInput.value) {
+        dpInput.setCustomValidity('');
+        return;
+    }
+    // Date input values are "YYYY-MM-DD", so string comparison works directly.
+    if (dpInput.value < resInput.value) {
+        dpInput.setCustomValidity('Date of Downpayment cannot be earlier than the Reservation Date.');
+    } else {
+        dpInput.setCustomValidity('');
+    }
+}
+
 
 function computeTCP(){
     var area = parseFloat(document.getElementById('f_lot_area').value) || 0;
@@ -826,28 +849,31 @@ document.addEventListener('DOMContentLoaded', function () {
             const isApproved = hlStatus === 'approved';
             const isPending  = hlStatus === 'pending';
             const isDuplicate= hlStatus === 'duplicate';
-            const bgColor    = isApproved ? 'rgba(22,163,74,.15)' : (isPending ? 'rgba(234,179,8,.15)' : (isDuplicate ? 'rgba(30,69,117,.12)' : 'rgba(220,38,38,.12)'));
-            const borderColor= isApproved ? '#16a34a' : (isPending ? '#d97706' : (isDuplicate ? '#1e4575' : '#dc2626'));
-            const badgeColor = isApproved ? '#16a34a' : (isPending ? '#d97706' : (isDuplicate ? '#1e4575' : '#dc2626'));
+            const bgColor    = isApproved ? 'rgba(22,163,74,.15)' : (isPending ? 'rgba(234,179,8,.15)' : 'rgba(220,38,38,.12)');
+            const borderColor= isApproved ? '#16a34a' : (isPending ? '#d97706' : '#dc2626');
+            const badgeColor = isApproved ? '#16a34a' : (isPending ? '#d97706' : '#dc2626');
             const badgeText  = isApproved ? '✓ Approved — Can ' + (hlAction||'edit')
                              : (isPending  ? '👁 ' + (hlAction||'edit') + ' requested'
-                             : (isDuplicate ? ''
-                             : '✕ Rejected'));
+                             : '✕ Rejected');
 
-            row.style.background   = bgColor;
-            row.style.outline      = '2px solid ' + borderColor;
-            row.style.outlineOffset= '-1px';
-            row.style.transition   = 'all .3s';
+            // Duplicate records: no highlight styling — the View modal (below)
+            // takes its place instead.
+            if (!isDuplicate) {
+                row.style.background   = bgColor;
+                row.style.outline      = '2px solid ' + borderColor;
+                row.style.outlineOffset= '-1px';
+                row.style.transition   = 'all .3s';
 
-            // Badge goes on the index cell (2nd cell) — 1st cell is the select checkbox
-            const cells = row.querySelectorAll('td');
-            const badgeTd = cells[1] || cells[0];
-            if (badgeTd && !badgeTd.querySelector('.hl-badge')) {
-                const badge = document.createElement('span');
-                badge.className = 'hl-badge';
-                badge.style.cssText = 'display:inline-block;margin-left:6px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:' + badgeColor + ';color:white;vertical-align:middle;';
-                badge.textContent = badgeText;
-                badgeTd.appendChild(badge);
+                // Badge goes on the index cell (2nd cell) — 1st cell is the select checkbox
+                const cells = row.querySelectorAll('td');
+                const badgeTd = cells[1] || cells[0];
+                if (badgeTd && !badgeTd.querySelector('.hl-badge')) {
+                    const badge = document.createElement('span');
+                    badge.className = 'hl-badge';
+                    badge.style.cssText = 'display:inline-block;margin-left:6px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;background:' + badgeColor + ';color:white;vertical-align:middle;';
+                    badge.textContent = badgeText;
+                    badgeTd.appendChild(badge);
+                }
             }
 
             // Find the scrollable container and scroll to row
@@ -860,6 +886,15 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 row.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
+
+            // Duplicate records: open the View modal for this record once the
+            // scroll settles, instead of the old highlight-only behavior.
+            if (isDuplicate) {
+                setTimeout(function() {
+                    viewRow(parseInt(highlightId));
+                }, 600);
+            }
+
 
             // If approved + edit action → auto-open edit modal
             if (isApproved && hlAction === 'edit') {
@@ -881,19 +916,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 }, 700);
             }
 
-            setTimeout(function() {
-                row.style.background   = '';
-                row.style.outline      = '';
-                const badge = row.querySelector('.hl-badge');
-                if (badge) badge.remove();
-            }, 10000);
-            // Click anywhere on row to remove highlight immediately
-            row.addEventListener('click', function() {
-                row.style.background = '';
-                row.style.outline    = '';
-                const badge = row.querySelector('.hl-badge');
-                if (badge) badge.remove();
-            }, { once: true });
+            if (!isDuplicate) {
+                setTimeout(function() {
+                    row.style.background   = '';
+                    row.style.outline      = '';
+                    const badge = row.querySelector('.hl-badge');
+                    if (badge) badge.remove();
+                }, 10000);
+                // Click anywhere on row to remove highlight immediately
+                row.addEventListener('click', function() {
+                    row.style.background = '';
+                    row.style.outline    = '';
+                    const badge = row.querySelector('.hl-badge');
+                    if (badge) badge.remove();
+                }, { once: true });
+            }
         }
 
         // Try multiple times to ensure table is rendered
@@ -1126,38 +1163,7 @@ function cdConfirmBulkDelete() {
     });
 }
 
-// ── Required + non-negative validation for Lot Area, Price per SQM, Discount ──
-function cdValidateNumericFields() {
-    var lotArea  = document.getElementById('f_lot_area').value.trim();
-    var priceSqm = document.getElementById('f_price_sqm').value.trim();
-    var discount = document.getElementById('f_discount_pct').value.trim();
 
-    if (lotArea === '') {
-        alert('Please enter the Lot Area.');
-        return false;
-    }
-    if (parseFloat(lotArea) < 0) {
-        alert('Lot Area cannot be negative.');
-        return false;
-    }
-    if (priceSqm === '') {
-        alert('Please enter the Price per SQM.');
-        return false;
-    }
-    if (parseFloat(priceSqm) < 0) {
-        alert('Price per SQM cannot be negative.');
-        return false;
-    }
-    if (discount === '') {
-        alert('Please enter the Discount (%). Enter 0 if there is no discount.');
-        return false;
-    }
-    if (parseFloat(discount) < 0) {
-        alert('Discount (%) cannot be negative.');
-        return false;
-    }
-    return true;
-}
 
 // ── Clear button — uses the app's real confirm modal, since window.confirm ──
 // is globally overridden (always returns true) in layouts/dashboard.blade.php.
@@ -1173,20 +1179,19 @@ document.getElementById('commissionForm').addEventListener('submit', function (e
     e.preventDefault();
     var form = this;
 
-    if (!cdValidateNumericFields()) {
-        return;
-    }
 
     window.showConfirmModal('Submit this client record?').then(function (confirmed) {
         if (!confirmed) return;
 
-        var clientName  = (form.querySelector('[name="client_name"]').value || '').trim();
-        var projectName = (form.querySelector('[name="project_name"]').value || '').trim();
-        var blockLot    = (form.querySelector('[name="block_lot_number"]').value || '').trim();
+        var clientName    = (form.querySelector('[name="client_name"]').value || '').trim();
+        var projectName   = (form.querySelector('[name="project_name"]').value || '').trim();
+        var developerName = (form.querySelector('[name="developer_name"]').value || '').trim();
+        var blockLot      = (form.querySelector('[name="block_lot_number"]').value || '').trim();
 
         var params = new URLSearchParams({
             client_name: clientName,
             project_name: projectName,
+            developer_name: developerName,
             block_lot_number: blockLot
         });
 

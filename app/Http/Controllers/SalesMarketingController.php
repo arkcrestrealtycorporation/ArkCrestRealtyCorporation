@@ -346,29 +346,34 @@ class SalesMarketingController extends Controller
     }
 
     public function checkDuplicate(Request $request)
-    {
-        $clientName  = trim($request->query('client_name', ''));
-        $projectName = trim($request->query('project_name', ''));
-        $blockLot    = trim($request->query('block_lot_number', ''));
+{
+    $clientName    = trim($request->query('client_name', ''));
+    $projectName   = trim($request->query('project_name', ''));
+    $developerName = trim($request->query('developer_name', ''));
+    $blockLot      = trim($request->query('block_lot_number', ''));
 
-        if ($clientName === '' || $projectName === '') {
-            return response()->json(['duplicate' => false]);
-        }
-
-        $query = CommissionRequestSales::whereRaw('LOWER(client_name) = ?', [strtolower($clientName)])
-            ->whereRaw('LOWER(project_name) = ?', [strtolower($projectName)]);
-
-        if ($blockLot !== '') {
-            $query->whereRaw('LOWER(block_lot_number) = ?', [strtolower($blockLot)]);
-        }
-
-        $existing = $query->first();
-
-        return response()->json([
-            'duplicate' => (bool) $existing,
-            'id' => $existing->id ?? null,
-        ]);
+    if ($clientName === '' || $projectName === '') {
+        return response()->json(['duplicate' => false]);
     }
+
+    $query = CommissionRequestSales::whereRaw('LOWER(client_name) = ?', [strtolower($clientName)])
+        ->whereRaw('LOWER(project_name) = ?', [strtolower($projectName)]);
+
+    if ($developerName !== '') {
+        $query->whereRaw('LOWER(developer_name) = ?', [strtolower($developerName)]);
+    }
+
+    if ($blockLot !== '') {
+        $query->whereRaw('LOWER(block_lot_number) = ?', [strtolower($blockLot)]);
+    }
+
+    $existing = $query->first();
+
+    return response()->json([
+        'duplicate' => (bool) $existing,
+        'id' => $existing->id ?? null,
+    ]);
+}
 
     public function store(Request $request)
     {
