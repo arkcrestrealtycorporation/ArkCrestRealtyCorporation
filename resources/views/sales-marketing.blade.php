@@ -87,7 +87,17 @@
     @keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    @media (max-width: 768px) { .metrics-grid { grid-template-columns: 1fr; } .welcome-title { font-size: 24px; } }
+    @media (max-width: 768px) {
+        .metrics-grid { grid-template-columns: 1fr; }
+        .welcome-title { font-size: 24px; }
+        .team-charts-grid {
+            grid-template-columns: 1fr !important;
+        }
+        .team-charts-grid canvas {
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+    }
 </style>
 
 <div class="sales-dashboard">
@@ -164,7 +174,7 @@
         </div>
 
         {{-- Member Charts --}}
-        <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start;">
+        <div class="team-charts-grid" style="display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start;">
             <div>
                 <div style="font-size:13px;font-weight:600;color:#64748b;margin-bottom:10px;" id="memberBarLabel">Members</div>
                 <canvas id="memberBarChart" height="140"></canvas>

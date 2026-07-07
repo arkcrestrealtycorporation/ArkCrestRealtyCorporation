@@ -890,15 +890,9 @@
 
     <div class="{{ $panelClass('visibility') }}" id="panel-visibility">
 
-      <div class="st-page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div>
-          <div class="st-page-title">Page Visibility</div>
-          <div class="st-page-sub">Checked items are visible to the selected user. Uncheck to hide. Admin always sees everything.</div>
-        </div>
-        <button type="button" onclick="document.getElementById('addUserVisModal').style.display='flex'" class="st-btn st-btn-primary" style="display:flex;align-items:center;gap:6px;">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          Add User
-        </button>
+      <div class="st-page-header">
+        <div class="st-page-title">Page Visibility</div>
+        <div class="st-page-sub">Checked items are visible to the selected user. Uncheck to hide. Admin always sees everything.</div>
       </div>
 
       <div class="st-card"><div class="st-card-body">
@@ -1042,35 +1036,6 @@
 
       </div></div>
 
-    </div>
-
-    {{-- ADD USER MODAL --}}
-    <div id="addUserVisModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-      <div style="background:#fff;border-radius:12px;padding:28px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-          <h3 style="font-size:16px;font-weight:700;color:#1e4575;margin:0;">Select User</h3>
-          <button type="button" onclick="document.getElementById('addUserVisModal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;">&times;</button>
-        </div>
-        @php $allStaff = \App\Models\User::where('role','!=','admin')->whereNotIn('status',['pre_registered'])->orderBy('name')->get(); @endphp
-        @if($allStaff->isEmpty())
-          <div style="color:#6b7280;font-size:13px;">No users found.</div>
-        @else
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            @foreach($allStaff as $u)
-            <button type="button" onclick="pickVisUser({{ $u->id }}, '{{ addslashes($u->name) }}')"
-              style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;text-align:left;width:100%;">
-              <div style="width:36px;height:36px;border-radius:50%;background:#1e4575;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
-                {{ strtoupper(substr($u->name,0,1)) }}
-              </div>
-              <div>
-                <div style="font-weight:600;font-size:13px;color:#111827;">{{ $u->name }}</div>
-                <div style="font-size:12px;color:#6b7280;">{{ $u->position ?? '' }} · {{ ucfirst($u->status) }}</div>
-              </div>
-            </button>
-            @endforeach
-          </div>
-        @endif
-      </div>
     </div>
 
     @endif

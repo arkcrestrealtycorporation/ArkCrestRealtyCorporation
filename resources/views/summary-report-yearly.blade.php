@@ -8,9 +8,15 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <div class="summary-report-page">
-    <!-- Page Title -->
-    <div class="page-header" style="text-align: center; margin-bottom: 30px; padding: 30px; background: linear-gradient(135deg, rgba(30, 69, 117, 0.08), rgba(163, 121, 41, 0.08)); border-radius: 16px; border: 3px solid #1e4575; box-shadow: 0 8px 24px rgba(30, 69, 117, 0.12);">
-        <h2 class="page-title" style="font-size: 36px; font-weight: 700; color: #1e4575; text-transform: uppercase; letter-spacing: 1.5px; background: linear-gradient(135deg, #1e4575, #A37929); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 0;">Summary Report</h2>
+    <!-- Page Banner -->
+    <div style="background:linear-gradient(135deg,#1e4575 0%,#2563eb 60%,#1e4575 100%);border-radius:20px;padding:36px 40px;margin-bottom:24px;position:relative;overflow:hidden;box-shadow:0 8px 32px rgba(30,69,117,.25);">
+        <div style="position:absolute;top:-40px;right:-40px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.06);"></div>
+        <div style="position:absolute;top:40px;right:120px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.04);"></div>
+        <div style="position:relative;z-index:2;">
+            <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Finance</div>
+            <h1 style="font-size:24px;font-weight:700;color:white;margin:0 0 6px;">Summary Report</h1>
+            <p style="font-size:13px;color:rgba(255,255,255,.75);margin:0;">Monthly &amp; yearly financial performance overview</p>
+        </div>
     </div>
 
     <!-- View Toggle Buttons -->
