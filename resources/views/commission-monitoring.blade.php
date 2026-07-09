@@ -1115,7 +1115,7 @@
         overflow-x: auto;
         overflow-y: visible;
         -webkit-overflow-scrolling: touch;
-        touch-action: pan-x;
+        touch-action: pan-x pan-y;
         scrollbar-width: thin !important;
     }
     .table-wrapper::-webkit-scrollbar {
