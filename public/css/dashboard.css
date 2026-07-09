@@ -2645,11 +2645,22 @@ background-color: #d4edda;
 color: #155724;
 border: 1px solid #c3e6cb;
 }
-.status-not-yet-liquidated {
+.status-not-yet-liquidated,
+.status-not-liquidated {
 background-color: #fee2e2;
 color: #dc2626;
 border: 2px solid #dc2626;
 border: 1px solid #ffeaa7;
+}
+.status-for-request {
+background-color: #fef3c7;
+color: #92400e;
+border: 1px solid #fcd34d;
+}
+.status-rejected {
+background-color: #f3f4f6;
+color: #374151;
+border: 1px solid #9ca3af;
 }
 .action-buttons {
 display: flex;

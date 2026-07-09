@@ -237,29 +237,8 @@
 
             <div class="expenses-filters-bar">
                 <div class="expenses-filters-row">
-                    <div class="expenses-date-filters">
-                        <div class="date-range-group">
-                            <label>Date Requested</label>
-                            <div class="date-range-inputs">
-                                <input type="date" id="dateRequestedFrom" class="filter-select">
-                                <span class="date-range-to">to</span>
-                                <input type="date" id="dateRequestedTo" class="filter-select">
-                            </div>
-                        </div>
-
-                        <div class="date-range-group">
-                            <label>Date Released</label>
-                            <div class="date-range-inputs">
-                                <input type="date" id="dateReleasedFrom" class="filter-select">
-                                <span class="date-range-to">to</span>
-                                <input type="date" id="dateReleasedTo" class="filter-select">
-                            </div>
-                        </div>
-
-                        <button type="button" class="clear-dates-btn" onclick="clearDateFilters()">Clear Dates</button>
-                    </div>
-
                     <div class="expenses-search-wrapper">
+            
                         <div class="column-filter-dropdown" id="columnFilterDropdown">
                             <button type="button" id="columnFilterBtn" class="column-filter-btn" onclick="toggleColumnFilterMenu(event)">
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -811,7 +790,7 @@
     }
     .expenses-filters-row {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-start;
         align-items: flex-end;
         flex-wrap: wrap;
         gap: 12px;
@@ -1440,10 +1419,11 @@
 // Date Requested / Date Released are handled separately as range pickers above.
 const FILTERABLE_FIELDS = [
     { key: 'client_name',       label: "Client's Name",             dataAttr: 'data-client',                type: 'text'  },
-    { key: 'reservation_date',  label: 'Reservation Date',          dataAttr: 'data-reservation-date',      type: 'date'  },
     { key: 'project_name',      label: 'Project Name',              dataAttr: 'data-project',                type: 'text'  },
     { key: 'property_details',  label: 'Property Details',          dataAttr: 'data-property',               type: 'text'  },
     { key: 'agent_name',        label: "Agent's Name",              dataAttr: 'data-agent',                  type: 'text'  },
+    { key: 'reservation_date',  label: 'Reservation Date',          dataAttr: 'data-reservation-date',      type: 'daterange' },
+    { key: 'date_requested',    label: 'Date Requested',            dataAttr: 'data-date-requested',        type: 'daterange' },
     @if($isAdmin)
     { key: 'price_sqm',         label: 'Price/SQM',                 dataAttr: 'data-price-sqm',              type: 'text'  },
     { key: 'lot_area',          label: 'Lot Area',                  dataAttr: 'data-lot-area',                type: 'text'  },
@@ -1454,6 +1434,7 @@ const FILTERABLE_FIELDS = [
     { key: 'mode_of_payment',   label: 'Mode of Payment',           dataAttr: 'data-mode',                    type: 'text'  },
     { key: 'remarks',           label: 'Remarks',                   dataAttr: 'data-remarks',                 type: 'text'  },
     { key: 'units',             label: 'Units',                     dataAttr: 'data-units',                   type: 'text'  },
+    { key: 'date_released',     label: 'Date Released',             dataAttr: 'data-date-released',         type: 'daterange' },
     @if($isAdmin)
     { key: 'commission_percent',label: 'Commission %',              dataAttr: 'data-commission-percent',      type: 'text'  },
     { key: 'commission',        label: 'Commission',                dataAttr: 'data-commission',              type: 'text'  },
@@ -1507,12 +1488,13 @@ function toggleColumnFilter(key) {
     if (columnFilters.hasOwnProperty(key)) {
         removeColumnFilter(key);
     } else {
-        columnFilters[key] = '';
+        const f = fieldConfig(key);
+        columnFilters[key] = (f && f.type === 'daterange') ? { from: '', to: '' } : '';
         renderColumnFilterMenu();
         renderActiveColumnFilters();
         closeColumnFilterMenu();
         setTimeout(() => {
-            const el = document.getElementById('colFilterInput_' + key);
+            const el = document.getElementById('colFilterInput_' + key) || document.getElementById('colFilterInput_' + key + '_from');
             if (el) el.focus();
         }, 0);
     }
@@ -1537,6 +1519,14 @@ function updateColumnFilterValue(key, value) {
     applyFilters();
 }
 
+function updateDateRangeFilterValue(key, part, value) {
+    if (!columnFilters[key] || typeof columnFilters[key] !== 'object') {
+        columnFilters[key] = { from: '', to: '' };
+    }
+    columnFilters[key][part] = value;
+    applyFilters();
+}
+
 function renderActiveColumnFilters() {
     const row = document.getElementById('activeColumnFiltersRow');
     const badge = document.getElementById('filterCountBadge');
@@ -1554,19 +1544,26 @@ function renderActiveColumnFilters() {
         return;
     }
 
-    row.style.display = 'flex';
+   row.style.display = 'flex';
     row.innerHTML = keys.map(key => {
         const f = fieldConfig(key);
-        const val = columnFilters[key] || '';
         let inputHtml = '';
         if (f.type === 'select') {
+            const val = columnFilters[key] || '';
             inputHtml = `<select id="colFilterInput_${key}" onchange="updateColumnFilterValue('${key}', this.value)">
                             <option value="">All</option>
                             ${f.options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
                          </select>`;
+        } else if (f.type === 'daterange') {
+            const range = (columnFilters[key] && typeof columnFilters[key] === 'object') ? columnFilters[key] : { from: '', to: '' };
+            inputHtml = `<input type="date" id="colFilterInput_${key}_from" value="${range.from || ''}" onchange="updateDateRangeFilterValue('${key}', 'from', this.value)">
+                         <span style="color:#8a9bad;font-size:12px;">to</span>
+                         <input type="date" id="colFilterInput_${key}_to" value="${range.to || ''}" onchange="updateDateRangeFilterValue('${key}', 'to', this.value)">`;
         } else if (f.type === 'date') {
+            const val = columnFilters[key] || '';
             inputHtml = `<input type="date" id="colFilterInput_${key}" value="${val}" oninput="updateColumnFilterValue('${key}', this.value)">`;
         } else {
+            const val = columnFilters[key] || '';
             inputHtml = `<input type="text" id="colFilterInput_${key}" placeholder="Search ${f.label.toLowerCase()}..." value="${val}" oninput="updateColumnFilterValue('${key}', this.value)">`;
         }
         return `<div class="column-filter-chip">
@@ -1579,9 +1576,21 @@ function renderActiveColumnFilters() {
 
 function matchesColumnFilters(row) {
     for (const key in columnFilters) {
+        const f = fieldConfig(key);
+        if (!f) continue;
+
+        if (f.type === 'daterange') {
+            const range = columnFilters[key];
+            if (!range || (!range.from && !range.to)) continue;
+            const rowVal = (row.getAttribute(f.dataAttr) || '').toString();
+            if (!rowVal) return false;
+            if (range.from && rowVal < range.from) return false;
+            if (range.to && rowVal > range.to) return false;
+            continue;
+        }
+
         const filterVal = (columnFilters[key] || '').toString().trim().toLowerCase();
         if (!filterVal) continue;
-        const f = fieldConfig(key);
         const rowVal = (row.getAttribute(f.dataAttr) || '').toString().toLowerCase();
 
         if (f.type === 'date') {
@@ -1593,37 +1602,6 @@ function matchesColumnFilters(row) {
         }
     }
     return true;
-}
-
-// Date Requested / Date Released range filter check
-function matchesDateRangeFilters(row) {
-    const reqFrom = document.getElementById('dateRequestedFrom')?.value || '';
-    const reqTo   = document.getElementById('dateRequestedTo')?.value || '';
-    const relFrom = document.getElementById('dateReleasedFrom')?.value || '';
-    const relTo   = document.getElementById('dateReleasedTo')?.value || '';
-
-    const rowReq = row.getAttribute('data-date-requested') || '';
-    const rowRel = row.getAttribute('data-date-released') || '';
-
-    if (reqFrom || reqTo) {
-        if (!rowReq) return false;
-        if (reqFrom && rowReq < reqFrom) return false;
-        if (reqTo && rowReq > reqTo) return false;
-    }
-    if (relFrom || relTo) {
-        if (!rowRel) return false;
-        if (relFrom && rowRel < relFrom) return false;
-        if (relTo && rowRel > relTo) return false;
-    }
-    return true;
-}
-
-function clearDateFilters() {
-    ['dateRequestedFrom','dateRequestedTo','dateReleasedFrom','dateReleasedTo'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
-    applyFilters();
 }
 
 function applyFilters() {
@@ -1640,10 +1618,9 @@ function applyFilters() {
     for (let row of dataRows) {
         const text = row.textContent.toLowerCase();
         const matchesSearch = searchWords.length === 0 || searchWords.every(w => text.includes(w));
-        const dateRangeMatch = matchesDateRangeFilters(row);
         const columnMatch = matchesColumnFilters(row);
 
-        if (matchesSearch && dateRangeMatch && columnMatch) {
+        if (matchesSearch && columnMatch) {
             row.style.display = '';
             visible++;
         } else {
@@ -1660,10 +1637,6 @@ function applyFilters() {
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('monitoringSearch');
     if (searchInput) searchInput.addEventListener('input', applyFilters);
-
-    ['dateRequestedFrom','dateRequestedTo','dateReleasedFrom','dateReleasedTo'].forEach(id => {
-        document.getElementById(id)?.addEventListener('change', applyFilters);
-    });
 });
 
 function filterByStat(status) {

@@ -90,7 +90,7 @@ class DepartmentalExpensesController extends Controller
                 'category' => 'required|string',
                 'date_requested' => 'nullable|date',
                 'requested_amount' => 'nullable|numeric|min:0',
-                'status' => 'required|in:LIQUIDATED,NOT YET LIQUIDATED',
+                'status' => 'required|in:' . implode(',', \App\Models\DepartmentalExpense::STATUSES),
                 'date_released' => 'nullable|date',
                 'total_expenses' => 'nullable|numeric',
                 'amount_returned' => 'nullable|numeric',
@@ -213,7 +213,7 @@ class DepartmentalExpensesController extends Controller
                 'category' => 'required|string',
                 'date_requested' => 'nullable|date',
                 'requested_amount' => 'nullable|numeric|min:0',
-                'status' => 'required|in:LIQUIDATED,NOT YET LIQUIDATED',
+                'status' => 'required|in:' . implode(',', \App\Models\DepartmentalExpense::STATUSES),
                 'date_released' => 'nullable|date',
                 'total_expenses' => 'nullable|numeric',
                 'amount_returned' => 'nullable|numeric',
@@ -389,6 +389,17 @@ class DepartmentalExpensesController extends Controller
         return response()->json($categories);
     }
     
+    /**
+     * Show the original Budget Request / Liquidation Form for a single
+     * "All Expenses" record, exactly as it was filled in and submitted,
+     * so it can be viewed and printed again at any time.
+     */
+    public function viewForm($id)
+    {
+        $expense = DepartmentalExpense::withTrashed()->findOrFail($id);
+        return view('budget-request-view', compact('expense'));
+    }
+
     public function printLiquidation(Request $request)
     {
         $controlNumbers = $request->query('controls', '');

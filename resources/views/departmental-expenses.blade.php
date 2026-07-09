@@ -238,8 +238,10 @@
                     <div class="form-group">
                         <label>Status <span class="required">*</span></label>
                         <select id="status" name="status" class="form-control" required>
-                            <option value="NOT YET LIQUIDATED">NOT YET LIQUIDATED</option>
+                            <option value="FOR REQUEST">FOR REQUEST</option>
+                            <option value="NOT LIQUIDATED">NOT LIQUIDATED</option>
                             <option value="LIQUIDATED">LIQUIDATED</option>
+                            <option value="REJECTED">REJECTED</option>
                         </select>
                     </div>
 
@@ -283,29 +285,7 @@
             
             <!-- Filters and Search below title -->
             <div class="expenses-filters-bar" style="display: flex; flex-direction: column; gap: 14px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0;">
-                <div class="expenses-filters-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                    <div class="expenses-date-filters" style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap;">
-                        <div class="date-range-group" style="display: flex; flex-direction: column; gap: 4px;">
-                            <label style="font-weight: 600; color: #1e4575; font-size: 12px; text-transform: uppercase; letter-spacing: .3px;">Date Requested</label>
-                            <div class="date-range-inputs" style="display: flex; align-items: center; gap: 6px;">
-                                <input type="date" id="dateRequestedFrom" class="filter-select" style="font-size: 13px; padding: 7px 10px; border: 1.5px solid #d0d5dd; border-radius: 6px; background-color: white; color: #344054;">
-                                <span style="color:#8a9bad;font-size:12px;">to</span>
-                                <input type="date" id="dateRequestedTo" class="filter-select" style="font-size: 13px; padding: 7px 10px; border: 1.5px solid #d0d5dd; border-radius: 6px; background-color: white; color: #344054;">
-                            </div>
-                        </div>
-
-                        <div class="date-range-group" style="display: flex; flex-direction: column; gap: 4px;">
-                            <label style="font-weight: 600; color: #1e4575; font-size: 12px; text-transform: uppercase; letter-spacing: .3px;">Date Released</label>
-                            <div class="date-range-inputs" style="display: flex; align-items: center; gap: 6px;">
-                                <input type="date" id="dateReleasedFrom" class="filter-select" style="font-size: 13px; padding: 7px 10px; border: 1.5px solid #d0d5dd; border-radius: 6px; background-color: white; color: #344054;">
-                                <span style="color:#8a9bad;font-size:12px;">to</span>
-                                <input type="date" id="dateReleasedTo" class="filter-select" style="font-size: 13px; padding: 7px 10px; border: 1.5px solid #d0d5dd; border-radius: 6px; background-color: white; color: #344054;">
-                            </div>
-                        </div>
-
-                        <button type="button" class="clear-dates-btn" onclick="clearDateFilters()" style="font-size:12px;font-weight:600;color:#1e4575;background:#eef2f7;border:1px solid #d0d5dd;border-radius:6px;padding:8px 14px;cursor:pointer;white-space:nowrap;height:34px;">Clear Dates</button>
-                    </div>
-
+                <div class="expenses-filters-row" style="display: flex; justify-content: flex-start; align-items: center; flex-wrap: wrap; gap: 12px;">
                     <div class="expenses-search-wrapper" style="display: flex; align-items: center; gap: 10px; width: 100%; max-width: 560px;">
                         <div class="column-filter-dropdown" id="columnFilterDropdown" style="position: relative;">
                             <button type="button" id="columnFilterBtn" class="column-filter-btn" onclick="toggleColumnFilterMenu(event)">
@@ -362,6 +342,7 @@
                         <td>
                             <div class="action-buttons">
                                 <button onclick="viewRequest({{ $req->id }})" class="btn-action btn-view">View</button>
+                                <a href="{{ route('departmental-expenses.view-form', $req->id) }}" target="_blank" class="btn-action btn-view" style="text-decoration:none;display:inline-flex;align-items:center;" title="View & print the original Budget Request Form">Form</a>
                                 <button onclick="editRequest({{ $req->id }})" class="btn-action btn-edit">Edit</button>
                                 <button onclick="deleteRequest({{ $req->id }})" class="btn-action btn-delete">Delete</button>
                             </div>
@@ -710,8 +691,10 @@
                 <div class="form-group">
                     <label>Status <span class="required">*</span></label>
                     <select id="edit_status" name="status" class="form-control form-control-sm" required>
-                        <option value="NOT YET LIQUIDATED">NOT YET LIQUIDATED</option>
+                        <option value="FOR REQUEST">FOR REQUEST</option>
+                        <option value="NOT LIQUIDATED">NOT LIQUIDATED</option>
                         <option value="LIQUIDATED">LIQUIDATED</option>
+                        <option value="REJECTED">REJECTED</option>
                     </select>
                 </div>
 
@@ -1663,40 +1646,6 @@ window.onclick = function(event) {
     }
 }
 
-// Date Requested / Date Released range filter check
-function matchesDateRangeFilters(row) {
-    const reqFrom = document.getElementById('dateRequestedFrom')?.value || '';
-    const reqTo   = document.getElementById('dateRequestedTo')?.value || '';
-    const relFrom = document.getElementById('dateReleasedFrom')?.value || '';
-    const relTo   = document.getElementById('dateReleasedTo')?.value || '';
-
-    const rowReq = row.getAttribute('data-date-requested') || '';
-    const rowRel = row.getAttribute('data-date-released') || '';
-
-    if (reqFrom || reqTo) {
-        if (!rowReq) return false;
-        if (reqFrom && rowReq < reqFrom) return false;
-        if (reqTo && rowReq > reqTo) return false;
-    }
-    if (relFrom || relTo) {
-        if (!rowRel) return false;
-        if (relFrom && rowRel < relFrom) return false;
-        if (relTo && rowRel > relTo) return false;
-    }
-    return true;
-}
-
-function clearDateFilters() {
-    ['dateRequestedFrom','dateRequestedTo','dateReleasedFrom','dateReleasedTo'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
-    applyFilters();
-}
-
-['dateRequestedFrom','dateRequestedTo','dateReleasedFrom','dateReleasedTo'].forEach(id => {
-    document.getElementById(id)?.addEventListener('change', applyFilters);
-});
 
 // Table Search + Date Range filtering (combined) - Multiple words support
 const searchInput = document.getElementById('tableSearch');
@@ -1709,11 +1658,13 @@ const FILTERABLE_FIELDS = [
     { key: 'requestor_name',           label: 'Requestor Name',           dataAttr: 'data-requestor',        type: 'text'  },
     { key: 'department',               label: 'Department',               dataAttr: 'data-department',       type: 'text'  },
     { key: 'category',                 label: 'Category',                 dataAttr: 'data-category',         type: 'text'  },
+    { key: 'date_requested',           label: 'Date Requested',           dataAttr: 'data-date-requested',   type: 'daterange' },
+    { key: 'date_released',            label: 'Date Released',            dataAttr: 'data-date-released',    type: 'daterange' },
+    { key: 'date_of_amount_returned',  label: 'Date of Amount Returned',  dataAttr: 'data-date-returned',    type: 'daterange' },
     { key: 'requested_amount',         label: 'Requested Amount',         dataAttr: 'data-requested-amount', type: 'text'  },
-    { key: 'status',                   label: 'Status',                   dataAttr: 'data-status',           type: 'select', options: ['NOT YET LIQUIDATED', 'LIQUIDATED'] },
+    { key: 'status',                   label: 'Status',                   dataAttr: 'data-status',           type: 'select', options: ['FOR REQUEST', 'NOT LIQUIDATED', 'LIQUIDATED', 'REJECTED'] },
     { key: 'total_expenses',           label: 'Total Expenses',           dataAttr: 'data-total-expenses',   type: 'text'  },
     { key: 'amount_returned',          label: 'Amount Returned',          dataAttr: 'data-amount-returned',  type: 'text'  },
-    { key: 'date_of_amount_returned',  label: 'Date of Amount Returned',  dataAttr: 'data-date-returned',    type: 'date'  },
 ];
 
 // Active per-column filters: { fieldKey: currentValue }
@@ -1760,17 +1711,17 @@ function toggleColumnFilter(key) {
     if (columnFilters.hasOwnProperty(key)) {
         removeColumnFilter(key);
     } else {
-        columnFilters[key] = '';
+        const f = fieldConfig(key);
+        columnFilters[key] = (f && f.type === 'daterange') ? { from: '', to: '' } : '';
         renderColumnFilterMenu();
         renderActiveColumnFilters();
         closeColumnFilterMenu();
         setTimeout(() => {
-            const el = document.getElementById('colFilterInput_' + key);
+            const el = document.getElementById('colFilterInput_' + key) || document.getElementById('colFilterInput_' + key + '_from');
             if (el) el.focus();
         }, 0);
     }
 }
-
 function removeColumnFilter(key) {
     delete columnFilters[key];
     renderColumnFilterMenu();
@@ -1787,6 +1738,14 @@ function clearAllColumnFilters() {
 
 function updateColumnFilterValue(key, value) {
     columnFilters[key] = value;
+    applyFilters();
+}
+
+function updateDateRangeFilterValue(key, part, value) {
+    if (!columnFilters[key] || typeof columnFilters[key] !== 'object') {
+        columnFilters[key] = { from: '', to: '' };
+    }
+    columnFilters[key][part] = value;
     applyFilters();
 }
 
@@ -1810,16 +1769,23 @@ function renderActiveColumnFilters() {
     row.style.display = 'flex';
     row.innerHTML = keys.map(key => {
         const f = fieldConfig(key);
-        const val = columnFilters[key] || '';
         let inputHtml = '';
         if (f.type === 'select') {
+            const val = columnFilters[key] || '';
             inputHtml = `<select id="colFilterInput_${key}" onchange="updateColumnFilterValue('${key}', this.value)">
                             <option value="">All</option>
                             ${f.options.map(o => `<option value="${o}" ${val === o ? 'selected' : ''}>${o}</option>`).join('')}
                          </select>`;
+        } else if (f.type === 'daterange') {
+            const range = (columnFilters[key] && typeof columnFilters[key] === 'object') ? columnFilters[key] : { from: '', to: '' };
+            inputHtml = `<input type="date" id="colFilterInput_${key}_from" value="${range.from || ''}" onchange="updateDateRangeFilterValue('${key}', 'from', this.value)">
+                         <span style="color:#8a9bad;font-size:12px;">to</span>
+                         <input type="date" id="colFilterInput_${key}_to" value="${range.to || ''}" onchange="updateDateRangeFilterValue('${key}', 'to', this.value)">`;
         } else if (f.type === 'date') {
+            const val = columnFilters[key] || '';
             inputHtml = `<input type="date" id="colFilterInput_${key}" value="${val}" oninput="updateColumnFilterValue('${key}', this.value)">`;
         } else {
+            const val = columnFilters[key] || '';
             inputHtml = `<input type="text" id="colFilterInput_${key}" placeholder="Search ${f.label.toLowerCase()}..." value="${val}" oninput="updateColumnFilterValue('${key}', this.value)">`;
         }
         return `<div class="column-filter-chip">
@@ -1832,9 +1798,21 @@ function renderActiveColumnFilters() {
 
 function matchesColumnFilters(row) {
     for (const key in columnFilters) {
+        const f = fieldConfig(key);
+        if (!f) continue;
+
+        if (f.type === 'daterange') {
+            const range = columnFilters[key];
+            if (!range || (!range.from && !range.to)) continue;
+            const rowVal = (row.getAttribute(f.dataAttr) || '').toString();
+            if (!rowVal) return false;
+            if (range.from && rowVal < range.from) return false;
+            if (range.to && rowVal > range.to) return false;
+            continue;
+        }
+
         const filterVal = (columnFilters[key] || '').toString().trim().toLowerCase();
         if (!filterVal) continue;
-        const f = fieldConfig(key);
         const rowVal = (row.getAttribute(f.dataAttr) || '').toString().toLowerCase();
 
         if (f.type === 'date') {
@@ -1861,10 +1839,9 @@ function applyFilters() {
 
         const text = row.textContent.toLowerCase();
         const allWordsFound = searchWords.length === 0 || searchWords.every(word => text.includes(word));
-        const dateRangeMatch = matchesDateRangeFilters(row);
         const columnMatch = matchesColumnFilters(row);
 
-        row.style.display = (allWordsFound && dateRangeMatch && columnMatch) ? '' : 'none';
+        row.style.display = (allWordsFound && columnMatch) ? '' : 'none';
     });
 
     checkNoResults();

@@ -15,6 +15,7 @@ class DepartmentalExpense extends Model
         'control_number', 'requestor_name', 'department', 'category',
         'date_requested', 'requested_amount', 'status', 'date_released',
         'total_expenses', 'amount_returned', 'date_of_amount_returned',
+        'form_data',
     ];
 
     protected $casts = [
@@ -24,5 +25,9 @@ class DepartmentalExpense extends Model
         'requested_amount'        => 'decimal:2',
         'total_expenses'          => 'decimal:2',
         'amount_returned'         => 'decimal:2',
+        'form_data'               => 'array',
     ];
+
+    /** The allowed statuses for a departmental expense / budget request record. */
+    public const STATUSES = ['FOR REQUEST', 'NOT LIQUIDATED', 'LIQUIDATED', 'REJECTED'];
 }

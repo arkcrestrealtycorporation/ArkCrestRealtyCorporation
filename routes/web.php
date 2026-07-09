@@ -67,6 +67,7 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     // Departments (Departmental Expenses)
     Route::get('/departments', [App\Http\Controllers\DepartmentalExpensesController::class, 'index'])->name('departments.admin')->middleware('page.visible');
     Route::get('/liquidation-print', [App\Http\Controllers\DepartmentalExpensesController::class, 'printLiquidation'])->name('liquidation.print');
+    Route::get('/departmental-expenses/{id}/view-form', [App\Http\Controllers\DepartmentalExpensesController::class, 'viewForm'])->name('departmental-expenses.view-form');
     Route::post('/api/departmental-expenses', [App\Http\Controllers\DepartmentalExpensesController::class, 'store']);
     Route::put('/api/departmental-expenses/{id}', [App\Http\Controllers\DepartmentalExpensesController::class, 'update']);
     Route::delete('/api/departmental-expenses/{id}', [App\Http\Controllers\DepartmentalExpensesController::class, 'destroy']);
@@ -133,6 +134,7 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::get('/forms/site-visit', [App\Http\Controllers\FormsController::class, 'siteVisit'])->name('forms.site-visit');
     Route::get('/api/forms/control-number', [App\Http\Controllers\FormsController::class, 'nextControlNumber']);
     Route::post('/api/forms/control-number/increment', [App\Http\Controllers\FormsController::class, 'incrementControlNumber']);
+    Route::post('/api/forms/budget-request/submit', [App\Http\Controllers\FormsController::class, 'submitBudgetRequest']);
 
     // Sales & Marketing
     Route::get('/sales-marketing', [App\Http\Controllers\SalesMarketingController::class, 'index'])->name('sales-marketing')->middleware('page.visible');

@@ -166,7 +166,7 @@
     <div class="dept-sel" style="margin-top:6px;">
     <select id="f_dept" onchange="updDept()" style="font-size:12px;padding:3px 8px;border:1px solid #ccc;border-radius:4px;">
     @foreach($departments->where('slug', '!=', 'capex') as $dept)
-    <option value="{{ strtoupper($dept->name) }}">{{ $dept->name }} Department</option>
+    <option value="{{ strtoupper($dept->name) }}" data-name="{{ $dept->name }}">{{ $dept->name }} Department</option>
     @endforeach
     </select>
     </div>
@@ -312,7 +312,7 @@
     <div class="frm-btns dept-sel">
     <button class="btn-clear-f" onclick="openClearConfirm('budget')">Clear</button>    <button class="btn-print-f" onclick="openPreview('frmCard','Budget Request Form')">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-    Print Budget Request Form
+    Print and Submit
     </button>
     </div>
 
@@ -501,9 +501,9 @@
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:15px;height:15px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
     Download PDF
     </button>
-    <button onclick="previewPrint()" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
+    <button onclick="previewPrint()" id="frmPreviewPrintBtn" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.3);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-    Print
+    <span id="frmPreviewPrintLabel">Print</span>
     </button>
     <button onclick="closePreview()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:white;width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;">&times;</button>
     </div>
@@ -803,25 +803,126 @@ function formatAmountInput(el){
     var newPos = Math.max(0, el.value.length - distFromEnd);
     if(el.setSelectionRange) el.setSelectionRange(newPos,newPos);
 }
-// Load control number on page load
+// Load (preview) the control number that will be assigned to this
+// request. This is not reserved yet — it's only committed once the
+// form is actually submitted via "Print and Submit".
 var _ctrlNum = '';
-fetch('{{ url("/api/forms/control-number") }}')
-    .then(function(r){return r.json();})
-    .then(function(d){
-    _ctrlNum = d.control_number;
-    var parts = d.control_number.split('-');
+function renderCtrlNum(num){
+    var parts = num.split('-');
     var html = parts[0] + '-'
     + '<span style="text-decoration:underline;">' + parts[1] + '</span>-'
     + '<span style="text-decoration:underline;">' + parts[2] + '</span>-'
     + '<span style="text-decoration:underline;">' + parts[3] + '</span>';
     document.getElementById('ctrlNumDisplay').innerHTML = html;
+}
+function loadControlNumberPreview(){
+    fetch('{{ url("/api/forms/control-number") }}')
+    .then(function(r){return r.json();})
+    .then(function(d){
+    _ctrlNum = d.control_number;
+    renderCtrlNum(d.control_number);
+    });
+}
+loadControlNumberPreview();
+
+// Reads a peso-formatted input (which may contain thousands separators)
+// and returns a plain number, or null if the field is empty/invalid.
+function readAmount(id){
+    var el = document.getElementById(id);
+    if(!el || !el.value) return null;
+    var n = parseFloat(el.value.replace(/,/g,''));
+    return isNaN(n) ? null : n;
+}
+
+function collectBudgetRequestData(){
+    var deptSel = document.getElementById('f_dept');
+    var deptOpt = deptSel.options[deptSel.selectedIndex];
+    var deptName = deptOpt ? (deptOpt.getAttribute('data-name') || deptSel.value) : deptSel.value;
+
+    // Full snapshot of every field on the printed form (including the
+    // liquidation report section, if any of it has been filled in), so the
+    // exact form can be viewed / printed again later from All Expenses —
+    // independent of the summary fields below, which always start blank.
+    var liquidationItems = [];
+    document.querySelectorAll('.liq-tbl tbody tr').forEach(function(tr){
+    var date = tr.querySelector('.liq-date-input');
+    var receipt = tr.querySelector('.liq-receipt-input');
+    var particulars = tr.querySelector('.liq-particulars-input');
+    var amount = tr.querySelector('.liq-amount-input');
+    date = date ? date.value : '';
+    receipt = receipt ? receipt.value : '';
+    particulars = particulars ? particulars.value : '';
+    amount = amount ? amount.value : '';
+    if(date || receipt || particulars || amount){
+    liquidationItems.push({date: date, receipt: receipt, particulars: particulars, amount: amount});
+    }
     });
 
-function incrementAndPrint(){
-    fetch('{{ url("/api/forms/control-number/increment") }}', {
+    var formSnapshot = {
+    department_display: document.getElementById('disp_dept') ? document.getElementById('disp_dept').textContent.trim() : '',
+    department: deptName,
+    requestor_name: document.getElementById('f_name').value.trim(),
+    category: document.getElementById('f_cat').value.trim(),
+    date_requested: document.getElementById('f_date_req').value || null,
+    target_date_released: document.getElementById('f_target').value || null,
+    actual_date_released: document.getElementById('f_actual_released').value || null,
+    remarks: document.getElementById('f_remarks').value,
+    liquidation_items: liquidationItems,
+    total_expenses: document.getElementById('f_total_expenses').value,
+    less_cash_advance: document.getElementById('f_less_cash_advance').value,
+    amount_returned: document.getElementById('f_amount_returned').value,
+    approved_by: document.getElementById('f_approved_by').value,
+    released_by: document.getElementById('f_released_by').value,
+    received_by: document.getElementById('f_received_by').value,
+    date_checked: document.getElementById('f_date_checked').value || null,
+    date_released_sig: document.getElementById('f_date_released').value || null,
+    date_received_sig: document.getElementById('f_date_received').value || null
+    };
+
+    return {
+    requestor_name: document.getElementById('f_name').value.trim(),
+    department: deptName,
+    category: document.getElementById('f_cat').value.trim(),
+    date_requested: document.getElementById('f_date_req').value || null,
+    requested_amount: readAmount('f_amount'),
+    form_snapshot: formSnapshot
+    };
+}
+
+var _budgetSubmitting = false;
+function submitBudgetRequestAndPrint(){
+    if(_budgetSubmitting) return;
+    var data = collectBudgetRequestData();
+    if(!data.requestor_name || !data.category || !data.requested_amount){
+    showToast('Please fill in Name, Particular, and Amount Requested before printing.', 'error', 'Missing details');
+    return;
+    }
+    _budgetSubmitting = true;
+    fetch('{{ url("/api/forms/budget-request/submit") }}', {
     method:'POST',
-    headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Content-Type':'application/json'}
-    }).then(function(){window.print();});
+    headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Content-Type':'application/json'},
+    body: JSON.stringify(data)
+    }).then(function(r){
+    return r.json().then(function(d){ return {ok:r.ok, d:d}; });
+    }).then(function(res){
+    _budgetSubmitting = false;
+    if(!res.ok || !res.d.success){
+    showToast(res.d.message || 'Could not submit the budget request.', 'error', 'Submission failed');
+    return;
+    }
+    _ctrlNum = res.d.control_number;
+    renderCtrlNum(res.d.control_number);
+    // Also refresh the number inside the open preview clone, if present
+    var previewCtrl = document.querySelector('#frmPreviewBody #ctrlNumDisplay');
+    if(previewCtrl) previewCtrl.innerHTML = document.getElementById('ctrlNumDisplay').innerHTML;
+    showToast('Added to All Expenses — Control Number: ' + res.d.control_number, 'success', 'Submitted');
+    window.print();
+    // Get the next control number ready for whatever request comes next
+    loadControlNumberPreview();
+    }).catch(function(){
+    _budgetSubmitting = false;
+    showToast('Network error. Please try again.', 'error');
+    });
 }
 
 // Populate categories for default department on load
@@ -1112,6 +1213,8 @@ function openPreview(cardId, label){
     document.getElementById('frmPreviewLabel').textContent = label + ' — Preview';
     var modal = document.getElementById('frmPreviewModal');
     modal.dataset.source = cardId;
+    var printLabelEl = document.getElementById('frmPreviewPrintLabel');
+    if(printLabelEl) printLabelEl.textContent = (cardId === 'frmCard') ? 'Print and Submit' : 'Print';
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     setTimeout(fitPreviewCard, 0);
@@ -1122,14 +1225,16 @@ function closePreview(){
 }
 function previewPrint(){
     var src = document.getElementById('frmPreviewModal').dataset.source;
-    if(src === 'frmCard'){ incrementAndPrint(); } else { window.print(); }
+    if(src === 'frmCard'){ submitBudgetRequestAndPrint(); } else { window.print(); }
 }
 function previewDownload(){
     var src = document.getElementById('frmPreviewModal').dataset.source;
     if(src === 'frmCard'){
     var ctrlEl = document.getElementById('ctrlNumDisplay');
     var ctrlNum = ctrlEl ? ctrlEl.textContent.trim() : 'Budget-Request-Form';
-    generatePDF('frmCard', ctrlNum, true);
+    // Downloading a PDF is just a snapshot/preview and does not submit
+    // the request to All Expenses, so no control number is reserved here.
+    generatePDF('frmCard', ctrlNum, false);
     } else {
     var cnameEl = document.getElementById('sv_client_name');
     var cname = (cnameEl && cnameEl.value ? cnameEl.value.trim() : 'Site-Visit').replace(/\s+/g,'-');
