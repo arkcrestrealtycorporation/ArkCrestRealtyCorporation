@@ -56,6 +56,33 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
     .cd-modal-box { width: 100% !important; max-width: 100% !important; height: 100%; max-height: 100%; overflow-y: auto !important; -webkit-overflow-scrolling: touch; border-radius: 0 !important; }
     .cd-modal-grid { grid-template-columns: 1fr !important; }
 }
+
+/* ---- Filter dropdown + chips (matches Commission Monitoring / ARC Sales pattern) ---- */
+.column-filter-dropdown{position:relative}
+.column-filter-btn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;font-size:13px;font-weight:600;color:#1e4575;background:white;border:2px solid #1e4575;border-radius:8px;padding:9px 14px;cursor:pointer;height:40px;box-sizing:border-box;transition:all .2s ease}
+.column-filter-btn:hover{background:#eef2f7}
+.filter-count-badge{background:#A37929;color:white;font-size:11px;font-weight:700;border-radius:999px;min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+.column-filter-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:220px;max-height:320px;overflow-y:auto;background:white;border:1.5px solid #d0d5dd;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:500;padding:6px}
+.column-filter-menu-item{display:flex;align-items:center;gap:8px;padding:9px 10px;font-size:13px;font-weight:500;color:#344054;border-radius:6px;cursor:pointer;white-space:nowrap}
+.column-filter-menu-item:hover{background:#eef2f7}
+.column-filter-menu-item .cfm-check{width:14px;color:#A37929;font-weight:700;visibility:hidden}
+.column-filter-menu-item.is-active .cfm-check{visibility:visible}
+.column-filter-menu-item.is-active{color:#1e4575;font-weight:700}
+.active-column-filters-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.column-filter-chip{display:flex;align-items:center;gap:6px;background:#f5f7fa;border:1.5px solid #d0d5dd;border-radius:8px;padding:6px 8px 6px 12px}
+.column-filter-chip label{font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.column-filter-chip input,.column-filter-chip select{font-size:13px;padding:6px 8px;border:1.5px solid #d0d5dd;border-radius:6px;color:#344054;min-width:130px}
+.column-filter-chip .cfm-remove{background:none;border:none;color:#8a9bad;cursor:pointer;font-size:16px;line-height:1;padding:2px 4px}
+.column-filter-chip .cfm-remove:hover{color:#dc2626}
+.clear-column-filters-btn{font-size:12px;font-weight:600;color:#1e4575;background:#eef2f7;border:1px solid #d0d5dd;border-radius:6px;padding:8px 14px;cursor:pointer;white-space:nowrap}
+@media (max-width:768px){
+  .column-filter-menu{left:0;right:0;min-width:0;width:100%;box-sizing:border-box}
+  .active-column-filters-row{flex-direction:column;align-items:stretch}
+  .column-filter-chip{width:100%;flex-wrap:wrap;box-sizing:border-box}
+  .column-filter-chip label{flex:1 1 100%}
+  .column-filter-chip input,.column-filter-chip select{flex:1 1 auto;min-width:0;width:100%}
+  .clear-column-filters-btn{width:100%;text-align:center}
+}
 </style>
 
 <div class="cd-wrap">
@@ -230,60 +257,27 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
 
     <!-- Table -->
     <div style="background:white;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.08);border:2px solid #1e4575;margin-top:30px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #e5e7eb;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #e5e7eb;">
             <h3 style="font-size:20px;font-weight:700;color:#1e4575;margin:0;text-transform:uppercase">Client Database Records</h3>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <div class="column-filter-dropdown" id="cdColumnFilterDropdown">
+                    <button type="button" class="column-filter-btn" onclick="toggleCdColumnFilterMenu(event)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                        <span>Filter</span>
+                        <span id="cdFilterCountBadge" class="filter-count-badge" style="display:none;">0</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div id="cdColumnFilterMenu" class="column-filter-menu" style="display:none;"></div>
+                </div>
                 <div class="cd-search-wrap" style="position:relative;">
                     <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#6b7280" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input type="text" id="cdSearch" placeholder="Search name, agent, project, client, block & lot... (space = AND)" style="width:340px;max-width:100%;padding:9px 12px 9px 36px;border:2px solid #d0d5dd;border-radius:8px;font-size:13px;box-sizing:border-box;outline:none;" oninput="cdFilter()">
+                    <input type="text" id="cdSearch" placeholder="Search request..." style="width:340px;max-width:100%;padding:9px 12px 9px 36px;border:2px solid #d0d5dd;border-radius:8px;font-size:13px;box-sizing:border-box;outline:none;" oninput="cdFilter()">
                 </div>
-                <select id="cdStatusFilter" onchange="cdFilter()" style="padding:9px 12px;border:2px solid #d0d5dd;border-radius:8px;font-size:13px;color:#374151;background:white;cursor:pointer;outline:none;">
-                    <option value="">All Status</option>
-                    <option value="pending">Pending</option>
-                    <option value="done">Done</option>
-                    <option value="cancelled">Cancelled</option>
-                    <option value="none">No Status</option>
-                </select>
-                <div style="display:flex;align-items:center;gap:6px;">
-                    <label style="font-size:11px;font-weight:700;color:#1e4575;white-space:nowrap;">Reservation Month:</label>
-                    <select id="cdReservationMonthFilter" onchange="cdFilter()" style="padding:9px 12px;border:2px solid #d0d5dd;border-radius:8px;font-size:13px;color:#374151;background:white;cursor:pointer;outline:none;">
-                        <option value="">All</option>
-                        <option value="jan">January</option>
-                        <option value="feb">February</option>
-                        <option value="mar">March</option>
-                        <option value="apr">April</option>
-                        <option value="may">May</option>
-                        <option value="jun">June</option>
-                        <option value="jul">July</option>
-                        <option value="aug">August</option>
-                        <option value="sep">September</option>
-                        <option value="oct">October</option>
-                        <option value="nov">November</option>
-                        <option value="dec">December</option>
-                    </select>
-                </div>
-                <div style="display:flex;align-items:center;gap:6px;">
-                    <label style="font-size:11px;font-weight:700;color:#1e4575;white-space:nowrap;">Downpayment Month:</label>
-                    <select id="cdDownpaymentMonthFilter" onchange="cdFilter()" style="padding:9px 12px;border:2px solid #d0d5dd;border-radius:8px;font-size:13px;color:#374151;background:white;cursor:pointer;outline:none;">
-                        <option value="">All</option>
-                        <option value="jan">January</option>
-                        <option value="feb">February</option>
-                        <option value="mar">March</option>
-                        <option value="apr">April</option>
-                        <option value="may">May</option>
-                        <option value="jun">June</option>
-                        <option value="jul">July</option>
-                        <option value="aug">August</option>
-                        <option value="sep">September</option>
-                        <option value="oct">October</option>
-                        <option value="nov">November</option>
-                        <option value="dec">December</option>
-                    </select>
-                </div>
-                <button onclick="document.getElementById('cdSearch').value='';document.getElementById('cdStatusFilter').value='';document.getElementById('cdReservationMonthFilter').value='';document.getElementById('cdDownpaymentMonthFilter').value='';cdFilter();" style="padding:9px 14px;background:#f1f5f9;border:2px solid #d0d5dd;border-radius:8px;font-size:13px;color:#64748b;cursor:pointer;">Clear</button>
                 <button id="cdBulkDeleteBtn" class="cd-bulk-btn" disabled onclick="cdDeleteSelected()">Delete Selected (0)</button>
                 <span id="cdCount" style="font-size:12px;color:#94a3b8;white-space:nowrap;"></span>
+                <button onclick="cdClearAll()" style="padding:9px 14px;background:#f1f5f9;border:2px solid #d0d5dd;border-radius:8px;font-size:13px;color:#64748b;cursor:pointer;">Clear</button>
             </div>
+            <div id="cdActiveColumnFiltersRow" class="active-column-filters-row" style="display:none;"></div>
         </div>
         <div class="cd-table-wrap">
             <table class="cd-records-table">
@@ -300,8 +294,26 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                 </thead>
                 <tbody id="cdTableBody">
                     @forelse($commissionRequests ?? [] as $req)
+                    @php $discVal = $req->tcp && $req->discount ? $req->tcp * ($req->discount / 100) : null; @endphp
                     <tr data-id="{{ $req->id }}"
                         data-search="{{ strtolower($req->client_name ?? '') }} {{ strtolower($req->agent_name ?? '') }} {{ strtolower($req->project_name ?? '') }} {{ strtolower($req->developer_name ?? '') }} {{ strtolower($req->block_lot_number ?? '') }}"
+                        data-developer="{{ strtolower($req->developer_name ?? '') }}"
+                        data-project="{{ strtolower($req->project_name ?? '') }}"
+                        data-block-lot="{{ strtolower($req->block_lot_number ?? '') }}"
+                        data-client="{{ strtolower($req->client_name ?? '') }}"
+                        data-lot-area="{{ $req->lot_area ?? '' }}"
+                        data-price-sqm="{{ $req->price_sqm ?? '' }}"
+                        data-tcp="{{ $req->tcp ?? '' }}"
+                        data-discount="{{ $req->discount ?? '' }}"
+                        data-discount-value="{{ $discVal ?? '' }}"
+                        data-net-tcp="{{ $req->net_tcp ?? '' }}"
+                        data-terms="{{ $req->terms_of_payment ?? '' }}"
+                        data-reservation-date="{{ $req->reservation_date ? $req->reservation_date->format('Y-m-d') : '' }}"
+                        data-units="{{ $req->number_of_units ?? '' }}"
+                        data-downpayment-date="{{ $req->date_of_downpayment ? $req->date_of_downpayment->format('Y-m-d') : '' }}"
+                        data-agent="{{ strtolower($req->agent_name ?? '') }}"
+                        data-client-status="{{ strtolower($req->client_status ?? '') }}"
+                        data-downpayment-status="{{ strtolower($req->downpayment_status ?? '') }}"
                         style="border-bottom:1px solid #e5e7eb">
                         <td class="cd-sticky-col cd-sticky-checkbox" style="padding:14px 8px">
                             <input type="checkbox" class="cd-row-checkbox" value="{{ $req->id }}" onchange="cdUpdateBulkBar()">
@@ -1022,12 +1034,215 @@ function cdInitScrollbar() {
     document.addEventListener('touchend', function() { dragging = false; });
 }
 
+/* ---- Filter dropdown + chips ---- */
+var CD_FILTERABLE_FIELDS = [
+    { key: 'developer',          label: 'Developer',          dataAttr: 'data-developer',        type: 'text'   },
+    { key: 'project',            label: 'Project',            dataAttr: 'data-project',           type: 'text'   },
+    { key: 'block-lot',          label: 'Block & Lot',        dataAttr: 'data-block-lot',         type: 'text'   },
+    { key: 'client',             label: 'Client',             dataAttr: 'data-client',            type: 'text'   },
+    { key: 'lot-area',           label: 'Lot Area',           dataAttr: 'data-lot-area',          type: 'text'   },
+    { key: 'price-sqm',          label: 'Price/SQM',          dataAttr: 'data-price-sqm',         type: 'text'   },
+    { key: 'tcp',                label: 'TCP',                dataAttr: 'data-tcp',               type: 'text'   },
+    { key: 'discount',           label: 'Discount',           dataAttr: 'data-discount',          type: 'text'   },
+    { key: 'discount-value',     label: 'Discount Value',     dataAttr: 'data-discount-value',    type: 'text'   },
+    { key: 'net-tcp',            label: 'Net TCP',            dataAttr: 'data-net-tcp',           type: 'text'   },
+    { key: 'terms',              label: 'Terms',              dataAttr: 'data-terms',             type: 'select', options: ['30% DP - 70% BAL 5 YRS','50% DP - 50% BAL 5 YRS','30% DP (6 MOS) - 70% BAL 54 MOS','30% DP (3 MOS) - 70% BAL 57 MOS','30% DP (9 MOS) - 70% BAL 36 MOS','30% DP (2 MOS) - 70% BAL 57 MOS','30% DP (2 MOS) - 70% BAL 5 YRS','STRAIGHT PAYMENT','30% DP - 70% BAL 3 YRS'] },
+    { key: 'reservation-date',   label: 'Reservation Date',   dataAttr: 'data-reservation-date',  type: 'daterange' },
+    { key: 'units',              label: 'Units',              dataAttr: 'data-units',             type: 'text'   },
+    { key: 'downpayment-date',   label: 'Downpayment Date',   dataAttr: 'data-downpayment-date',  type: 'daterange' },
+    { key: 'agent',              label: 'Agent',              dataAttr: 'data-agent',             type: 'text'   },
+    { key: 'status',             label: 'Status',             dataAttr: 'data-client-status',     type: 'select', options: ['Pending','Done','Cancelled'] },
+    { key: 'downpayment-status', label: 'Downpayment Status', dataAttr: 'data-downpayment-status',type: 'text'   },
+];
+
+var cdColumnFilters = {};
+
+function cdFieldConfig(key) {
+    return CD_FILTERABLE_FIELDS.find(function (f) { return f.key === key; });
+}
+
+function toggleCdColumnFilterMenu(e) {
+    e.stopPropagation();
+    var menu = document.getElementById('cdColumnFilterMenu');
+    if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
+    renderCdColumnFilterMenu();
+    menu.style.display = 'block';
+}
+
+function renderCdColumnFilterMenu() {
+    var menu = document.getElementById('cdColumnFilterMenu');
+    menu.innerHTML = '';
+    CD_FILTERABLE_FIELDS.forEach(function (f) {
+        var item = document.createElement('div');
+        item.className = 'column-filter-menu-item' + (cdColumnFilters.hasOwnProperty(f.key) ? ' is-active' : '');
+        item.innerHTML = '<span class="cfm-check">✓</span><span>' + f.label + '</span>';
+        item.onclick = function (ev) { ev.stopPropagation(); cdToggleColumnFilter(f.key); };
+        menu.appendChild(item);
+    });
+}
+
+function cdToggleColumnFilter(key) {
+    if (cdColumnFilters.hasOwnProperty(key)) {
+        delete cdColumnFilters[key];
+    } else {
+        cdColumnFilters[key] = '';
+    }
+    renderCdColumnFilterMenu();
+    renderCdActiveColumnFilters();
+    updateCdFilterBadge();
+    cdFilter();
+    document.getElementById('cdColumnFilterMenu').style.display = 'none';
+}
+
+function cdRemoveColumnFilter(key) {
+    delete cdColumnFilters[key];
+    renderCdActiveColumnFilters();
+    updateCdFilterBadge();
+    cdFilter();
+}
+
+function updateCdFilterBadge() {
+    var badge = document.getElementById('cdFilterCountBadge');
+    var count = Object.keys(cdColumnFilters).length;
+    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    badge.textContent = count;
+}
+
+function renderCdActiveColumnFilters() {
+    var row = document.getElementById('cdActiveColumnFiltersRow');
+    var keys = Object.keys(cdColumnFilters);
+    row.innerHTML = '';
+    if (keys.length === 0) { row.style.display = 'none'; return; }
+    row.style.display = 'flex';
+
+    keys.forEach(function (key) {
+        var f = cdFieldConfig(key);
+        if (!f) return;
+        var chip = document.createElement('div');
+        chip.className = 'column-filter-chip';
+        var label = document.createElement('label');
+        label.textContent = f.label;
+        chip.appendChild(label);
+
+        var input;
+        if (f.type === 'daterange') {
+            if (!cdColumnFilters[key] || typeof cdColumnFilters[key] !== 'object') {
+                cdColumnFilters[key] = { from: '', to: '' };
+            }
+            var range = cdColumnFilters[key];
+
+            input = document.createElement('span');
+            input.style.display = 'flex';
+            input.style.alignItems = 'center';
+            input.style.gap = '6px';
+
+            var fromInput = document.createElement('input');
+            fromInput.type = 'date';
+            fromInput.value = range.from || '';
+            fromInput.onchange = function () { range.from = this.value; cdFilter(); };
+
+            var toLabel = document.createElement('span');
+            toLabel.textContent = 'to';
+            toLabel.style.cssText = 'color:#8a9bad;font-size:12px;';
+
+            var toInput = document.createElement('input');
+            toInput.type = 'date';
+            toInput.value = range.to || '';
+            toInput.onchange = function () { range.to = this.value; cdFilter(); };
+
+            input.appendChild(fromInput);
+            input.appendChild(toLabel);
+            input.appendChild(toInput);
+        } else if (f.type === 'select') {
+            input = document.createElement('select');
+            var optAll = document.createElement('option');
+            optAll.value = ''; optAll.textContent = 'All';
+            input.appendChild(optAll);
+            f.options.forEach(function (o) {
+                var opt = document.createElement('option');
+                opt.value = o; opt.textContent = o;
+                if (cdColumnFilters[key] === o) opt.selected = true;
+                input.appendChild(opt);
+            });
+            input.onchange = function () { cdColumnFilters[key] = this.value; cdFilter(); };
+        } else {
+            input = document.createElement('input');
+            input.type = f.type === 'date' ? 'date' : 'text';
+            input.placeholder = 'Search ' + f.label.toLowerCase() + '...';
+            input.value = cdColumnFilters[key];
+            input.oninput = function () { cdColumnFilters[key] = this.value; cdFilter(); };
+        }
+        chip.appendChild(input);
+
+        var removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'cfm-remove';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.onclick = function () { cdRemoveColumnFilter(key); };
+        chip.appendChild(removeBtn);
+
+        row.appendChild(chip);
+    });
+
+    var clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'clear-column-filters-btn';
+    clearBtn.textContent = 'Clear Filters';
+    clearBtn.onclick = function () {
+        cdColumnFilters = {};
+        renderCdActiveColumnFilters();
+        updateCdFilterBadge();
+        cdFilter();
+    };
+    row.appendChild(clearBtn);
+}
+
+function cdMatchesColumnFilters(row) {
+    for (var key in cdColumnFilters) {
+        var f = cdFieldConfig(key);
+        if (!f) continue;
+
+        if (f.type === 'daterange') {
+            var range = cdColumnFilters[key];
+            if (!range || (!range.from && !range.to)) continue;
+            var rowDate = (row.getAttribute(f.dataAttr) || '').toString();
+            if (!rowDate) return false;
+            if (range.from && rowDate < range.from) return false;
+            if (range.to && rowDate > range.to) return false;
+            continue;
+        }
+
+        var filterVal = (cdColumnFilters[key] || '').toString().trim().toLowerCase();
+        if (!filterVal) continue;
+        var rowVal = (row.getAttribute(f.dataAttr) || '').toString().toLowerCase();
+
+        if (f.type === 'date' || f.type === 'select') {
+            if (rowVal !== filterVal) return false;
+        } else {
+            if (!rowVal.includes(filterVal)) return false;
+        }
+    }
+    return true;
+}
+
+document.addEventListener('click', function (e) {
+    var dropdown = document.getElementById('cdColumnFilterDropdown');
+    if (dropdown && !dropdown.contains(e.target)) {
+        document.getElementById('cdColumnFilterMenu').style.display = 'none';
+    }
+});
+
+function cdClearAll() {
+    document.getElementById('cdSearch').value = '';
+    cdColumnFilters = {};
+    renderCdColumnFilterMenu();
+    renderCdActiveColumnFilters();
+    updateCdFilterBadge();
+    cdFilter();
+}
+
 function cdFilter() {
     var raw = (document.getElementById('cdSearch')?.value || '').toLowerCase().trim();
-    var statusFilter       = (document.getElementById('cdStatusFilter')?.value || '').toLowerCase();
-    var reservationMonth   = (document.getElementById('cdReservationMonthFilter')?.value || '').toLowerCase();
-    var downpaymentMonth   = (document.getElementById('cdDownpaymentMonthFilter')?.value || '').toLowerCase();
-
     var keywords = raw ? raw.split(/\s+/).filter(k => k.length > 0).map(k => MONTH_ALIASES[k] || k) : [];
 
     var rows = document.querySelectorAll('#cdTableBody tr');
@@ -1041,29 +1256,9 @@ function cdFilter() {
         var searchText = (r.dataset.search || '').toLowerCase();
         var keyMatch = keywords.every(k => searchText.includes(k));
 
-        // Status filter
-        var statusCell = r.querySelector('[data-client-status]');
-        var rowStatus  = statusCell ? statusCell.getAttribute('data-client-status').toLowerCase() : '';
-        var statusMatch = true;
-        var statusMatch = true;
-        if (statusFilter === 'done')           statusMatch = rowStatus === 'done';
-        else if (statusFilter === 'pending')   statusMatch = rowStatus === 'pending';
-        else if (statusFilter === 'cancelled') statusMatch = rowStatus === 'cancelled';
-        else if (statusFilter === 'none')      statusMatch = rowStatus === '';
+        var columnMatch = cdMatchesColumnFilters(r);
 
-        // Reservation date month filter — column index 13 (checkbox + index columns shift indices by 2)
-        var reservationMatch = true;
-        if (reservationMonth && cells[13]) {
-            reservationMatch = cells[13].textContent.toLowerCase().includes(reservationMonth);
-        }
-
-        // Downpayment date month filter — column index 15
-        var downpaymentMatch = true;
-        if (downpaymentMonth && cells[15]) {
-            downpaymentMatch = cells[15].textContent.toLowerCase().includes(downpaymentMonth);
-        }
-
-        var show = keyMatch && statusMatch && reservationMatch && downpaymentMatch;
+        var show = keyMatch && columnMatch;
         r.style.display = show ? '' : 'none';
         if (show) visible++;
     });
