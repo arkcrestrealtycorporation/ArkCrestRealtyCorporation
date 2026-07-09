@@ -726,6 +726,82 @@
     </div>
 </div>
 
+<!-- Liquidation Update Modal (appears when status is changed to LIQUIDATED) -->
+<div id="liquidationUpdateModal" class="modal">
+    <div class="modal-content modal-compact">
+        <div class="modal-header">
+            <h3>UPDATE RECORD</h3>
+            <span class="close" onclick="cancelLiquidationModal()">&times;</span>
+        </div>
+        <form id="liquidationUpdateForm" class="request-form modal-form">
+            <input type="hidden" id="liq_source">
+            <input type="hidden" id="liq_id">
+            <input type="hidden" id="liq_control_number">
+
+            <!-- Request Information Section (auto-filled from the budget request form, read-only) -->
+            <div class="form-section">
+                <h4 class="section-label">Request Information</h4>
+                <div class="form-row-inline">
+                    <div class="form-group">
+                        <label>Requestor Name</label>
+                        <input type="text" id="liq_requestor_name" class="form-control" readonly style="background-color: #f4f6f8;">
+                    </div>
+                    <div class="form-group">
+                        <label>Department</label>
+                        <input type="text" id="liq_department" class="form-control" readonly style="background-color: #f4f6f8;">
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <input type="text" id="liq_category" class="form-control" readonly style="background-color: #f4f6f8;">
+                    </div>
+                </div>
+                <div class="form-row-inline">
+                    <div class="form-group">
+                        <label>Date Requested</label>
+                        <input type="date" id="liq_date_requested" class="form-control" readonly style="background-color: #f4f6f8;">
+                    </div>
+                    <div class="form-group">
+                        <label>Requested Amount</label>
+                        <input type="text" id="liq_requested_amount" class="form-control" readonly style="background-color: #f4f6f8;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Release & Liquidation Section (left blank for the user to fill in now) -->
+            <div class="form-section">
+                <h4 class="section-label">Release & Liquidation Details</h4>
+                <div class="form-row-inline">
+                    <div class="form-group">
+                        <label>Status</label>
+                        <input type="text" id="liq_status_display" class="form-control" value="LIQUIDATED" readonly style="background-color: #f4f6f8;">
+                    </div>
+                    <div class="form-group">
+                        <label>Date Released</label>
+                        <input type="date" id="liq_date_released" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label>Total Expenses</label>
+                        <input type="text" id="liq_total_expenses" class="form-control" placeholder="0.00" inputmode="decimal">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount Returned</label>
+                        <input type="text" id="liq_amount_returned" class="form-control" placeholder="0.00" inputmode="decimal" readonly style="background-color: #f4f6f8;">
+                    </div>
+                    <div class="form-group">
+                        <label>Date of Amount Returned</label>
+                        <input type="date" id="liq_date_of_amount_returned" class="form-control">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions-right" style="margin-top: 20px; gap: 10px; display: flex; justify-content: flex-end;">
+                <button type="button" onclick="cancelLiquidationModal()" style="padding: 10px 20px; background: #f4f6f8; color: #565651; border: 1px solid #dfe3e8; border-radius: 6px; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="submit" class="btn-submit">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Toast Notification -->
 <div id="toastNotification" class="custom-toast">
     <div class="toast-icon" id="toastIcon"></div>
@@ -1186,7 +1262,198 @@ function addCommaFormatting(inputId) {
     });
 }
 ['requested_amount','total_expenses','amount_returned',
- 'edit_requested_amount','edit_total_expenses','edit_amount_returned'].forEach(addCommaFormatting);
+ 'edit_requested_amount','edit_total_expenses','edit_amount_returned',
+ 'liq_requested_amount','liq_total_expenses','liq_amount_returned'].forEach(addCommaFormatting);
+
+// ---- Liquidation "UPDATE RECORD" popup ----
+// Triggered whenever the Status field (on the Add New Expenses form, or the
+// Edit Request modal) is switched to LIQUIDATED. Shows a popup mirroring the
+// Add New Expenses "Request Information" fields (auto-filled and locked,
+// since they come from the original budget request form) plus the
+// Release & Liquidation fields, which are left blank for the user to fill
+// in now.
+// ---- Lock the Release & Liquidation fields (Date Released, Total Expenses,
+// Amount Returned, Date of Amount Returned) unless Status is LIQUIDATED.
+// These are only ever meant to be filled in through the "UPDATE RECORD"
+// popup, so outside of an already-liquidated record they stay blank and
+// non-editable here. ----
+function syncLiquidationFieldsState(prefix) {
+    const statusEl = document.getElementById(prefix + 'status');
+    const isLiquidated = !!statusEl && statusEl.value === 'LIQUIDATED';
+    ['date_released', 'total_expenses', 'amount_returned', 'date_of_amount_returned'].forEach(function(field) {
+        const el = document.getElementById(prefix + field);
+        if (!el) return;
+        if (isLiquidated) {
+            el.disabled = false;
+        } else {
+            el.value = '';
+            el.disabled = true;
+        }
+    });
+}
+
+let addStatusPrevValue = document.getElementById('status') ? document.getElementById('status').value : 'FOR REQUEST';
+let editStatusPrevValue = 'FOR REQUEST';
+
+function openLiquidationModal(data) {
+    document.getElementById('liq_source').value = data.source;
+    document.getElementById('liq_id').value = data.id || '';
+    document.getElementById('liq_control_number').value = data.control_number || '';
+    document.getElementById('liq_requestor_name').value = data.requestor_name || '';
+    document.getElementById('liq_department').value = data.department || '';
+    document.getElementById('liq_category').value = data.category || '';
+    document.getElementById('liq_date_requested').value = data.date_requested || '';
+    document.getElementById('liq_requested_amount').value = data.requested_amount || '';
+
+    // These are intentionally left blank so the user fills them in now.
+    document.getElementById('liq_date_released').value = '';
+    document.getElementById('liq_total_expenses').value = '';
+    document.getElementById('liq_amount_returned').value = '';
+    document.getElementById('liq_date_of_amount_returned').value = '';
+
+    if (data.source === 'edit') {
+        document.getElementById('editModal').style.display = 'none';
+    }
+
+    document.getElementById('liquidationUpdateModal').style.display = 'block';
+}
+
+function cancelLiquidationModal() {
+    const source = document.getElementById('liq_source').value;
+    document.getElementById('liquidationUpdateModal').style.display = 'none';
+
+    if (source === 'edit') {
+        document.getElementById('edit_status').value = editStatusPrevValue;
+        syncLiquidationFieldsState('edit_');
+        document.getElementById('editModal').style.display = 'block';
+    } else if (source === 'add') {
+        const statusEl = document.getElementById('status');
+        if (statusEl) statusEl.value = addStatusPrevValue;
+        syncLiquidationFieldsState('');
+    }
+}
+
+const addStatusSelect = document.getElementById('status');
+if (addStatusSelect) {
+    syncLiquidationFieldsState('');
+    addStatusSelect.addEventListener('change', function() {
+        if (this.value === 'LIQUIDATED') {
+            openLiquidationModal({
+                source: 'add',
+                id: null,
+                control_number: '',
+                requestor_name: document.getElementById('requestor_name').value.trim(),
+                department: document.getElementById('department').value.trim(),
+                category: document.getElementById('category').value.trim(),
+                date_requested: document.getElementById('date_requested').value,
+                requested_amount: document.getElementById('requested_amount').value
+            });
+        } else {
+            addStatusPrevValue = this.value;
+        }
+        syncLiquidationFieldsState('');
+    });
+}
+
+document.getElementById('edit_status').addEventListener('change', function() {
+    if (this.value === 'LIQUIDATED') {
+        openLiquidationModal({
+            source: 'edit',
+            id: document.getElementById('edit_id').value,
+            control_number: document.getElementById('edit_control_number').value,
+            requestor_name: document.getElementById('edit_requestor_name').value,
+            department: document.getElementById('edit_department').value,
+            category: document.getElementById('edit_category').value,
+            date_requested: document.getElementById('edit_date_requested').value,
+            requested_amount: document.getElementById('edit_requested_amount').value
+        });
+    } else {
+        editStatusPrevValue = this.value;
+    }
+    syncLiquidationFieldsState('edit_');
+});
+
+document.getElementById('liquidationUpdateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    if (!validateAmountField('liq_total_expenses', 'Total Expenses', false)) return;
+
+    showConfirm('Are you sure you want to update this record?', function() {
+        _submitLiquidationUpdate();
+    });
+});
+
+function _submitLiquidationUpdate() {
+    const source = document.getElementById('liq_source').value;
+    const id = document.getElementById('liq_id').value;
+
+    const payload = {
+        requestor_name: document.getElementById('liq_requestor_name').value.trim(),
+        department: reverseDepartmentName(document.getElementById('liq_department').value.trim()),
+        category: document.getElementById('liq_category').value.trim(),
+        date_requested: document.getElementById('liq_date_requested').value || null,
+        requested_amount: parseFloat(document.getElementById('liq_requested_amount').value.replace(/,/g,'')) || 0,
+        status: 'LIQUIDATED',
+        date_released: document.getElementById('liq_date_released').value || null,
+        total_expenses: document.getElementById('liq_total_expenses').value ? parseFloat(document.getElementById('liq_total_expenses').value.replace(/,/g,'')) : null,
+        amount_returned: document.getElementById('liq_amount_returned').value ? parseFloat(document.getElementById('liq_amount_returned').value.replace(/,/g,'')) : null,
+        date_of_amount_returned: document.getElementById('liq_date_of_amount_returned').value || null
+    };
+
+    if (source === 'edit' && id) {
+        payload.control_number = document.getElementById('liq_control_number').value.trim();
+
+        fetch(`/api/departmental-expenses/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.message || 'Error updating request'); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showToast('success', 'Success', 'Record updated and marked as liquidated!');
+                setTimeout(() => location.reload(), 800);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('error', 'Error', error.message || 'Error updating request');
+        });
+    } else {
+        fetch('/api/departmental-expenses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.message || 'Error adding request'); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showToast('success', 'Success', 'Request added and marked as liquidated!');
+                setTimeout(() => location.reload(), 800);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showToast('error', 'Error', error.message || 'Error adding request');
+        });
+    }
+}
 
 // Highlight row from permission notification URL params
 (function() {
@@ -1396,6 +1663,8 @@ function _doEditRequest(id) {
     
     document.getElementById('edit_requested_amount').value = cells[5].textContent.replace('₱ ', '').replace(/,/g, '');
     document.getElementById('edit_status').value = cells[6].querySelector('.status-badge').textContent.trim();
+    editStatusPrevValue = document.getElementById('edit_status').value;
+    syncLiquidationFieldsState('edit_');
     
     if (cells[7].textContent !== '-') {
         const dateReleased = cells[7].textContent.trim();
@@ -1643,6 +1912,10 @@ window.onclick = function(event) {
     const modal = document.getElementById('editModal');
     if (event.target == modal) {
         closeEditModal();
+    }
+    const liqModal = document.getElementById('liquidationUpdateModal');
+    if (event.target == liqModal) {
+        cancelLiquidationModal();
     }
 }
 

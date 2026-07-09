@@ -133,13 +133,21 @@ class FormsController extends Controller
                 'total_expenses'          => null,
                 'amount_returned'         => null,
                 'date_of_amount_returned' => null,
-
-                // Full snapshot of everything printed on the form (target
-                // date, liquidation line items, signatures, remarks, etc.)
-                // so the exact form can be viewed and printed again later,
-                // independent of the summary columns above.
-                'form_data' => $request->input('form_snapshot'),
             ]);
+
+            // Full snapshot of everything printed on the form (target
+            // date, liquidation line items, signatures, remarks, etc.), so
+            // the exact form can be viewed and printed again later. Stored
+            // in the existing app_settings key/value table (keyed by this
+            // expense's id) rather than a new column, so no migration is
+            // needed for this feature.
+            $snapshot = $request->input('form_snapshot');
+            if (!empty($snapshot)) {
+                \DB::table('app_settings')->updateOrInsert(
+                    ['key' => 'budget_form_snapshot_' . $departmentalExpense->id],
+                    ['value' => json_encode($snapshot), 'created_at' => now(), 'updated_at' => now()]
+                );
+            }
         });
 
         ActivityLog::log(

@@ -2,7 +2,7 @@
 
 @section('content')
 @php
-    $data = $expense->form_data ?? [];
+    $data = $formData ?? [];
 
     $deptMap = [
         'ADMIN' => 'ADMINISTRATIVE',
@@ -32,7 +32,10 @@
     $actualDateReleased  = $fmtDate($data['actual_date_released'] ?? $expense->date_released);
 
     $liquidationItems = $data['liquidation_items'] ?? [];
-    $totalRows = 25;
+    // 15 rows matches the original printed Budget Request & Liquidation
+    // Form (short bond / letter size, 8.5in x 11in) so the whole form
+    // still fits on a single page when printed.
+    $totalRows = 15;
 
     $totalExpenses    = $data['total_expenses'] ?? $expense->total_expenses;
     $lessCashAdvance  = $data['less_cash_advance'] ?? '';
