@@ -233,7 +233,17 @@
     <div class="monitoring-table-container">
         <!-- Table Header with Title + Filters -->
         <div class="table-top-bar">
-            <h3 class="table-section-title">ALL COMMISSION REQUESTS</h3>
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+                <h3 class="table-section-title" style="margin:0;">ALL COMMISSION REQUESTS</h3>
+                @if($isAdmin)
+                <div style="display:flex;gap:8px;">
+                    <button type="button" id="cmSelectModeBtn" class="clear-dates-btn" onclick="cmToggleSelectMode()">Select</button>
+                    <button type="button" id="cmDeleteSelectedBtn" class="clear-dates-btn" style="background:#fee2e2;color:#dc2626;border-color:#fecaca;display:none;" onclick="cmDeleteSelected()">
+                        Delete Selected (<span id="cmSelectedCount">0</span>)
+                    </button>
+                </div>
+                @endif
+            </div>
 
             <div class="expenses-filters-bar">
                 <div class="expenses-filters-row">
@@ -260,11 +270,16 @@
             </div>
         </div>
 
+        <div class="table-scroll-hint">⟵ Swipe left/right to see more columns ⟶</div>
         <div class="table-wrapper">
-            <table class="monitoring-table">
+            <table class="monitoring-table{{ $isAdmin ? '' : ' no-checkbox' }}">
                 <thead>
                     <tr>
-                        <th>Client's Name</th>
+                        @if($isAdmin)
+                        <th class="col-sticky col-sticky-check"><input type="checkbox" id="cmSelectAll" onchange="cmToggleSelectAll(this)"></th>
+                        @endif
+                        <th class="col-sticky col-sticky-index">#</th>
+                        <th class="col-sticky col-sticky-name">Client's Name</th>
                         <th>Reservation Date</th>
                         <th>Project Name</th>
                         <th>Property Details (Block & Lot No.)</th>
@@ -316,7 +331,11 @@
                         data-commission-terms="{{ $request->payment_type }}"
                         data-value-commission-terms="{{ $request->value_of_payment_terms }}"
                         data-agent="{{ $request->agent_name }}">
-                        <td>{{ $request->client_name ?? '-' }}</td>
+                        @if($isAdmin)
+                        <td class="col-sticky col-sticky-check"><input type="checkbox" class="cm-row-check" value="{{ $request->id }}" onchange="cmUpdateSelectedCount()"></td>
+                        @endif
+                        <td class="col-sticky col-sticky-index">{{ $loop->iteration }}</td>
+                        <td class="col-sticky col-sticky-name">{{ $request->client_name ?? '-' }}</td>
                         <td>{{ $request->reservation_date ? $request->reservation_date->format('M d, Y') : '-' }}</td>
                         <td>{{ $request->project_name ?? '-' }}</td>
                         <td>{{ $request->property_details ?? '-' }}</td>
@@ -377,7 +396,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="{{ $isAdmin ? 19 : 18 }}" style="text-align: center; padding: 40px; color: #6b7280;">
+                        <td colspan="{{ $isAdmin ? 21 : 19 }}" style="text-align: center; padding: 40px; color: #6b7280;">
                             No commission requests found.
                         </td>
                     </tr>
@@ -397,8 +416,26 @@
 </div>
 
 <style>
-    .commission-monitoring-container {
-        padding: 0;
+    .col-sticky {
+        position: sticky;
+        background: white;
+        z-index: 2;
+        box-sizing: border-box;
+        /* left is set dynamically by JS (cmUpdateStickyOffsets) */
+    }
+    .monitoring-table thead .col-sticky { background: #1e4575; z-index: 3; }
+    .col-sticky-check {
+        width: 40px; min-width: 40px; max-width: 40px;
+        text-align: center; padding: 12px 4px !important;
+    }
+    .col-sticky-index {
+        width: 50px; min-width: 50px; max-width: 50px;
+        text-align: center; font-weight: 600; color: #6b7280;
+        padding: 12px 4px !important;
+    }
+    .col-sticky-name {
+        min-width: 160px;
+        box-shadow: 4px 0 6px -2px rgba(0,0,0,0.08);
     }
 
     /* Add Form Section */
@@ -1077,6 +1114,47 @@
     .table-wrapper {
         overflow-x: auto;
         overflow-y: visible;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x;
+        scrollbar-width: thin !important;
+    }
+    .table-wrapper::-webkit-scrollbar {
+        display: block !important;
+        height: 8px;
+    }
+    .table-wrapper::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 4px;
+    }
+    @media (max-width: 768px) {
+        .table-scroll-hint {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1e4575;
+            background: #eef2f7;
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+    }
+    .table-scroll-hint { display: none; }
+    @media (max-width: 768px) {
+        .col-sticky-check {
+            width: 32px; min-width: 32px; max-width: 32px;
+            padding: 12px 2px !important;
+        }
+        .col-sticky-index {
+            width: 28px; min-width: 28px; max-width: 28px;
+            font-size: 11px; padding: 12px 2px !important;
+        }
+        .col-sticky-name {
+            min-width: 90px; max-width: 90px;
+            font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
     }
 
     .monitoring-table {
@@ -1696,6 +1774,32 @@ function resetFilters() {
     document.getElementById('statNotReleased').textContent = notReleased;
     document.getElementById('statReleased').textContent = released;
 }
+function cmUpdateStickyOffsets() {
+    const table = document.querySelector('.monitoring-table');
+    if (!table) return;
+
+    // Use the header row as the source of truth for column widths —
+    // every column in a table shares the same width as its header cell.
+    const headerCells = Array.from(table.querySelectorAll('thead th.col-sticky'))
+        .filter(el => el.offsetParent !== null); // skip hidden (display:none) cells
+
+    let offset = 0;
+    const offsets = [];
+    headerCells.forEach(cell => {
+        offsets.push(offset);
+        offset += cell.getBoundingClientRect().width;
+    });
+
+    // Apply the same offsets to header AND every body row, matched by
+    // column order (only counting visible sticky cells per row).
+    table.querySelectorAll('tr').forEach(row => {
+        const cells = Array.from(row.querySelectorAll('.col-sticky'))
+            .filter(el => el.offsetParent !== null);
+        cells.forEach((cell, i) => {
+            if (offsets[i] !== undefined) cell.style.left = offsets[i] + 'px';
+        });
+    });
+}
 function clearCmAddForm() {
     window.showConfirmModal('Clear all entered fields? This cannot be undone.').then(function(confirmed) {
         if (confirmed) {
@@ -2115,6 +2219,83 @@ function staffDeleteCommission(e, id) {
         }
     }
     return false;
+}
+function cmIsMobile() {
+    return window.matchMedia('(max-width: 768px)').matches;
+}
+
+function cmSetCheckboxColumnVisible(visible) {
+    document.querySelectorAll('.col-sticky-check').forEach(el => {
+        el.style.display = visible ? '' : 'none';
+    });
+}
+
+function cmToggleSelectMode() {
+    const table = document.querySelector('.monitoring-table');
+    const btn = document.getElementById('cmSelectModeBtn');
+    const isOn = table.classList.toggle('cm-select-mode');
+    btn.textContent = isOn ? 'Cancel' : 'Select';
+    btn.style.background = isOn ? '#1e4575' : '';
+    btn.style.color = isOn ? '#fff' : '';
+
+    cmSetCheckboxColumnVisible(isOn);
+    cmUpdateStickyOffsets();
+
+    if (!isOn) {
+        document.querySelectorAll('.cm-row-check').forEach(cb => cb.checked = false);
+        cmUpdateSelectedCount();
+    }
+}
+
+// On mobile, start with the checkbox column hidden until "Select" is tapped.
+// On desktop, always keep it visible.
+document.addEventListener('DOMContentLoaded', function() {
+    if (cmIsMobile()) {
+        cmSetCheckboxColumnVisible(false);
+    }
+    cmUpdateStickyOffsets();
+});
+window.addEventListener('resize', cmUpdateStickyOffsets);
+
+function cmToggleSelectAll(checkbox) {
+    document.querySelectorAll('.cm-row-check').forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+    cmUpdateSelectedCount();
+}
+
+function cmUpdateSelectedCount() {
+    const checked = document.querySelectorAll('.cm-row-check:checked');
+    const btn = document.getElementById('cmDeleteSelectedBtn');
+    const countEl = document.getElementById('cmSelectedCount');
+    if (countEl) countEl.textContent = checked.length;
+    if (btn) btn.style.display = checked.length > 0 ? 'inline-flex' : 'none';
+
+    const selectAll = document.getElementById('cmSelectAll');
+    const allBoxes = document.querySelectorAll('.cm-row-check');
+    if (selectAll) selectAll.checked = allBoxes.length > 0 && checked.length === allBoxes.length;
+}
+
+function cmDeleteSelected() {
+    const ids = Array.from(document.querySelectorAll('.cm-row-check:checked')).map(cb => cb.value);
+    if (ids.length === 0) return;
+
+    window.showConfirmModal('Delete ' + ids.length + ' selected commission request(s)? This cannot be undone.').then(function(confirmed) {
+        if (!confirmed) return;
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route("commission-monitoring.bulk-delete") }}';
+        form.innerHTML = `@csrf`;
+        ids.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ids[]';
+            input.value = id;
+            form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
+    });
 }
 
 function closeCmPermModal() {
