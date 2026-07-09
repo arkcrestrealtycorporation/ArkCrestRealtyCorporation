@@ -294,6 +294,36 @@ class DepartmentalExpensesController extends Controller
         }
         
         $DepartmentalExpense->update($validated);
+
+        // Keep the "view & print" Budget Request Form (reachable from this
+        // page via the Form button) in sync with the latest release /
+        // liquidation details entered here — e.g. via the "UPDATE RECORD"
+        // popup shown when Status is switched to LIQUIDATED. The view
+        // already falls back to these columns when the snapshot doesn't
+        // have its own value, but we sync explicitly too so a snapshot
+        // that already has stale values gets overwritten as well.
+        $snapshotKey = 'budget_form_snapshot_' . $DepartmentalExpense->id;
+        $rawSnapshot = \DB::table('app_settings')->where('key', $snapshotKey)->value('value');
+        if ($rawSnapshot !== null) {
+            $snapshot = json_decode($rawSnapshot, true);
+            if (!is_array($snapshot)) {
+                $snapshot = [];
+            }
+            $snapshot['actual_date_released'] = $DepartmentalExpense->date_released
+                ? $DepartmentalExpense->date_released->format('Y-m-d')
+                : null;
+            $snapshot['total_expenses'] = $DepartmentalExpense->total_expenses !== null
+                ? (string) $DepartmentalExpense->total_expenses
+                : '';
+            $snapshot['amount_returned'] = $DepartmentalExpense->amount_returned !== null
+                ? (string) $DepartmentalExpense->amount_returned
+                : '';
+            \DB::table('app_settings')->updateOrInsert(
+                ['key' => $snapshotKey],
+                ['value' => json_encode($snapshot), 'updated_at' => now()]
+            );
+        }
+
         ActivityLog::log('update', 'Departmental Expenses', "Updated expense ID: {$id} ({$validated['department']} - {$validated['category']})");
         return response()->json([
             'success' => true,
@@ -397,7 +427,14 @@ class DepartmentalExpensesController extends Controller
     public function viewForm($id)
     {
         $expense = DepartmentalExpense::withTrashed()->findOrFail($id);
-        return view('budget-request-view', compact('expense'));
+
+        $raw = \DB::table('app_settings')
+            ->where('key', 'budget_form_snapshot_' . $expense->id)
+            ->value('value');
+
+        $formData = $raw ? json_decode($raw, true) : [];
+
+        return view('budget-request-view', compact('expense', 'formData'));
     }
 
     public function printLiquidation(Request $request)

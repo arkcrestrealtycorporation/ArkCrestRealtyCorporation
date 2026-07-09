@@ -245,7 +245,9 @@
     </tr>
     </thead>
     <tbody>
-    @for($i=0;$i<25;$i++)
+    {{-- 15 rows matches the original printed form (short bond / letter,
+         8.5in x 11in) so the whole form fits on a single page when printed. --}}
+    @for($i=0;$i<15;$i++)
     <tr>
     <td><input type="date" class="liq-date-input"></td>
     <td><input type="text" class="liq-receipt-input" autocomplete="off"></td>
