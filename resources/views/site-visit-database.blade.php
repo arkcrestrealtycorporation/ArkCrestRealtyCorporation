@@ -45,68 +45,21 @@
 .search-wrap input{padding:8px 12px 8px 34px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;color:#111827;background:#f8fafc;width:220px;transition:all .2s}
 .search-wrap input:focus{outline:none;border-color:#1e4575;background:white;box-shadow:0 0 0 3px rgba(30,69,117,.08)}
 .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:#94a3b8}
-
-/* ── Site Visit filter bar (Filter dropdown + search + active chips) ── */
-.svd-filters-bar{padding:14px 24px 18px;border-bottom:1px solid #f1f5f9;display:flex;flex-direction:column;gap:12px}
-.svd-filters-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.svd-search-box{position:relative;flex:1 1 260px;max-width:340px}
-.svd-search-box svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:#94a3b8;pointer-events:none}
-.svd-search-box input{width:100%;padding:8px 12px 8px 32px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;color:#111827;background:#f8fafc;transition:all .2s;box-sizing:border-box}
-.svd-search-box input:focus{outline:none;border-color:#1e4575;background:white;box-shadow:0 0 0 3px rgba(30,69,117,.08)}
-.column-filter-dropdown{position:relative}
-.column-filter-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:#f5f7fa;border:1.5px solid #d0d5dd;border-radius:8px;font-size:12px;font-weight:700;color:#1e4575;cursor:pointer;font-family:inherit;white-space:nowrap}
-.column-filter-btn:hover{background:#eef2f7}
-.filter-count-badge{background:#1e4575;color:white;border-radius:20px;padding:1px 6px;font-size:10px;font-weight:700;min-width:16px;text-align:center;display:inline-flex;align-items:center;justify-content:center}
-.column-filter-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:50;background:white;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.12);min-width:210px;padding:6px;max-height:320px;overflow-y:auto}
-.column-filter-menu-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;font-size:12.5px;color:#374151;cursor:pointer;white-space:nowrap}
-.column-filter-menu-item:hover{background:#f5f7fa}
-.column-filter-menu-item .cfm-check{opacity:0;width:12px;color:#1e4575;font-weight:700;flex-shrink:0}
-.column-filter-menu-item.is-active .cfm-check{opacity:1}
-.column-filter-menu-item.is-active{color:#1e4575;font-weight:700}
-.active-column-filters-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
-.column-filter-chip{display:flex;align-items:center;gap:6px;background:#f5f7fa;border:1.5px solid #d0d5dd;border-radius:8px;padding:6px 8px 6px 12px}
-.column-filter-chip label{font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
-.column-filter-chip input,.column-filter-chip select{font-size:13px;padding:6px 8px;border:1.5px solid #d0d5dd;border-radius:6px;color:#344054;min-width:130px}
-.column-filter-chip .cfm-remove{background:none;border:none;color:#8a9bad;cursor:pointer;font-size:16px;line-height:1;padding:2px 4px}
-.column-filter-chip .cfm-remove:hover{color:#dc2626}
-.clear-column-filters-btn{font-size:12px;font-weight:600;color:#1e4575;background:#eef2f7;border:1px solid #d0d5dd;border-radius:6px;padding:8px 14px;cursor:pointer;white-space:nowrap}
-.date-range-inputs{display:flex;align-items:center;gap:6px}
-.date-range-inputs input[type="date"]{font-size:13px;padding:6px 8px;border:1.5px solid #d0d5dd;border-radius:6px;color:#344054;min-width:130px}
-@media (max-width: 768px) {
-    .svd-filters-row{flex-direction:column;align-items:stretch}
-    .svd-search-box{max-width:100%;flex:none;width:100%}
-    .column-filter-dropdown{width:100%}
-    .column-filter-btn{width:100%;justify-content:center}
-    .column-filter-menu{left:0;right:0;width:100%;box-sizing:border-box}
-    .active-column-filters-row{flex-direction:column;align-items:stretch}
-    .column-filter-chip{width:100%;flex-wrap:wrap;box-sizing:border-box}
-    .column-filter-chip label{flex:1 1 100%}
-    .column-filter-chip input,.column-filter-chip select{flex:1 1 auto;min-width:0;width:100%}
-    .date-range-inputs input[type="date"]{flex:1 1 120px;min-width:0;width:auto}
-    .clear-column-filters-btn{width:100%;text-align:center}
-}
 /* Table */
-.tbl-wrap{overflow:auto;-webkit-overflow-scrolling:touch;max-height:65vh;}
-.tbl-wrap::-webkit-scrollbar{height:8px;width:8px;}
+.tbl-wrap{overflow-x:scroll;-webkit-overflow-scrolling:touch;}
+.tbl-wrap::-webkit-scrollbar{height:8px;}
 .tbl-wrap::-webkit-scrollbar-track{background:#f1f5f9;border-radius:4px;}
 .tbl-wrap::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:4px;}
 .tbl-wrap::-webkit-scrollbar-thumb:hover{background:#475569;}
 .svd-table{width:100%;border-collapse:collapse;min-width:900px}
 .svd-table thead tr{background:linear-gradient(135deg,#0f2a4a,#1e4575)}
-.svd-table thead th{padding:13px 18px;text-align:left;font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;border-right:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:3;background:linear-gradient(135deg,#0f2a4a,#1e4575)}
+.svd-table thead th{padding:13px 18px;text-align:left;font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;border-right:1px solid rgba(255,255,255,.08)}
 .svd-table thead th:last-child{border-right:none}
 .svd-table tbody tr{border-bottom:1px solid #f1f5f9;transition:background .15s}
 .svd-table tbody tr:hover{background:#f8fafc}
 .svd-table tbody tr:last-child{border-bottom:none}
 .svd-table td{padding:10px 14px;font-size:12px;color:#374151;vertical-align:middle;border-right:1px solid #f8fafc;white-space:nowrap;}
 .svd-table td:last-child{border-right:none;white-space:normal;max-width:none}
-
-/* Freeze the # and Name of Client columns so they stay visible while
-   scrolling horizontally through the rest of the table. */
-.svd-table th:nth-child(1),.svd-table td:nth-child(1){position:sticky;left:0;z-index:1;background:white;}
-.svd-table th:nth-child(2),.svd-table td:nth-child(2){position:sticky;left:40px;z-index:1;background:white;}
-.svd-table thead th:nth-child(1),.svd-table thead th:nth-child(2){z-index:4;background:linear-gradient(135deg,#0f2a4a,#1e4575);}
-.svd-table tbody tr:hover td:nth-child(1),.svd-table tbody tr:hover td:nth-child(2){background:#f8fafc;}
 .td-name{font-weight:700;color:#0f172a;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:130px}
 .td-sub{font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;display:block;};display:block;max-width:130px}
 .td-num{font-size:11px;color:#64748b;font-family:monospace;white-space:nowrap}
@@ -142,7 +95,7 @@
 .empty-state{text-align:center;padding:56px 20px;color:#94a3b8}
 .empty-state svg{width:44px;height:44px;margin:0 auto 12px;display:block;opacity:.3}
 .empty-state p{font-size:13px;font-weight:500}
-.row-num{font-size:11px;color:#cbd5e1;font-weight:600;text-align:center;width:40px}
+.row-num{font-size:11px;color:#cbd5e1;font-weight:600;text-align:center;width:36px}
 
 /* Quick Reference Tabs */
 .qtab{display:flex;align-items:center;gap:7px;padding:11px 20px;background:none;border:none;font-size:13px;font-weight:600;color:#64748b;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;font-family:inherit;}
@@ -226,25 +179,6 @@
             <span class="status-pill confirmed">{{ $confirmedCount }} record{{ $confirmedCount != 1 ? 's' : '' }}</span>
         </div>
     </div>
-
-    <div class="svd-filters-bar">
-        <div class="svd-filters-row">
-            <div class="column-filter-dropdown" id="svdFilterDropdown">
-                <button type="button" id="svdFilterBtn" class="column-filter-btn" onclick="toggleSvdFilterMenu(event)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-                    <span>Filter</span>
-                    <span id="svdFilterCountBadge" class="filter-count-badge" style="display:none;">0</span>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-                <div id="svdFilterMenu" class="column-filter-menu" style="display:none;"></div>
-            </div>
-            <div class="svd-search-box">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <input type="text" id="svdTableSearch" placeholder="Search scheduled trippings...">
-            </div>
-        </div>
-        <div id="svdActiveFiltersRow" class="active-column-filters-row" style="display:none;"></div>
-    </div>
     <div class="tbl-wrap">
     <table class="svd-table">
         <thead><tr>
@@ -255,18 +189,7 @@
         </tr></thead>
         <tbody>
         @foreach($confirmed->values() as $i => $r)
-        <tr id="trip-{{ $r->id }}" data-id="{{ $r->id }}"
-            data-client-name="{{ $r->client_name }}"
-            data-property="{{ $r->property_name }}"
-            data-company="{{ $r->company_name }}"
-            data-agent="{{ $r->agent_name }}"
-            data-email="{{ $r->client_email }}"
-            data-phone="{{ $r->client_phone ? ($r->client_phone_code ?? '+63') . ' ' . ltrim($r->client_phone, '0') : '' }}"
-            data-address="{{ $r->client_address }}"
-            data-tripping-date="{{ $r->tripping_date ? $r->tripping_date->format('Y-m-d') : '' }}"
-            data-tripping-time="{{ $r->tripping_time ? \Carbon\Carbon::parse($r->tripping_time)->format('g:i A') : '' }}"
-            data-mode="{{ $r->tripping_type }}"
-            data-date-submitted="{{ $r->created_at ? $r->created_at->format('Y-m-d') : '' }}">
+        <tr id="trip-{{ $r->id }}" data-id="{{ $r->id }}">
             <td class="row-num">{{ $i + 1 }}</td>
             <td><div class="td-name">{{ $r->client_name }}</div></td>
             <td><div class="td-name" style="font-size:12px">{{ $r->property_name ?? '—' }}</div></td>
@@ -312,7 +235,7 @@
                         <button type="submit" class="btn-reject">&#10005; Cancel</button>
                     </form>
                     {{-- Print --}}
-                    <button class="btn-print">
+                    <button class="btn-print" onclick="autosaveAndPrint(this)" type="button">
                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                         Print
                     </button>
@@ -393,7 +316,7 @@
                         <button type="submit" class="btn-delete">Delete</button>
                     </form>
                     {{-- Print --}}
-                    <button class="btn-print" onclick="autosaveAndPrint()">
+                    <button class="btn-print" onclick="autosaveAndPrint(this)" type="button">
                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
                         Print
                     </button>
@@ -435,6 +358,8 @@
 </div>
 
 <script>
+var _svLogo = "{{ asset('images/ArkCrest_Logo.png') }}";
+
 function openReschedule(id, date, time) {
     document.getElementById('rescheduleForm').action = '/site-visit-database/' + id + '/reschedule';
     document.getElementById('rescheduleDate').value = date || '';
@@ -478,225 +403,6 @@ function filterTable(tableId, q) {
     });
 }
 
-// ── Scheduled Tripping: Filter dropdown + search bar ──
-const SVD_FILTERABLE_FIELDS = [
-    { key: 'client_name',     label: 'Name of Client', dataAttr: 'data-client-name',     type: 'text' },
-    { key: 'property_name',   label: 'Property',       dataAttr: 'data-property',        type: 'text' },
-    { key: 'company_name',    label: 'Company',        dataAttr: 'data-company',         type: 'text' },
-    { key: 'agent_name',      label: 'Name of Agent',  dataAttr: 'data-agent',           type: 'text' },
-    { key: 'client_email',    label: 'Email',          dataAttr: 'data-email',           type: 'text' },
-    { key: 'client_phone',    label: 'Mobile Number',  dataAttr: 'data-phone',           type: 'text' },
-    { key: 'client_address',  label: 'Address',        dataAttr: 'data-address',         type: 'text' },
-    { key: 'tripping_date',   label: 'Tripping Date',  dataAttr: 'data-tripping-date',   type: 'daterange' },
-    { key: 'tripping_time',   label: 'Tripping Time',  dataAttr: 'data-tripping-time',   type: 'text' },
-    { key: 'tripping_type',   label: 'Mode of Visit',  dataAttr: 'data-mode',            type: 'text' },
-    { key: 'date_submitted',  label: 'Date Submitted', dataAttr: 'data-date-submitted',  type: 'daterange' },
-];
-
-// key -> id prefix used for the two date inputs of a daterange field
-const SVD_DATERANGE_IDS = {
-    tripping_date:  { from: 'svdTrippingDateFrom',  to: 'svdTrippingDateTo'  },
-    date_submitted: { from: 'svdDateSubmittedFrom', to: 'svdDateSubmittedTo' },
-};
-
-const svdColumnFilters = {}; // { fieldKey: currentValue } — for 'text' fields only
-
-function svdFieldConfig(key) {
-    return SVD_FILTERABLE_FIELDS.find(f => f.key === key);
-}
-
-function toggleSvdFilterMenu(evt) {
-    if (evt) evt.stopPropagation();
-    const menu = document.getElementById('svdFilterMenu');
-    const btn = document.getElementById('svdFilterBtn');
-    if (!menu || !btn) return;
-    const isOpen = menu.style.display === 'block';
-
-    if (isOpen) {
-        menu.style.display = 'none';
-        return;
-    }
-
-    // Move the menu to <body> so it isn't clipped by any ancestor's
-    // "overflow: hidden" (e.g. .section-block), then position it
-    // manually right under the Filter button using fixed coordinates.
-    if (menu.parentElement !== document.body) {
-        document.body.appendChild(menu);
-    }
-    const rect = btn.getBoundingClientRect();
-    menu.style.position = 'fixed';
-    menu.style.top = (rect.bottom + 6) + 'px';
-    menu.style.left = rect.left + 'px';
-    menu.style.minWidth = rect.width + 'px';
-    menu.style.display = 'block';
-    renderSvdFilterMenu();
-}
-
-function closeSvdFilterMenu() {
-    const menu = document.getElementById('svdFilterMenu');
-    if (menu) menu.style.display = 'none';
-}
-
-document.addEventListener('click', function(evt) {
-    const wrapper = document.getElementById('svdFilterDropdown');
-    const menu = document.getElementById('svdFilterMenu');
-    const clickedInsideMenu = menu && menu.contains(evt.target);
-    const clickedInsideButton = wrapper && wrapper.contains(evt.target);
-    if (!clickedInsideMenu && !clickedInsideButton) closeSvdFilterMenu();
-});
-
-// Close the menu on scroll, since it's now fixed-positioned and would
-// otherwise drift away from the Filter button as the page scrolls.
-// (Ignore scroll events that originate from inside the menu itself —
-// otherwise scrolling the dropdown's own list would instantly close it.)
-window.addEventListener('scroll', function(evt) {
-    const menu = document.getElementById('svdFilterMenu');
-    if (menu && menu.contains(evt.target)) return;
-    closeSvdFilterMenu();
-}, true);
-
-function renderSvdFilterMenu() {
-    const menu = document.getElementById('svdFilterMenu');
-    if (!menu) return;
-    menu.innerHTML = SVD_FILTERABLE_FIELDS.map(f => {
-        const active = svdColumnFilters.hasOwnProperty(f.key);
-        return `<div class="column-filter-menu-item${active ? ' is-active' : ''}" onclick="toggleSvdFilter('${f.key}')">
-                    <span class="cfm-check">&#10003;</span><span>${f.label}</span>
-                </div>`;
-    }).join('');
-}
-
-function toggleSvdFilter(key) {
-    if (svdColumnFilters.hasOwnProperty(key)) {
-        removeSvdFilter(key);
-    } else {
-        svdColumnFilters[key] = '';
-        renderSvdFilterMenu();
-        renderSvdActiveFilters();
-        closeSvdFilterMenu();
-        setTimeout(() => {
-            const f = svdFieldConfig(key);
-            const focusId = f.type === 'daterange' ? SVD_DATERANGE_IDS[key].from : 'svdColFilterInput_' + key;
-            const el = document.getElementById(focusId);
-            if (el) el.focus();
-        }, 0);
-    }
-}
-
-function removeSvdFilter(key) {
-    delete svdColumnFilters[key];
-    const f = svdFieldConfig(key);
-    if (f && f.type === 'daterange') {
-        const ids = SVD_DATERANGE_IDS[key];
-        [ids.from, ids.to].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    }
-    renderSvdFilterMenu();
-    renderSvdActiveFilters();
-    applySvdFilters();
-}
-
-function clearAllSvdFilters() {
-    Object.keys(svdColumnFilters).forEach(k => delete svdColumnFilters[k]);
-    Object.values(SVD_DATERANGE_IDS).forEach(ids => {
-        [ids.from, ids.to].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-    });
-    renderSvdFilterMenu();
-    renderSvdActiveFilters();
-    applySvdFilters();
-}
-
-function updateSvdFilterValue(key, value) {
-    svdColumnFilters[key] = value;
-    applySvdFilters();
-}
-
-function renderSvdActiveFilters() {
-    const row = document.getElementById('svdActiveFiltersRow');
-    const badge = document.getElementById('svdFilterCountBadge');
-    if (!row) return;
-    const keys = Object.keys(svdColumnFilters);
-
-    if (badge) {
-        badge.style.display = keys.length ? 'inline-flex' : 'none';
-        badge.textContent = keys.length;
-    }
-
-    if (keys.length === 0) {
-        row.style.display = 'none';
-        row.innerHTML = '';
-        return;
-    }
-
-    row.style.display = 'flex';
-    row.innerHTML = keys.map(key => {
-        const f = svdFieldConfig(key);
-        let inputHtml = '';
-        if (f.type === 'daterange') {
-            const ids = SVD_DATERANGE_IDS[key];
-            inputHtml = `<div class="date-range-inputs">
-                            <input type="date" id="${ids.from}" onchange="applySvdFilters()">
-                            <span style="color:#8a9bad;font-size:12px;">to</span>
-                            <input type="date" id="${ids.to}" onchange="applySvdFilters()">
-                         </div>`;
-        } else {
-            const val = svdColumnFilters[key] || '';
-            inputHtml = `<input type="text" id="svdColFilterInput_${key}" placeholder="Search ${f.label.toLowerCase()}..." value="${val}" oninput="updateSvdFilterValue('${key}', this.value)">`;
-        }
-        return `<div class="column-filter-chip">
-                    <label>${f.label}</label>
-                    ${inputHtml}
-                    <button type="button" class="cfm-remove" title="Remove filter" onclick="removeSvdFilter('${key}')">&times;</button>
-                </div>`;
-    }).join('') + `<button type="button" class="clear-column-filters-btn" onclick="clearAllSvdFilters()">Clear Filters</button>`;
-}
-
-function svdMatchesColumnFilters(row) {
-    for (const key in svdColumnFilters) {
-        const f = svdFieldConfig(key);
-        if (f.type === 'daterange') continue; // handled separately below
-        const filterVal = (svdColumnFilters[key] || '').toString().trim().toLowerCase();
-        if (!filterVal) continue;
-        const rowVal = (row.getAttribute(f.dataAttr) || '').toString().toLowerCase();
-        if (!rowVal.includes(filterVal)) return false;
-    }
-    return true;
-}
-
-function svdMatchesDateRangeFilters(row) {
-    for (const key in SVD_DATERANGE_IDS) {
-        const ids = SVD_DATERANGE_IDS[key];
-        const from = document.getElementById(ids.from)?.value || '';
-        const to   = document.getElementById(ids.to)?.value || '';
-        if (!from && !to) continue;
-        const f = svdFieldConfig(key);
-        const rowVal = row.getAttribute(f.dataAttr) || '';
-        if (!rowVal) return false;
-        if (from && rowVal < from) return false;
-        if (to && rowVal > to) return false;
-    }
-    return true;
-}
-
-function applySvdFilters() {
-    const searchInput = document.getElementById('svdTableSearch');
-    const searchText = searchInput ? searchInput.value.toLowerCase().trim() : '';
-    const searchWords = searchText.split(/\s+/).filter(w => w.length > 0);
-    const rows = document.querySelectorAll('#section-confirmed table tbody tr[data-id]');
-
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        const allWordsFound = searchWords.length === 0 || searchWords.every(word => text.includes(word));
-        const columnMatch = svdMatchesColumnFilters(row);
-        const dateMatch = svdMatchesDateRangeFilters(row);
-        row.style.display = (allWordsFound && columnMatch && dateMatch) ? '' : 'none';
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const svdSearchInput = document.getElementById('svdTableSearch');
-    if (svdSearchInput) svdSearchInput.addEventListener('input', applySvdFilters);
-});
-
 function toggleSection(id) {
     var allSections = ['section-confirmed','section-cancelled','section-done','section-rejected'];
     var el = document.getElementById(id);
@@ -721,6 +427,79 @@ function toggleSection(id) {
 document.addEventListener('DOMContentLoaded', function() {
     toggleSection('section-confirmed');
 });
+
+/* ---------- Print a single tripping row as a formatted slip ---------- */
+// Reads the row's cells straight from the DOM (no extra request needed),
+// builds a clean printable slip in a new tab, and triggers the print dialog.
+// Works for any Print button inside a table row, regardless of which
+// status section (confirmed / done / cancelled) it lives in.
+function autosaveAndPrint(btn) {
+    var row = btn.closest('tr');
+    if (!row) return;
+    var cells = row.querySelectorAll('td');
+    var get = function (i) {
+        if (!cells[i]) return '—';
+        var text = cells[i].innerText.trim();
+        return text || '—';
+    };
+
+    var rows = [
+        ['Name of Client', get(1)],
+        ['Property', get(2)],
+        ['Company', get(3)],
+        ['Name of Agent', get(4)],
+        ['Email', get(5)],
+        ['Mobile Number', get(6)],
+        ['Address', get(7)],
+        ['Tripping Date', get(8)],
+        ['Tripping Time', get(9)],
+        ['Mode of Visit', get(10)],
+        ['Date Submitted', get(11)]
+    ];
+
+    // NOTE: closing tags are deliberately built with string concatenation
+    // (e.g. '<' + '/tr>') rather than typed literally as '</tr>'. Writing
+    // them out in full inside this inline <script> block causes the browser
+    // to treat the sequence as the end of the *enclosing* script tag,
+    // dumping the remaining JS as literal text on the page. Splitting the
+    // sequence avoids that entirely. Same trick already used elsewhere in
+    // this codebase (see the HR form's print function).
+    var bodyRows = rows.map(function (pair) {
+        return '<tr><td class="lbl">' + pair[0] + '<' + '/td><td>' + pair[1] + '<' + '/td><' + '/tr>';
+    }).join('');
+
+    // Styled to match the branded look of the Site Visit Form on the
+    // Forms page: logo + underlined black title, blue subtitle, and a
+    // bold-label / black-border info table.
+    var printHtml = '<html><head><title>Site Visit Slip<' + '/title><style>'
+        + '@page{size:letter;margin:.6in}'
+        + 'body{font-family:Arial,sans-serif;color:#000;margin:0;padding:0}'
+        + '.hdr{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:18px}'
+        + '.hdr img{width:70px;height:70px;object-fit:contain;flex-shrink:0}'
+        + '.hdr .titles{text-align:center}'
+        + '.hdr .company{font-size:22px;font-weight:700;text-decoration:underline;color:#000;letter-spacing:.3px}'
+        + '.hdr .subtitle{font-size:20px;font-weight:700;color:#2563eb;margin-top:8px;letter-spacing:.3px}'
+        + 'table{width:100%;border-collapse:collapse;font-size:13px}'
+        + 'td{border:1px solid #000;padding:7px 10px;vertical-align:top}'
+        + 'td.lbl{font-weight:700;background:#fafafa;width:180px;white-space:nowrap}'
+        + '<' + '/style><' + '/head><body>'
+        + '<div class="hdr">'
+        + '<img src="' + _svLogo + '">'
+        + '<div class="titles">'
+        + '<div class="company">ARKCREST REALTY CORPORATION<' + '/div>'
+        + '<div class="subtitle">SITE VISIT TRIPPING SLIP<' + '/div>'
+        + '<' + '/div>'
+        + '<' + '/div>'
+        + '<table>' + bodyRows + '<' + '/table>'
+        + '<' + '/body><' + '/html>';
+
+    var win = window.open('', '_blank');
+    if (!win) { return; } // popup blocked
+    win.document.write(printHtml);
+    win.document.close();
+    win.focus();
+    setTimeout(function () { win.print(); }, 300);
+}
 
 // ── Auto-poll for new pending trippings every 10 seconds ──
 var _knownPendingIds = new Set(
