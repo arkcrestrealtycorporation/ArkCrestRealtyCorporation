@@ -233,17 +233,42 @@ function saveHrForm() {
     });
 }
 function printHrForm() {
+    // Auto-save before printing
+    var type = document.getElementById('hrFormModal').getAttribute('data-type');
+    var fields = {};
+    document.querySelectorAll('#hrFormContent input, #hrFormContent textarea').forEach(function(el, i) {
+        fields['field_'+i] = el.value;
+    });
+    var csrf = document.querySelector('meta[name=csrf-token]').content;
+    var isEditing = !!_editingFormId;
+    var oldId = _editingFormId;
+
+    fetch('/api/hr-forms', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-TOKEN':csrf},
+        body: JSON.stringify({type: type, data: fields})
+    }).then(function(r){return r.json();}).then(function(d){
+        if (!d.success) {
+            _showToast('Failed to save before printing.', true);
+            return;
+        }
+        _editingFormId = null;
+        // If editing, clean up the old record
+        if (isEditing && oldId) {
+            fetch('/api/hr-forms/'+oldId, {method:'DELETE',headers:{'X-CSRF-TOKEN':csrf}})
+                .finally(function(){ loadSavedForms(); _doPrint(); });
+        } else {
+            loadSavedForms();
+            _doPrint();
+        }
+    }).catch(function(){
+        _showToast('Network error. Could not save before printing.', true);
+    });
+}
+
+function _doPrint() {
     var source = document.getElementById('hrFormContent');
     var clone = source.cloneNode(true);
-    // innerHTML only serializes the *original* attributes/content of each
-    // element, not what the user actually typed — an <input>'s typed text
-    // lives in its .value property (never written back to the "value"
-    // attribute), and a <textarea>'s typed text lives in .value too (its
-    // innerHTML/child text node stays empty, since it started empty). That
-    // mismatch is why the print preview showed blank fields and an
-    // apparently "missing" Explanation box. Fix: copy each live value into
-    // the clone (as an attribute for inputs, as text content for
-    // textareas) before reading its HTML.
     var liveFields = source.querySelectorAll('input, textarea');
     var cloneFields = clone.querySelectorAll('input, textarea');
     liveFields.forEach(function (live, i) {
@@ -258,19 +283,7 @@ function printHrForm() {
     var content = clone.innerHTML;
     var win = window.open('','_blank');
     var printHtml = '<html><head><title>HR Form</title><style>@page{size:letter;margin:.75in}body{font-family:"Times New Roman",serif;font-size:13px;color:#111;margin:0}table{border-collapse:collapse;width:100%}td,th{border:1px solid #111;padding:4px 8px}.nb td,.nb th{border:none}input,textarea{font-family:"Times New Roman",serif;font-size:13px;color:#111;}'
-        // Only strip the outline (browser focus-ring styling, irrelevant to print).
-        // A previous version also forced border:none!important here, which — because
-        // !important beats a plain inline style — wiped out every field's intentional
-        // border: the Explanation textarea's box (inline border:1px solid #111) and the
-        // underline (border-bottom) on every other text field. Removing that override
-        // restores both.
         + '@media print{body{margin:0}input,textarea{outline:none!important;}}</style>'
-        // NOTE: the closing head tag below is split on purpose. Dev-only HTML injector tools
-        // (e.g. Laravel Boost's browser logger) scan raw response bodies for that literal
-        // closing tag text to insert a script tag. Since this string is inside a JS
-        // document.write() call (not a real closing head tag in the page itself), having it
-        // intact here gets matched and injected into, corrupting this script block.
-        // Splitting it keeps the printed document correct while avoiding an accidental match.
         + '<' + '/head><body>'
         + content
         + '</body></html>';
