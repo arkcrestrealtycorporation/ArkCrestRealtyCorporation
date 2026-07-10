@@ -238,7 +238,7 @@
                     <div class="form-group">
                         <label>Status <span class="required">*</span></label>
                         <select id="status" name="status" class="form-control" required>
-                            <option value="FOR REQUEST">FOR REQUEST</option>
+                            <option value="PENDING">PENDING</option>
                             <option value="NOT LIQUIDATED">NOT LIQUIDATED</option>
                             <option value="LIQUIDATED">LIQUIDATED</option>
                             <option value="REJECTED">REJECTED</option>
@@ -691,7 +691,7 @@
                 <div class="form-group">
                     <label>Status <span class="required">*</span></label>
                     <select id="edit_status" name="status" class="form-control form-control-sm" required>
-                        <option value="FOR REQUEST">FOR REQUEST</option>
+                        <option value="PENDING">PENDING</option>
                         <option value="NOT LIQUIDATED">NOT LIQUIDATED</option>
                         <option value="LIQUIDATED">LIQUIDATED</option>
                         <option value="REJECTED">REJECTED</option>
@@ -1292,8 +1292,8 @@ function syncLiquidationFieldsState(prefix) {
     });
 }
 
-let addStatusPrevValue = document.getElementById('status') ? document.getElementById('status').value : 'FOR REQUEST';
-let editStatusPrevValue = 'FOR REQUEST';
+let addStatusPrevValue = document.getElementById('status') ? document.getElementById('status').value : 'PENDING';
+let editStatusPrevValue = 'PENDING';
 
 function openLiquidationModal(data) {
     document.getElementById('liq_source').value = data.source;
@@ -1935,7 +1935,7 @@ const FILTERABLE_FIELDS = [
     { key: 'date_released',            label: 'Date Released',            dataAttr: 'data-date-released',    type: 'daterange' },
     { key: 'date_of_amount_returned',  label: 'Date of Amount Returned',  dataAttr: 'data-date-returned',    type: 'daterange' },
     { key: 'requested_amount',         label: 'Requested Amount',         dataAttr: 'data-requested-amount', type: 'text'  },
-    { key: 'status',                   label: 'Status',                   dataAttr: 'data-status',           type: 'select', options: ['FOR REQUEST', 'NOT LIQUIDATED', 'LIQUIDATED', 'REJECTED'] },
+    { key: 'status',                   label: 'Status',                   dataAttr: 'data-status',           type: 'select', options: ['PENDING', 'NOT LIQUIDATED', 'LIQUIDATED', 'REJECTED'] },
     { key: 'total_expenses',           label: 'Total Expenses',           dataAttr: 'data-total-expenses',   type: 'text'  },
     { key: 'amount_returned',          label: 'Amount Returned',          dataAttr: 'data-amount-returned',  type: 'text'  },
 ];
