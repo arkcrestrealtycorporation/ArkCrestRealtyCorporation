@@ -583,6 +583,14 @@
                                 </a>
                             </li>
                             @endif
+                            @if($isAdminUser)
+                            <li>
+                                <a href="{{ route('settings.edit-history') }}" class="nav-subitem" data-page="settings-edit-history">
+                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span class="sidebar-text">Edit History</span>
+                                </a>
+                            </li>
+                            @endif
                             @if($canSeeSetting('settings.deleted'))
                             <li>
                                 <a href="{{ route('settings') }}?panel=deleted" class="nav-subitem" data-page="settings-deleted">
