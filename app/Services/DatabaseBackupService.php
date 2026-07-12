@@ -76,12 +76,23 @@ class DatabaseBackupService
             $filename = basename($path);
             if (!preg_match('/\.(zip|pdf)$/i', $filename)) continue;
 
+            // Prefer the timestamp encoded in the filename itself
+            // (backup_YYYY-MM-DD_HHiiss.ext) over the filesystem's "last
+            // modified" time — mtime can drift if the file is ever copied,
+            // moved, or touched by backup tools, git, etc., while the
+            // filename always reflects the exact moment it was generated.
+            if (preg_match('/^backup_(\d{4}-\d{2}-\d{2}_\d{6})\./', $filename, $m)) {
+                $createdAt = \Illuminate\Support\Carbon::createFromFormat('Y-m-d_His', $m[1]);
+            } else {
+                $createdAt = \Illuminate\Support\Carbon::createFromTimestamp($disk->lastModified($path));
+            }
+
             $backups[] = [
                 'filename'   => $filename,
                 'type'       => str_ends_with(strtolower($filename), '.pdf') ? 'pdf' : 'csv',
                 'size_bytes' => $disk->size($path),
                 'size_human' => $this->humanFileSize($disk->size($path)),
-                'created_at' => \Illuminate\Support\Carbon::createFromTimestamp($disk->lastModified($path)),
+                'created_at' => $createdAt,
             ];
         }
 

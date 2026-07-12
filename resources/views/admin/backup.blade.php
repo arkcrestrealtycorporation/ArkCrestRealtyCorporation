@@ -68,7 +68,7 @@
                     <tr>
                         <td style="font-family:monospace;font-size:12px;">{{ $b['filename'] }}</td>
                         <td>
-                            @if($b['type'] === 'zip')
+                            @if($b['type'] === 'csv')
                                 <span class="backup-badge backup-badge-csv">CSV (ZIP)</span>
                             @else
                                 <span class="backup-badge backup-badge-pdf">PDF</span>
@@ -80,7 +80,7 @@
                             <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
                                 <a href="{{ route('backup.download', $b['filename']) }}" class="backup-action-btn backup-action-download">DOWNLOAD</a>
 
-                                @if($b['type'] === 'zip')
+                                @if($b['type'] === 'csv')
                                     <button type="button" class="backup-action-btn backup-action-restore"
                                         onclick="openRestoreModal('{{ $b['filename'] }}')">RESTORE</button>
                                 @endif
