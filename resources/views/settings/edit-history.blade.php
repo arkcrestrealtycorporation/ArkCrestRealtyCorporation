@@ -48,6 +48,25 @@
 .eh-diff-arrow{color:#94a3b8;margin:0 4px}
 .eh-diff-more{font-size:11px;color:#94a3b8;font-weight:600}
 .eh-empty{text-align:center;padding:48px;color:#94a3b8;font-size:13px}
+.eh-check-col{width:36px;text-align:center}
+.eh-actions-col{width:170px}
+.eh-row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.eh-row-btn{padding:6px 12px;border-radius:7px;font-size:11.5px;font-weight:700;cursor:pointer;border:none;white-space:nowrap}
+.eh-row-btn-undo{background:#dbeafe;color:#1e40af}
+.eh-row-btn-undo:hover{background:#bfdbfe}
+.eh-row-btn-delete{background:#fee2e2;color:#991b1b}
+.eh-row-btn-delete:hover{background:#fecaca}
+.eh-row-btn:disabled{opacity:.5;cursor:not-allowed}
+.eh-bulkbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid #f1f5f9;background:#f8fafc}
+.eh-bulkbar-count{font-size:12px;color:#64748b;font-weight:600}
+.eh-bulkbar-count strong{color:#0f172a}
+.eh-bulkbar-actions{display:flex;gap:8px}
+.eh-bulk-btn{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer;border:none;white-space:nowrap}
+.eh-bulk-btn-undo{background:#1e40af;color:white}
+.eh-bulk-btn-undo:hover:not(:disabled){background:#1e3a8a}
+.eh-bulk-btn-delete{background:#dc2626;color:white}
+.eh-bulk-btn-delete:hover:not(:disabled){background:#b91c1c}
+.eh-bulk-btn:disabled{opacity:.45;cursor:not-allowed}
 .eh-footer{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;flex-wrap:wrap;gap:10px}
 .eh-count{font-size:12px;color:#94a3b8}
 .eh-pagenav{display:flex;gap:6px;align-items:center}
@@ -100,15 +119,25 @@
     <a href="{{ route('settings.edit-history') }}" class="eh-btn eh-btn-ghost">Reset</a>
   </form>
 
+  <div class="eh-bulkbar">
+    <div class="eh-bulkbar-count"><strong id="ehSelCount">0</strong> selected</div>
+    <div class="eh-bulkbar-actions">
+      <button type="button" id="ehBulkUndoBtn" class="eh-bulk-btn eh-bulk-btn-undo" disabled onclick="ehBulkAction('restore')">Undo Selected</button>
+      <button type="button" id="ehBulkDeleteBtn" class="eh-bulk-btn eh-bulk-btn-delete" disabled onclick="ehBulkAction('delete')">Delete Selected</button>
+    </div>
+  </div>
+
   <div class="eh-table-wrap">
     <table class="eh-table">
       <thead>
         <tr>
+          <th class="eh-check-col"><input type="checkbox" id="ehSelectAll" onclick="ehToggleSelectAll(this)" title="Select all on this page"></th>
           <th style="width:130px;">Timestamp</th>
           <th style="width:150px;">Editor</th>
           <th style="width:170px;">Module / Record</th>
           <th style="width:80px;">Action</th>
           <th>Changed Fields (Before &rarr; After)</th>
+          <th class="eh-actions-col">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -117,7 +146,8 @@
             $meta = is_array($log->meta) ? $log->meta : [];
             $changes = $meta['changes'] ?? [];
           @endphp
-          <tr>
+          <tr data-log-id="{{ $log->id }}">
+            <td class="eh-check-col"><input type="checkbox" class="eh-row-check" value="{{ $log->id }}" onclick="ehToggleRow(this)"></td>
             <td class="eh-time">
               {{ $log->created_at->format('M d, Y') }}
               <small>{{ $log->created_at->format('h:i A') }} &bull; {{ $log->created_at->diffForHumans() }}</small>
@@ -163,9 +193,17 @@
                 <span style="color:#94a3b8;font-size:12px;">{{ $log->description }}</span>
               @endif
             </td>
+            <td class="eh-actions-col">
+              <div class="eh-row-actions">
+                @if($log->can_undo && $log->action === 'update')
+                  <button type="button" class="eh-row-btn eh-row-btn-undo" onclick="ehSingleAction({{ $log->id }}, 'restore')">Undo</button>
+                @endif
+                <button type="button" class="eh-row-btn eh-row-btn-delete" onclick="ehSingleAction({{ $log->id }}, 'delete')">Delete</button>
+              </div>
+            </td>
           </tr>
         @empty
-          <tr><td colspan="5"><div class="eh-empty">No edit history found for the selected filters.</div></td></tr>
+          <tr><td colspan="7"><div class="eh-empty">No edit history found for the selected filters.</div></td></tr>
         @endforelse
       </tbody>
     </table>
@@ -195,4 +233,92 @@
     </div>
   </div>
 </div>
+
+<script>
+(function() {
+  function ehCsrf() {
+    return document.querySelector('meta[name=csrf-token]')?.content || '';
+  }
+
+  function ehChecks() {
+    return Array.from(document.querySelectorAll('.eh-row-check'));
+  }
+
+  function ehUpdateBulkBar() {
+    const checked = ehChecks().filter(c => c.checked);
+    const n = checked.length;
+    const countEl = document.getElementById('ehSelCount');
+    const undoBtn = document.getElementById('ehBulkUndoBtn');
+    const deleteBtn = document.getElementById('ehBulkDeleteBtn');
+    if (countEl) countEl.textContent = n;
+    if (undoBtn) undoBtn.disabled = n === 0;
+    if (deleteBtn) deleteBtn.disabled = n === 0;
+    const all = ehChecks();
+    const selectAll = document.getElementById('ehSelectAll');
+    if (selectAll) selectAll.checked = all.length > 0 && n === all.length;
+  }
+
+  window.ehToggleSelectAll = function(cb) {
+    ehChecks().forEach(c => { c.checked = cb.checked; });
+    ehUpdateBulkBar();
+  };
+
+  window.ehToggleRow = function() {
+    ehUpdateBulkBar();
+  };
+
+  async function ehCallBulk(action, ids) {
+    const url = action === 'restore'
+      ? '{{ route('settings.deleted.bulkRestore') }}'
+      : '{{ route('settings.deleted.bulkDelete') }}';
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': ehCsrf(), 'Accept': 'application/json' },
+      body: JSON.stringify({ items: ids.map(id => ({ type: 'log', id: id })) })
+    });
+    return res.json();
+  }
+
+  window.ehSingleAction = async function(id, action) {
+    const message = action === 'restore'
+      ? 'Undo this deletion and restore the underlying record?'
+      : 'Permanently delete this entry from the Edit History log? This cannot be undone.';
+    const confirmed = window.showConfirmModal ? await window.showConfirmModal(message) : window.confirm(message);
+    if (!confirmed) return;
+
+    try {
+      const result = await ehCallBulk(action, [id]);
+      if (result.success) {
+        window.showToast ? window.showToast(result.message || 'Done.', 'success') : alert(result.message || 'Done.');
+        setTimeout(() => location.reload(), 600);
+      } else {
+        window.showToast ? window.showToast(result.message || 'Action failed.', 'error') : alert(result.message || 'Action failed.');
+      }
+    } catch (e) {
+      window.showToast ? window.showToast('Something went wrong. Please try again.', 'error') : alert('Something went wrong. Please try again.');
+    }
+  };
+
+  window.ehBulkAction = async function(action) {
+    const ids = ehChecks().filter(c => c.checked).map(c => c.value);
+    if (!ids.length) return;
+
+    const message = action === 'restore'
+      ? `Undo deletion and restore ${ids.length} selected record(s)?`
+      : `Permanently delete ${ids.length} selected entr${ids.length === 1 ? 'y' : 'ies'} from the Edit History log? This cannot be undone.`;
+    const confirmed = window.showConfirmModal ? await window.showConfirmModal(message) : window.confirm(message);
+    if (!confirmed) return;
+
+    try {
+      const result = await ehCallBulk(action, ids);
+      window.showToast ? window.showToast(result.message || 'Done.', result.success ? 'success' : 'error') : alert(result.message || 'Done.');
+      setTimeout(() => location.reload(), 600);
+    } catch (e) {
+      window.showToast ? window.showToast('Something went wrong. Please try again.', 'error') : alert('Something went wrong. Please try again.');
+    }
+  };
+
+  ehUpdateBulkBar();
+})();
+</script>
 @endsection
