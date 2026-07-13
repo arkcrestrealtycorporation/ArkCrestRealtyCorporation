@@ -59,6 +59,31 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
     .cd-modal-box { width: 100% !important; max-width: 100% !important; height: 100%; max-height: 100%; overflow-y: auto !important; -webkit-overflow-scrolling: touch; border-radius: 0 !important; }
     .cd-modal-grid { grid-template-columns: 1fr !important; }
 }
+/* Downpayment modal — responsive on all sizes */
+
+/* Desktop / tablet default: let rows wrap gracefully at any width instead
+   of relying on a fixed min-width, and keep the toolbar from ever
+   overflowing when the browser window itself is resized narrow. */
+.dp-installment-row > * { flex: 1 1 auto; }
+.dp-installment-row input[type="number"] { min-width: 120px; }
+.dp-installment-toolbar-btn { white-space: nowrap; }
+
+/* Small desktop windows / tablets — start stacking the toolbar before
+   things get cramped, well above the phone breakpoint. */
+@media (max-width: 900px) {
+    .dp-installment-toolbar > div { flex: 1 1 140px; }
+}
+
+/* Phones — full-screen modal + fully stacked rows */
+@media (max-width: 768px) {
+    #dpModal { padding: 0; }
+    #dpModal > div { width: 100% !important; max-width: 100% !important; height: 100% !important; max-height: 100% !important; border-radius: 0 !important; }
+    .dp-installment-toolbar { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+    .dp-installment-toolbar > div { width: 100% !important; }
+    .dp-installment-toolbar-btn { width: 100%; }
+    .dp-installment-row > * { flex: 1 1 100% !important; border-right: none !important; }
+    .dp-installment-row > span:first-child { border-bottom: 1.5px solid #e2e8f0; }
+}
 
 /* ---- Filter dropdown + chips (matches Commission Monitoring / ARC Sales pattern) ---- */
 .column-filter-dropdown{position:relative}
@@ -1655,7 +1680,7 @@ function goToDuplicateRecord() {
 </script>
 <!-- Downpayment Installment Modal -->
 <div id="dpModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
-    <div style="background:white;border-radius:16px;width:90%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;max-height:90vh;display:flex;flex-direction:column;">
+    <div style="background:white;border-radius:16px;width:90%;max-width:580px;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:90vh;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;">
         <div style="background:linear-gradient(135deg,#1e4575,#2563eb);color:white;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
             <h3 style="margin:0;font-size:18px;font-weight:700">Downpayment</h3>
             <button onclick="document.getElementById('dpModal').style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:18px">✕</button>
@@ -1663,7 +1688,7 @@ function goToDuplicateRecord() {
 
         {{-- Read-only summary header: Terms of Payment / TCP / Total DP / Remaining Balance.
              These are all derived values — never directly editable by the user. --}}
-        <div id="dp_summary_header" style="padding:16px 24px;background:#f8fafc;border-bottom:1.5px solid #e5e7eb;display:flex;flex-direction:column;gap:10px;flex-shrink:0">
+        <div id="dp_summary_header" style="padding:16px 24px;background:#f8fafc;border-bottom:1.5px solid #e5e7eb;display:flex;flex-direction:column;gap:10px;">
             <div>
                 <label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px">Terms of Payment</label>
                 <div id="dp_summary_terms" style="font-size:13px;font-weight:700;color:#1e4575;">—</div>
@@ -1738,8 +1763,8 @@ function goToDuplicateRecord() {
         </div>
 
         {{-- Installment DP --}}
-        <div id="dp_installment_section" style="display:none;flex-direction:column;flex:1;min-height:0">
-            <div style="padding:16px 24px;border-bottom:1px solid #e5e7eb;display:flex;gap:12px;align-items:flex-end;flex-shrink:0">
+        <div id="dp_installment_section" style="display:none;flex-direction:column;">
+            <div class="dp-installment-toolbar" style="padding:16px 24px;border-bottom:1px solid #e5e7eb;display:flex;gap:12px;align-items:flex-end;flex-shrink:0;flex-wrap:wrap">
                 <div style="flex:1">
                     <label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Total Amount</label>
                     <input type="number" id="dp_total_amount" step="0.01" min="0" placeholder="0.00" readonly
@@ -1747,15 +1772,15 @@ function goToDuplicateRecord() {
                 </div>
                 <div>
                     <label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px">Terms</label>
-                    <select id="dp_terms_select" disabled style="padding:9px 12px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px;background:#f3f4f6;cursor:not-allowed;color:#374151">
+                    <select id="dp_terms_select" disabled style="padding:9px 12px;border:2px solid #d0d5dd;border-radius:8px;font-size:14px;background:#f3f4f6;cursor:not-allowed;color:#374151;width:100%;box-sizing:border-box;">
                         @for($i = 1; $i <= 6; $i++)
                         <option value="{{ $i }}">{{ $i }}</option>
                         @endfor
                     </select>
                 </div>
-                <button onclick="setupInstallments()" style="padding:9px 16px;background:linear-gradient(135deg,#1e4575,#2563eb);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Generate Terms</button>
+                <button onclick="setupInstallments()" class="dp-installment-toolbar-btn" style="padding:9px 16px;background:linear-gradient(135deg,#1e4575,#2563eb);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Generate Terms</button>
             </div>
-            <div id="dp_installments_list" style="padding:16px 24px;overflow-y:auto;overflow-x:auto;-webkit-overflow-scrolling:touch;flex:1;display:flex;flex-direction:column;gap:10px;min-height:60px">
+            <div id="dp_installments_list" style="padding:16px 24px;display:flex;flex-direction:column;gap:10px;">
                 <div style="text-align:center;color:#94a3b8;padding:20px;font-size:13px;">Set amount and terms, then click "Set Terms".</div>
             </div>
         </div>
@@ -1778,10 +1803,10 @@ function goToDuplicateRecord() {
                 </div>
                 <button onclick="setupOthersInstallments()" style="padding:9px 16px;background:linear-gradient(135deg,#1e4575,#2563eb);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">Set Terms</button>
             </div>
-            <div id="dp_others_list" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto;"></div>
+            <div id="dp_others_list" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;"></div>
         </div>
 
-        <div style="padding:16px 24px;border-top:1px solid #e5e7eb;flex-shrink:0">
+        <div style="padding:16px 24px;border-top:1px solid #e5e7eb;flex-shrink:0;position:sticky;bottom:0;background:white;z-index:10;">
             <div id="dp_footer_type" style="display:flex">
             </div>
             <div id="dp_footer_spot" style="display:none;gap:10px">
@@ -2311,7 +2336,7 @@ function renderInstallments(list) {
             `<input type="date" id="inst_date_${inst.id}" style="padding:8px 10px;border:none;border-left:1.5px solid #e2e8f0;outline:none;font-size:12px;background:transparent;color:#374151;" title="Date of payment">`;
 
         return `
-            <div style="display:flex;align-items:center;gap:0;border:1.5px solid ${border};border-radius:10px;overflow:hidden;background:${bg};min-width:460px;">
+            <div class="dp-installment-row" style="display:flex;align-items:center;flex-wrap:wrap;gap:0;border:1.5px solid ${border};border-radius:10px;overflow:hidden;background:${bg};">
                 <span style="font-size:13px;font-weight:700;color:#1e4575;padding:10px 14px;white-space:nowrap;border-right:1.5px solid ${border};">Term ${inst.term_number}</span>
                 ${amountInput}
                 ${dateInput}
