@@ -27,6 +27,8 @@ class SettingsController extends Controller
     'settings.permissions',
     'settings.teams',
     'settings.period-lock',
+    'settings.backup',
+    'settings.export',
 ];
 
     public function index()
@@ -923,6 +925,7 @@ private function getDeletedExpenses()
             'human-resource','human-resource.employee-data','human-resource.contact-list',
             'settings.users','settings.teams',
             'settings.period-lock','settings.visibility','settings.activity','settings.deleted','settings.permissions',
+            'settings.backup','settings.export',
         ];
 
         $visiblePages = $request->input('visible_pages', []);

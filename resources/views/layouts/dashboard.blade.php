@@ -553,10 +553,10 @@
                             </li>
                             @php
                                 $isAdminUser = auth()->check() && auth()->user()->isAdmin();
-                                $sHiddenGlobal = array_values(json_decode(\DB::table('app_settings')->where('key', 'hidden_pages')->value('value') ?? '[]', true) ?: []);
-                                $canSeeSetting = fn($k) => $isAdminUser || !in_array($k, $sHiddenGlobal);
+                                $userHiddenSettings = $isAdminUser ? [] : ($allHidden ?? []);
+                                $canSeeSetting = fn($k) => $isAdminUser || !in_array($k, $userHiddenSettings);
                             @endphp
-                            @if($isAdminUser || array_filter(['settings.users','settings.visibility','settings.activity','settings.deleted','settings.permissions','settings.teams','settings.period-lock'], fn($k) => !in_array($k, $sHiddenGlobal)))
+                            @if($isAdminUser || array_filter(['settings.users','settings.visibility','settings.activity','settings.deleted','settings.permissions','settings.teams','settings.period-lock','settings.backup','settings.export'], fn($k) => !in_array($k, $userHiddenSettings)))
                             <li class="nav-submenu-label">Admin</li>
                             @endif
                             @if($canSeeSetting('settings.users'))
