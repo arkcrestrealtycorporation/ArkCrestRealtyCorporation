@@ -178,8 +178,7 @@
 
 .st-panel.active { display: block !important; animation: panelIn .3s ease forwards; }
 
-@keyframes panelIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
+@keyframes panelIn { from { opacity: 0; } to { opacity: 1; } }
 /* Page header */
 
 .st-page-header { margin-bottom: 20px; padding: 32px 0 0 0; }
@@ -1216,7 +1215,7 @@
 
       
 
-    </div>
+
 
     
 
