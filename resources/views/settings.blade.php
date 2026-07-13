@@ -854,7 +854,7 @@
           <div class="st-page-title">Page Visibility</div>
           <div class="st-page-sub">Checked items are visible to the selected user. Uncheck to hide. Admin always sees everything.</div>
         </div>
-        <button type="button" onclick="document.getElementById('addUserVisModal').style.display='flex'" class="st-btn st-btn-primary" style="display:flex;align-items:center;gap:6px;">
+        <button type="button" onclick="document.getElementById('addUserVisModal').style.display='flex'; var s=document.getElementById('addUserModalSearch'); if(s){s.value='';filterAddUserModal('');}" class="st-btn st-btn-primary" style="display:flex;align-items:center;gap:6px;">
           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           Add User
         </button>
@@ -907,15 +907,22 @@
         @endphp
 
         {{-- User selector --}}
-        <div style="margin-bottom:20px;">
-          <label style="font-weight:700;font-size:13px;color:#1e4575;display:block;margin-bottom:8px;">Page Visibility — Select User</label>
-          @if($staffUsers->isEmpty())
-            <div style="color:#6b7280;font-size:13px;padding:10px 0;">No users yet. Click "Add User" to add one.</div>
-          @else
-          <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;" id="vis-user-tabs">
-            @foreach($staffUsers as $u)
-              <button type="button" onclick="selectVisUser({{ $u->id }}, this, '{{ addslashes($u->name) }}')"
-                style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 18px;border-radius:12px;cursor:pointer;border:2px solid {{ $selectedUserId == $u->id ? '#1e4575' : '#e5e7eb' }};background:{{ $selectedUserId == $u->id ? '#1e4575' : '#fff' }};color:{{ $selectedUserId == $u->id ? '#fff' : '#374151' }};width:110px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+       <div style="margin-bottom:20px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
+    <label style="font-weight:700;font-size:13px;color:#1e4575;margin:0;">Page Visibility — Select User</label>
+    <div style="position:relative;">
+      <input type="text" id="visUserSearch" class="st-input" placeholder="Search users..." oninput="filterVisUserTabs(this.value)" style="width:220px;padding-left:32px;">
+      <svg width="14" height="14" fill="none" stroke="#94a3b8" viewBox="0 0 24 24" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);"><circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.3-4.3" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+  </div>
+  @if($staffUsers->isEmpty())
+    <div style="color:#6b7280;font-size:13px;padding:10px 0;">No users yet. Click "Add User" to add one.</div>
+  @else
+  <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;" id="vis-user-tabs">
+    @foreach($staffUsers as $u)
+      <button type="button" data-name="{{ strtolower($u->name) }}" onclick="selectVisUser({{ $u->id }}, this, '{{ addslashes($u->name) }}')"
+        style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 18px;border-radius:12px;cursor:pointer;border:2px solid {{ $selectedUserId == $u->id ? '#1e4575' : '#e5e7eb' }};background:{{ $selectedUserId == $u->id ? '#1e4575' : '#fff' }};color:{{ $selectedUserId == $u->id ? '#fff' : '#374151' }};width:110px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+  <div id="vis-user-no-results" style="display:none;color:#94a3b8;font-size:13px;padding:10px 0;">No users match your search.</div>
                 <div style="position:relative;">
                 @if($u->avatar)
                   <img src="{{ str_starts_with($u->avatar, 'avatars/') ? \Storage::disk('public')->url($u->avatar) : asset($u->avatar) }}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid {{ $selectedUserId == $u->id ? 'rgba(255,255,255,0.4)' : '#e5e7eb' }};">
@@ -986,11 +993,12 @@
         </div>
         @php $allStaff = \App\Models\User::where('role','!=','admin')->whereNotIn('status',['pre_registered'])->orderBy('name')->get(); @endphp
         @if($allStaff->isEmpty())
-          <div style="color:#6b7280;font-size:13px;">No users found.</div>
-        @else
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            @foreach($allStaff as $u)
-            <button type="button" onclick="pickVisUser({{ $u->id }}, '{{ addslashes($u->name) }}')"
+  <div style="color:#6b7280;font-size:13px;">No users found.</div>
+@else
+  <input type="text" id="addUserModalSearch" class="st-input" placeholder="Search users..." oninput="filterAddUserModal(this.value)" style="width:100%;margin-bottom:12px;">
+  <div style="display:flex;flex-direction:column;gap:8px;" id="addUserModalList">
+    @foreach($allStaff as $u)
+    <button type="button" data-name="{{ strtolower($u->name) }}" onclick="pickVisUser({{ $u->id }}, '{{ addslashes($u->name) }}')"
               style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;text-align:left;width:100%;">
               <div style="width:36px;height:36px;border-radius:50%;background:#1e4575;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
                 {{ strtoupper(substr($u->name,0,1)) }}
@@ -1930,6 +1938,28 @@ function pickVisUser(userId, userName) {
         window.location.href = window.location.pathname + '?vis_user=' + userId + '#panel-visibility';
     }
 }
+function filterVisUserTabs(q) {
+    q = q.toLowerCase().trim();
+    var tabs = document.querySelectorAll('#vis-user-tabs button');
+    var visibleCount = 0;
+    tabs.forEach(function(b) {
+        var name = b.getAttribute('data-name') || '';
+        var match = !q || name.includes(q);
+        b.style.display = match ? '' : 'none';
+        if (match) visibleCount++;
+    });
+    var noResults = document.getElementById('vis-user-no-results');
+    if (noResults) noResults.style.display = (q && visibleCount === 0) ? 'block' : 'none';
+}
+function filterAddUserModal(q) {
+    q = q.toLowerCase().trim();
+    document.querySelectorAll('#addUserModalList button').forEach(function(b) {
+        var name = b.getAttribute('data-name') || '';
+        b.style.display = (!q || name.includes(q)) ? '' : 'none';
+    });
+}
+
+
 function addEmailRow() {
     const row = document.createElement('div');
     row.className = 'email-row';
