@@ -112,7 +112,7 @@
             @foreach($departments as $dept)
                 @if($dept->slug !== 'capex')
                 @php
-                    $totalExpenses = \App\Models\CommissionRequest::where('department', $dept->name)->sum('requested_amount');
+                    $totalExpenses = $commitments[$dept->name]['liquidated'] ?? 0;
                     $remaining = $dept->allowable_budget - $totalExpenses;
                     $pct = $dept->allowable_budget > 0 ? min(100, ($totalExpenses / $dept->allowable_budget) * 100) : 0;
                     $barColor = $pct >= 90 ? '#ef4444' : ($pct >= 70 ? '#f59e0b' : '#16a34a');
@@ -1007,27 +1007,23 @@ try {
 const categories = @json($categories);
 
 // Department name mapping function
-function mapDepartmentName(shortName) {
-    const mapping = {
-        'Admin': 'Administrative',
-        'HR': 'Human Resources',
-        'Sales & Marketing': 'Sales & Marketing',
-        'Finance': 'Finance',
-        'Executive': 'Executive'
-    };
-    return mapping[shortName] || shortName;
+// NOTE: previously this translated short codes ("Admin", "HR") to/from
+// the full department names ("Administrative", "Human Resource") used
+// by the Departments table. That translation caused a real bug: every
+// save (including liquidation via the "UPDATE RECORD" popup) wrote the
+// short code back into departmental_expenses.department, which never
+// matched Department::name, so remainingBudget() saw allowable_budget=0
+// for that department and reported wildly negative "remaining" values.
+// All dropdowns already emit the real department name directly, so
+// these are now no-ops kept only so existing call sites don't need to
+// change.
+function mapDepartmentName(name) {
+    return name;
 }
 
 // Reverse mapping for saving to database
-function reverseDepartmentName(fullName) {
-    const reverseMapping = {
-        'Administrative': 'Admin',
-        'Human Resources': 'HR',
-        'Sales & Marketing': 'Sales & Marketing',
-        'Finance': 'Finance',
-        'Executive': 'Executive'
-    };
-    return reverseMapping[fullName] || fullName;
+function reverseDepartmentName(name) {
+    return name;
 }
 
 // Save and restore scroll position of page-content
@@ -1542,6 +1538,9 @@ function _submitLiquidationUpdate() {
         .catch(error => {
             console.error('Error:', error);
             showToast('error', 'Error', error.message || 'Error updating request');
+            // Re-open the liquidation modal so the user can correct the amount
+            // instead of silently losing the entered data.
+            document.getElementById('liquidationUpdateModal').style.display = 'block';
         });
     } else {
         fetch('/api/departmental-expenses', {
@@ -1567,6 +1566,7 @@ function _submitLiquidationUpdate() {
         .catch(error => {
             console.error('Error:', error);
             showToast('error', 'Error', error.message || 'Error adding request');
+            document.getElementById('liquidationUpdateModal').style.display = 'block';
         });
     }
 }
@@ -1758,12 +1758,12 @@ function _doEditRequest(id) {
     document.getElementById('edit_control_number').value = row.getAttribute('data-control') || cells[1].textContent.trim();
     document.getElementById('edit_requestor_name').value = cells[2].textContent;
     
-    // Get original department value from data attribute
+    // Department is now stored consistently as the real Department name,
+    // so it's used directly (no more short-code mapping).
     const originalDepartment = row.getAttribute('data-department');
-    const mappedDepartment = mapDepartmentName(originalDepartment);
-    document.getElementById('edit_department').value = mappedDepartment;
+    document.getElementById('edit_department').value = originalDepartment;
     
-    updateEditCategoryDropdown(mappedDepartment);
+    updateEditCategoryDropdown(originalDepartment);
     
     setTimeout(() => {
         document.getElementById('edit_category').value = cells[4].textContent;
@@ -2263,11 +2263,8 @@ function checkNoResults() {
 
 // Initialize filters on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Map department names in table
-    document.querySelectorAll('.department-cell').forEach(cell => {
-        cell.textContent = mapDepartmentName(cell.textContent);
-    });
-
+    // Department names are now stored consistently as the real Department
+    // name (e.g. "Administrative"), so no more mapping needed here.
     applyFilters();
 });
 
