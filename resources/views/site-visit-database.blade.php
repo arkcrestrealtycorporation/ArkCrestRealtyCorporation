@@ -229,21 +229,21 @@
 
     <div class="svd-filters-bar">
         <div class="svd-filters-row">
-            <div class="column-filter-dropdown" id="svdFilterDropdown">
-                <button type="button" id="svdFilterBtn" class="column-filter-btn" onclick="toggleSvdFilterMenu(event)">
+            <div class="column-filter-dropdown" id="svdFilterDropdown_confirmed">
+                <button type="button" id="svdFilterBtn_confirmed" class="column-filter-btn" onclick="toggleSvdFilterMenu(event, 'confirmed')">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
                     <span>Filter</span>
-                    <span id="svdFilterCountBadge" class="filter-count-badge" style="display:none;">0</span>
+                    <span id="svdFilterCountBadge_confirmed" class="filter-count-badge" style="display:none;">0</span>
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
-                <div id="svdFilterMenu" class="column-filter-menu" style="display:none;"></div>
+                <div id="svdFilterMenu_confirmed" class="column-filter-menu" style="display:none;"></div>
             </div>
             <div class="svd-search-box">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <input type="text" id="svdTableSearch" placeholder="Search scheduled trippings...">
+                <input type="text" id="svdTableSearch_confirmed" placeholder="Search scheduled trippings...">
             </div>
         </div>
-        <div id="svdActiveFiltersRow" class="active-column-filters-row" style="display:none;"></div>
+        <div id="svdActiveFiltersRow_confirmed" class="active-column-filters-row" style="display:none;"></div>
     </div>
     <div class="tbl-wrap">
     <table class="svd-table">
@@ -347,6 +347,24 @@
             <p>No {{ strtolower($label) }} at the moment.</p>
         </div>
     @else
+    <div class="svd-filters-bar">
+        <div class="svd-filters-row">
+            <div class="column-filter-dropdown" id="svdFilterDropdown_{{ $status }}">
+                <button type="button" id="svdFilterBtn_{{ $status }}" class="column-filter-btn" onclick="toggleSvdFilterMenu(event, '{{ $status }}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    <span>Filter</span>
+                    <span id="svdFilterCountBadge_{{ $status }}" class="filter-count-badge" style="display:none;">0</span>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div id="svdFilterMenu_{{ $status }}" class="column-filter-menu" style="display:none;"></div>
+            </div>
+            <div class="svd-search-box">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input type="text" id="svdTableSearch_{{ $status }}" placeholder="Search {{ strtolower($label) }}...">
+            </div>
+        </div>
+        <div id="svdActiveFiltersRow_{{ $status }}" class="active-column-filters-row" style="display:none;"></div>
+    </div>
     <div class="tbl-wrap">
     <table class="svd-table">
         <thead><tr>
@@ -358,7 +376,18 @@
         </tr></thead>
         <tbody>
         @foreach($grp->values() as $i => $r)
-        <tr id="trip-{{ $r->id }}" data-id="{{ $r->id }}">
+        <tr id="trip-{{ $r->id }}" data-id="{{ $r->id }}"
+            data-client-name="{{ $r->client_name }}"
+            data-property="{{ $r->property_name }}"
+            data-company="{{ $r->company_name }}"
+            data-agent="{{ $r->agent_name }}"
+            data-email="{{ $r->client_email }}"
+            data-phone="{{ $r->client_phone ? ($r->client_phone_code ?? '+63') . ' ' . ltrim($r->client_phone, '0') : '' }}"
+            data-address="{{ $r->client_address }}"
+            data-tripping-date="{{ $r->tripping_date ? $r->tripping_date->format('Y-m-d') : '' }}"
+            data-tripping-time="{{ $r->tripping_time ? \Carbon\Carbon::parse($r->tripping_time)->format('g:i A') : '' }}"
+            data-mode="{{ $r->tripping_type }}"
+            data-date-submitted="{{ $r->created_at ? $r->created_at->format('Y-m-d') : '' }}">
             <td class="row-num">{{ $i + 1 }}</td>
             <td><div class="td-name">{{ $r->client_name }}</div></td>
             <td><div class="td-name" style="font-size:12px">{{ $r->property_name ?? '—' }}</div></td>
@@ -479,8 +508,9 @@ function filterTable(tableId, q) {
         row.style.display = !q || row.textContent.toLowerCase().includes(q) ? '' : 'none';
     });
 }
-
-// ── Scheduled Tripping: Filter dropdown + search bar ──
+// ── Site Visit tables: Filter dropdown + search bar (works for
+// Scheduled Tripping, Done Tripping, and Cancelled Tripping — each
+// identified by its own "status" key: 'confirmed' | 'done' | 'cancelled') ──
 const SVD_FILTERABLE_FIELDS = [
     { key: 'client_name',     label: 'Name of Client', dataAttr: 'data-client-name',     type: 'text' },
     { key: 'property_name',   label: 'Property',       dataAttr: 'data-property',        type: 'text' },
@@ -495,22 +525,24 @@ const SVD_FILTERABLE_FIELDS = [
     { key: 'date_submitted',  label: 'Date Submitted', dataAttr: 'data-date-submitted',  type: 'daterange' },
 ];
 
-// key -> id prefix used for the two date inputs of a daterange field
-const SVD_DATERANGE_IDS = {
-    tripping_date:  { from: 'svdTrippingDateFrom',  to: 'svdTrippingDateTo'  },
-    date_submitted: { from: 'svdDateSubmittedFrom', to: 'svdDateSubmittedTo' },
-};
+const SVD_STATUSES = ['confirmed', 'done', 'cancelled'];
 
-const svdColumnFilters = {}; // { fieldKey: currentValue } — for 'text' fields only
+// One independent set of active filters per table/status.
+const svdColumnFiltersByStatus = { confirmed: {}, done: {}, cancelled: {} };
 
 function svdFieldConfig(key) {
     return SVD_FILTERABLE_FIELDS.find(f => f.key === key);
 }
 
-function toggleSvdFilterMenu(evt) {
+// Per-status, per-field id prefix used for the two date inputs of a daterange field.
+function svdDaterangeIds(status, key) {
+    return { from: 'svd_' + status + '_' + key + '_from', to: 'svd_' + status + '_' + key + '_to' };
+}
+
+function toggleSvdFilterMenu(evt, status) {
     if (evt) evt.stopPropagation();
-    const menu = document.getElementById('svdFilterMenu');
-    const btn = document.getElementById('svdFilterBtn');
+    const menu = document.getElementById('svdFilterMenu_' + status);
+    const btn = document.getElementById('svdFilterBtn_' + status);
     if (!menu || !btn) return;
     const isOpen = menu.style.display === 'block';
 
@@ -531,92 +563,101 @@ function toggleSvdFilterMenu(evt) {
     menu.style.left = rect.left + 'px';
     menu.style.minWidth = rect.width + 'px';
     menu.style.display = 'block';
-    renderSvdFilterMenu();
+    renderSvdFilterMenu(status);
 }
 
-function closeSvdFilterMenu() {
-    const menu = document.getElementById('svdFilterMenu');
+function closeSvdFilterMenu(status) {
+    const menu = document.getElementById('svdFilterMenu_' + status);
     if (menu) menu.style.display = 'none';
 }
 
 document.addEventListener('click', function(evt) {
-    const wrapper = document.getElementById('svdFilterDropdown');
-    const menu = document.getElementById('svdFilterMenu');
-    const clickedInsideMenu = menu && menu.contains(evt.target);
-    const clickedInsideButton = wrapper && wrapper.contains(evt.target);
-    if (!clickedInsideMenu && !clickedInsideButton) closeSvdFilterMenu();
+    SVD_STATUSES.forEach(function(status) {
+        const wrapper = document.getElementById('svdFilterDropdown_' + status);
+        const menu = document.getElementById('svdFilterMenu_' + status);
+        const clickedInsideMenu = menu && menu.contains(evt.target);
+        const clickedInsideButton = wrapper && wrapper.contains(evt.target);
+        if (!clickedInsideMenu && !clickedInsideButton) closeSvdFilterMenu(status);
+    });
 });
 
-// Close the menu on scroll, since it's now fixed-positioned and would
-// otherwise drift away from the Filter button as the page scrolls.
+// Close any open menu on scroll, since it's now fixed-positioned and would
+// otherwise drift away from its Filter button as the page scrolls.
 // (Ignore scroll events that originate from inside the menu itself —
 // otherwise scrolling the dropdown's own list would instantly close it.)
 window.addEventListener('scroll', function(evt) {
-    const menu = document.getElementById('svdFilterMenu');
-    if (menu && menu.contains(evt.target)) return;
-    closeSvdFilterMenu();
+    SVD_STATUSES.forEach(function(status) {
+        const menu = document.getElementById('svdFilterMenu_' + status);
+        if (menu && menu.contains(evt.target)) return;
+        closeSvdFilterMenu(status);
+    });
 }, true);
 
-function renderSvdFilterMenu() {
-    const menu = document.getElementById('svdFilterMenu');
+function renderSvdFilterMenu(status) {
+    const menu = document.getElementById('svdFilterMenu_' + status);
     if (!menu) return;
+    const activeFilters = svdColumnFiltersByStatus[status];
     menu.innerHTML = SVD_FILTERABLE_FIELDS.map(f => {
-        const active = svdColumnFilters.hasOwnProperty(f.key);
-        return `<div class="column-filter-menu-item${active ? ' is-active' : ''}" onclick="toggleSvdFilter('${f.key}')">
+        const active = activeFilters.hasOwnProperty(f.key);
+        return `<div class="column-filter-menu-item${active ? ' is-active' : ''}" onclick="toggleSvdFilter('${status}', '${f.key}')">
                     <span class="cfm-check">&#10003;</span><span>${f.label}</span>
                 </div>`;
     }).join('');
 }
 
-function toggleSvdFilter(key) {
-    if (svdColumnFilters.hasOwnProperty(key)) {
-        removeSvdFilter(key);
+function toggleSvdFilter(status, key) {
+    const activeFilters = svdColumnFiltersByStatus[status];
+    if (activeFilters.hasOwnProperty(key)) {
+        removeSvdFilter(status, key);
     } else {
-        svdColumnFilters[key] = '';
-        renderSvdFilterMenu();
-        renderSvdActiveFilters();
-        closeSvdFilterMenu();
+        activeFilters[key] = '';
+        renderSvdFilterMenu(status);
+        renderSvdActiveFilters(status);
+        closeSvdFilterMenu(status);
         setTimeout(() => {
             const f = svdFieldConfig(key);
-            const focusId = f.type === 'daterange' ? SVD_DATERANGE_IDS[key].from : 'svdColFilterInput_' + key;
+            const focusId = f.type === 'daterange' ? svdDaterangeIds(status, key).from : 'svdColFilterInput_' + status + '_' + key;
             const el = document.getElementById(focusId);
             if (el) el.focus();
         }, 0);
     }
 }
 
-function removeSvdFilter(key) {
-    delete svdColumnFilters[key];
+function removeSvdFilter(status, key) {
+    delete svdColumnFiltersByStatus[status][key];
     const f = svdFieldConfig(key);
     if (f && f.type === 'daterange') {
-        const ids = SVD_DATERANGE_IDS[key];
+        const ids = svdDaterangeIds(status, key);
         [ids.from, ids.to].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     }
-    renderSvdFilterMenu();
-    renderSvdActiveFilters();
-    applySvdFilters();
+    renderSvdFilterMenu(status);
+    renderSvdActiveFilters(status);
+    applySvdFilters(status);
 }
 
-function clearAllSvdFilters() {
-    Object.keys(svdColumnFilters).forEach(k => delete svdColumnFilters[k]);
-    Object.values(SVD_DATERANGE_IDS).forEach(ids => {
+function clearAllSvdFilters(status) {
+    const activeFilters = svdColumnFiltersByStatus[status];
+    Object.keys(activeFilters).forEach(k => delete activeFilters[k]);
+    SVD_FILTERABLE_FIELDS.filter(f => f.type === 'daterange').forEach(f => {
+        const ids = svdDaterangeIds(status, f.key);
         [ids.from, ids.to].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     });
-    renderSvdFilterMenu();
-    renderSvdActiveFilters();
-    applySvdFilters();
+    renderSvdFilterMenu(status);
+    renderSvdActiveFilters(status);
+    applySvdFilters(status);
 }
 
-function updateSvdFilterValue(key, value) {
-    svdColumnFilters[key] = value;
-    applySvdFilters();
+function updateSvdFilterValue(status, key, value) {
+    svdColumnFiltersByStatus[status][key] = value;
+    applySvdFilters(status);
 }
 
-function renderSvdActiveFilters() {
-    const row = document.getElementById('svdActiveFiltersRow');
-    const badge = document.getElementById('svdFilterCountBadge');
+function renderSvdActiveFilters(status) {
+    const row = document.getElementById('svdActiveFiltersRow_' + status);
+    const badge = document.getElementById('svdFilterCountBadge_' + status);
     if (!row) return;
-    const keys = Object.keys(svdColumnFilters);
+    const activeFilters = svdColumnFiltersByStatus[status];
+    const keys = Object.keys(activeFilters);
 
     if (badge) {
         badge.style.display = keys.length ? 'inline-flex' : 'none';
@@ -634,29 +675,30 @@ function renderSvdActiveFilters() {
         const f = svdFieldConfig(key);
         let inputHtml = '';
         if (f.type === 'daterange') {
-            const ids = SVD_DATERANGE_IDS[key];
+            const ids = svdDaterangeIds(status, key);
             inputHtml = `<div class="date-range-inputs">
-                            <input type="date" id="${ids.from}" onchange="applySvdFilters()">
+                            <input type="date" id="${ids.from}" onchange="applySvdFilters('${status}')">
                             <span style="color:#8a9bad;font-size:12px;">to</span>
-                            <input type="date" id="${ids.to}" onchange="applySvdFilters()">
+                            <input type="date" id="${ids.to}" onchange="applySvdFilters('${status}')">
                          </div>`;
         } else {
-            const val = svdColumnFilters[key] || '';
-            inputHtml = `<input type="text" id="svdColFilterInput_${key}" placeholder="Search ${f.label.toLowerCase()}..." value="${val}" oninput="updateSvdFilterValue('${key}', this.value)">`;
+            const val = activeFilters[key] || '';
+            inputHtml = `<input type="text" id="svdColFilterInput_${status}_${key}" placeholder="Search ${f.label.toLowerCase()}..." value="${val}" oninput="updateSvdFilterValue('${status}', '${key}', this.value)">`;
         }
         return `<div class="column-filter-chip">
                     <label>${f.label}</label>
                     ${inputHtml}
-                    <button type="button" class="cfm-remove" title="Remove filter" onclick="removeSvdFilter('${key}')">&times;</button>
+                    <button type="button" class="cfm-remove" title="Remove filter" onclick="removeSvdFilter('${status}', '${key}')">&times;</button>
                 </div>`;
-    }).join('') + `<button type="button" class="clear-column-filters-btn" onclick="clearAllSvdFilters()">Clear Filters</button>`;
+    }).join('') + `<button type="button" class="clear-column-filters-btn" onclick="clearAllSvdFilters('${status}')">Clear Filters</button>`;
 }
 
-function svdMatchesColumnFilters(row) {
-    for (const key in svdColumnFilters) {
+function svdMatchesColumnFilters(status, row) {
+    const activeFilters = svdColumnFiltersByStatus[status];
+    for (const key in activeFilters) {
         const f = svdFieldConfig(key);
         if (f.type === 'daterange') continue; // handled separately below
-        const filterVal = (svdColumnFilters[key] || '').toString().trim().toLowerCase();
+        const filterVal = (activeFilters[key] || '').toString().trim().toLowerCase();
         if (!filterVal) continue;
         const rowVal = (row.getAttribute(f.dataAttr) || '').toString().toLowerCase();
         if (!rowVal.includes(filterVal)) return false;
@@ -664,13 +706,12 @@ function svdMatchesColumnFilters(row) {
     return true;
 }
 
-function svdMatchesDateRangeFilters(row) {
-    for (const key in SVD_DATERANGE_IDS) {
-        const ids = SVD_DATERANGE_IDS[key];
+function svdMatchesDateRangeFilters(status, row) {
+    for (const f of SVD_FILTERABLE_FIELDS.filter(f => f.type === 'daterange')) {
+        const ids = svdDaterangeIds(status, f.key);
         const from = document.getElementById(ids.from)?.value || '';
         const to   = document.getElementById(ids.to)?.value || '';
         if (!from && !to) continue;
-        const f = svdFieldConfig(key);
         const rowVal = row.getAttribute(f.dataAttr) || '';
         if (!rowVal) return false;
         if (from && rowVal < from) return false;
@@ -679,24 +720,26 @@ function svdMatchesDateRangeFilters(row) {
     return true;
 }
 
-function applySvdFilters() {
-    const searchInput = document.getElementById('svdTableSearch');
+function applySvdFilters(status) {
+    const searchInput = document.getElementById('svdTableSearch_' + status);
     const searchText = searchInput ? searchInput.value.toLowerCase().trim() : '';
     const searchWords = searchText.split(/\s+/).filter(w => w.length > 0);
-    const rows = document.querySelectorAll('#section-confirmed table tbody tr[data-id]');
+    const rows = document.querySelectorAll('#section-' + status + ' table tbody tr[data-id]');
 
     rows.forEach(row => {
         const text = row.textContent.toLowerCase();
         const allWordsFound = searchWords.length === 0 || searchWords.every(word => text.includes(word));
-        const columnMatch = svdMatchesColumnFilters(row);
-        const dateMatch = svdMatchesDateRangeFilters(row);
+        const columnMatch = svdMatchesColumnFilters(status, row);
+        const dateMatch = svdMatchesDateRangeFilters(status, row);
         row.style.display = (allWordsFound && columnMatch && dateMatch) ? '' : 'none';
     });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const svdSearchInput = document.getElementById('svdTableSearch');
-    if (svdSearchInput) svdSearchInput.addEventListener('input', applySvdFilters);
+    SVD_STATUSES.forEach(function(status) {
+        const svdSearchInput = document.getElementById('svdTableSearch_' + status);
+        if (svdSearchInput) svdSearchInput.addEventListener('input', function() { applySvdFilters(status); });
+    });
 });
 
 function toggleSection(id) {
