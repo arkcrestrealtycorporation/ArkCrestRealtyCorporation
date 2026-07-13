@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\CommissionRequestSales;
 use App\Models\ActivityLog;
 use App\Models\SalesTeam;
+use App\Models\Property;
+use Illuminate\Support\Facades\Schema;
 
 class SalesMarketingController extends Controller
 {
@@ -303,7 +305,32 @@ class SalesMarketingController extends Controller
     public function clientDatabase()
     {
         $commissionRequests = CommissionRequestSales::orderBy('date_requested', 'asc')->get();
-        return view('client-database', compact('commissionRequests'));
+
+        // Developer names can come from two places:
+        //  1. Existing client records (the free-text developer_name column), and
+        //  2. The Property Management list in Settings (properties.developer) —
+        //     adding a property with a developer there should make that name
+        //     available here right away, even before any client record uses it.
+        // Merge both, dedupe case-insensitively, and sort so the dropdown always
+        // reflects real, current data instead of the old 2-name hardcoded fallback.
+        $developersFromClients = CommissionRequestSales::whereNotNull('developer_name')
+            ->where('developer_name', '!=', '')
+            ->distinct()
+            ->pluck('developer_name');
+
+        $developersFromProperties = Schema::hasTable('properties')
+            ? Property::whereNotNull('developer')->where('developer', '!=', '')->distinct()->pluck('developer')
+            : collect();
+
+        $developers = $developersFromClients
+            ->merge($developersFromProperties)
+            ->map(fn ($name) => trim($name))
+            ->filter()
+            ->unique(fn ($name) => strtolower($name))
+            ->sort()
+            ->values();
+
+        return view('client-database', compact('commissionRequests', 'developers'));
     }
 
     public function propertyList()
@@ -423,8 +450,16 @@ class SalesMarketingController extends Controller
         try {
             $validated = $request->validate($this->validationRules());
         } catch (\Illuminate\Validation\ValidationException $e) {
-            $msg = collect($e->errors())->flatten()->first();
-            return response()->json(['error' => $msg], 422);
+            // Mirror what the Add form's default Laravel validation redirect
+            // gives the page: every message in the errors bag, not just one.
+            // The Edit modal is AJAX-driven (it can't rely on a full-page
+            // redirect + $errors->any() the way the Add form does), so we
+            // hand the same full message list back as JSON instead.
+            $allMessages = collect($e->errors())->flatten()->all();
+            return response()->json([
+                'error'  => $allMessages[0] ?? 'Validation failed. Please check the form and try again.',
+                'errors' => $allMessages,
+            ], 422);
         }
 
         // Preserve downpayment fields — never overwrite from the edit form
