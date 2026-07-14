@@ -112,7 +112,7 @@
             @foreach($departments as $dept)
                 @if($dept->slug !== 'capex')
                 @php
-                    $totalExpenses = \App\Models\CommissionRequest::where('department', $dept->name)->sum('requested_amount');
+                    $totalExpenses = $commitments[$dept->name]['liquidated'] ?? 0;
                     $remaining = $dept->allowable_budget - $totalExpenses;
                     $pct = $dept->allowable_budget > 0 ? min(100, ($totalExpenses / $dept->allowable_budget) * 100) : 0;
                     $barColor = $pct >= 90 ? '#ef4444' : ($pct >= 70 ? '#f59e0b' : '#16a34a');
@@ -220,8 +220,8 @@
                 <!-- Row 2: 2 fields -->
                 <div class="form-row-inline">
                     <div class="form-group">
-                        <label>Date Requested</label>
-                        <input type="date" id="date_requested" name="date_requested" class="form-control">
+                        <label>Date Requested <span class="required">*</span></label>
+                        <input type="date" id="date_requested" name="date_requested" class="form-control" required>
                     </div>
 
                     <div class="form-group">
@@ -237,9 +237,9 @@
                 <div class="form-row-inline">
                     <div class="form-group">
                         <label>Status <span class="required">*</span></label>
-                        <select id="status" name="status" class="form-control" required>
-                            <option value="FOR REQUEST">FOR REQUEST</option>
-                            <option value="NOT LIQUIDATED">NOT LIQUIDATED</option>
+                            <select id="status" name="status" class="form-control" required>
+                            <option value="PENDING">PENDING</option>
+                            <option value="NOT YET LIQUIDATED">NOT YET LIQUIDATED</option>
                             <option value="LIQUIDATED">LIQUIDATED</option>
                             <option value="REJECTED">REJECTED</option>
                         </select>
@@ -286,6 +286,10 @@
             <!-- Filters and Search below title -->
             <div class="expenses-filters-bar" style="display: flex; flex-direction: column; gap: 14px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0;">
                 <div class="expenses-filters-row" style="display: flex; justify-content: flex-start; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <button type="button" id="printSelectedBtn" onclick="printSelectedRecords()" style="display:flex;align-items:center;gap:6px;padding:9px 14px;background:#1e4575;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;height:40px;box-sizing:border-box;">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                        Print Selected
+                    </button>
                     <div class="expenses-search-wrapper" style="display: flex; align-items: center; gap: 10px; width: 100%; max-width: 560px;">
                         <div class="column-filter-dropdown" id="columnFilterDropdown" style="position: relative;">
                             <button type="button" id="columnFilterBtn" class="column-filter-btn" onclick="toggleColumnFilterMenu(event)">
@@ -311,6 +315,9 @@
             <table class="requests-table">
                 <thead>
                     <tr>
+                        <th style="width: 40px; min-width: 40px;">
+                            <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)">
+                        </th>
                         <th style="min-width: 150px;">Control Number</th>
                         <th style="min-width: 180px;">Requestor Name</th>
                         <th style="min-width: 180px;">Department</th>
@@ -328,6 +335,7 @@
                 <tbody id="requestsTableBody">
                     @foreach($requests as $req)
                     <tr id="expense-{{ $req->id }}" data-id="{{ $req->id }}" data-department="{{ $req->department }}" data-date-requested="{{ $req->date_requested ? $req->date_requested->format('Y-m-d') : '' }}" data-date-released="{{ $req->date_released ? $req->date_released->format('Y-m-d') : '' }}" data-control="{{ $req->control_number }}" data-requestor="{{ $req->requestor_name }}" data-category="{{ $req->category }}" data-status="{{ $req->status }}" data-requested-amount="{{ $req->requested_amount }}" data-total-expenses="{{ $req->total_expenses }}" data-amount-returned="{{ $req->amount_returned }}" data-date-returned="{{ $req->date_of_amount_returned ? $req->date_of_amount_returned->format('Y-m-d') : '' }}">
+                        <td><input type="checkbox" class="row-select-checkbox" value="{{ $req->id }}"></td>
                         <td>{{ $req->control_number }}</td>
                         <td>{{ $req->requestor_name }}</td>
                         <td class="department-cell">{{ $req->department }}</td>
@@ -360,6 +368,7 @@
                 <p style="font-size: 14px;">Try adjusting your search or filter criteria</p>
             </div>
         </div>
+        <div id="printArea" class="print-only"></div>
     </div>
     @endif
 </div>
@@ -439,6 +448,10 @@
     .clear-column-filters-btn {
         width: 100% !important;
         text-align: center;
+    }
+    #printSelectedBtn {
+        width: 100% !important;
+        justify-content: center !important;
     }
 
 }
@@ -572,6 +585,109 @@
     cursor: pointer;
     white-space: nowrap;
 }
+
+/* Sticky checkbox + Control Number + Requestor Name columns in All Expenses table.
+   Column order is: (1) checkbox, (2) Control Number, (3) Requestor Name */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.requests-table th:nth-child(1),
+.requests-table td:nth-child(1) {
+    width: 40px;
+    min-width: 40px;
+    text-align: center;
+}
+.requests-table th:nth-child(1),
+.requests-table td:nth-child(1),
+.requests-table th:nth-child(2),
+.requests-table td:nth-child(2),
+.requests-table th:nth-child(3),
+.requests-table td:nth-child(3) {
+    position: sticky;
+    z-index: 2;
+}
+.requests-table td:nth-child(1),
+.requests-table td:nth-child(2),
+.requests-table td:nth-child(3) {
+    background: #fff;
+}
+.requests-table th:nth-child(1),
+.requests-table th:nth-child(2),
+.requests-table th:nth-child(3) {
+    z-index: 3;
+}
+.requests-table th:nth-child(1),
+.requests-table td:nth-child(1) {
+    left: 0;
+}
+.requests-table th:nth-child(2),
+.requests-table td:nth-child(2) {
+    left: 40px;
+}
+.requests-table th:nth-child(3),
+.requests-table td:nth-child(3) {
+    left: 190px;
+}
+.requests-table td:nth-child(3),
+.requests-table th:nth-child(3) {
+    box-shadow: 2px 0 4px -2px rgba(0,0,0,0.12);
+}
+
+@media (max-width: 768px) {
+    .requests-table th:nth-child(1),
+    .requests-table td:nth-child(1),
+    .requests-table th:nth-child(2),
+    .requests-table td:nth-child(2),
+    .requests-table th:nth-child(3),
+    .requests-table td:nth-child(3) {
+        position: static;
+        box-shadow: none;
+        left: auto;
+    }
+    .requests-table th:nth-child(2),
+    .requests-table td:nth-child(2) {
+        min-width: 110px !important;
+        max-width: 110px !important;
+        white-space: normal;
+        word-break: break-word;
+        font-size: 12px;
+    }
+    .requests-table th:nth-child(3),
+    .requests-table td:nth-child(3) {
+        min-width: 140px !important;
+    }
+}
+
+/* Print view - hidden on screen, shown only when printing */
+.print-only { display: none; }
+
+@media print {
+    body * { visibility: hidden; }
+    .print-only, .print-only * { visibility: visible; }
+    .print-only {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+    }
+    .print-header { margin-bottom: 20px; }
+    .print-header h2 { margin: 0 0 4px; font-size: 18px; color: #1e4575; }
+    .print-header p { margin: 0; font-size: 12px; color: #555; }
+    .print-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .print-table th, .print-table td {
+        border: 1px solid #999;
+        padding: 6px 8px;
+        text-align: left;
+    }
+    .print-table th {
+        background: #eef2f7 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    @page { size: landscape; margin: 12mm; }
+}
 </style>
 
 <div id="budgetModal" class="modal">
@@ -679,8 +795,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Date Requested</label>
-                    <input type="date" id="edit_date_requested" name="date_requested" class="form-control form-control-sm">
+                    <label>Date Requested <span class="required" style="color:#ef4444;">*</span></label>
+                    <input type="date" id="edit_date_requested" name="date_requested" class="form-control form-control-sm" required>
                 </div>
 
                 <div class="form-group">
@@ -691,8 +807,8 @@
                 <div class="form-group">
                     <label>Status <span class="required">*</span></label>
                     <select id="edit_status" name="status" class="form-control form-control-sm" required>
-                        <option value="FOR REQUEST">FOR REQUEST</option>
-                        <option value="NOT LIQUIDATED">NOT LIQUIDATED</option>
+                        <option value="PENDING">PENDING</option>
+                        <option value="NOT YET LIQUIDATED">NOT YET LIQUIDATED</option>
                         <option value="LIQUIDATED">LIQUIDATED</option>
                         <option value="REJECTED">REJECTED</option>
                     </select>
@@ -776,12 +892,12 @@
                         <input type="text" id="liq_status_display" class="form-control" value="LIQUIDATED" readonly style="background-color: #f4f6f8;">
                     </div>
                     <div class="form-group">
-                        <label>Date Released</label>
-                        <input type="date" id="liq_date_released" class="form-control">
+                        <label>Date Released <span class="required" style="color:#ef4444;">*</span></label>
+                        <input type="date" id="liq_date_released" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label>Total Expenses</label>
-                        <input type="text" id="liq_total_expenses" class="form-control" placeholder="0.00" inputmode="decimal">
+                        <label>Total Expenses <span class="required" style="color:#ef4444;">*</span></label>
+                        <input type="text" id="liq_total_expenses" class="form-control" placeholder="0.00" inputmode="decimal" required>
                     </div>
                     <div class="form-group">
                         <label>Amount Returned</label>
@@ -891,27 +1007,23 @@ try {
 const categories = @json($categories);
 
 // Department name mapping function
-function mapDepartmentName(shortName) {
-    const mapping = {
-        'Admin': 'Administrative',
-        'HR': 'Human Resources',
-        'Sales & Marketing': 'Sales & Marketing',
-        'Finance': 'Finance',
-        'Executive': 'Executive'
-    };
-    return mapping[shortName] || shortName;
+// NOTE: previously this translated short codes ("Admin", "HR") to/from
+// the full department names ("Administrative", "Human Resource") used
+// by the Departments table. That translation caused a real bug: every
+// save (including liquidation via the "UPDATE RECORD" popup) wrote the
+// short code back into departmental_expenses.department, which never
+// matched Department::name, so remainingBudget() saw allowable_budget=0
+// for that department and reported wildly negative "remaining" values.
+// All dropdowns already emit the real department name directly, so
+// these are now no-ops kept only so existing call sites don't need to
+// change.
+function mapDepartmentName(name) {
+    return name;
 }
 
 // Reverse mapping for saving to database
-function reverseDepartmentName(fullName) {
-    const reverseMapping = {
-        'Administrative': 'Admin',
-        'Human Resources': 'HR',
-        'Sales & Marketing': 'Sales & Marketing',
-        'Finance': 'Finance',
-        'Executive': 'Executive'
-    };
-    return reverseMapping[fullName] || fullName;
+function reverseDepartmentName(name) {
+    return name;
 }
 
 // Save and restore scroll position of page-content
@@ -1292,8 +1404,8 @@ function syncLiquidationFieldsState(prefix) {
     });
 }
 
-let addStatusPrevValue = document.getElementById('status') ? document.getElementById('status').value : 'FOR REQUEST';
-let editStatusPrevValue = 'FOR REQUEST';
+let addStatusPrevValue = document.getElementById('status') ? document.getElementById('status').value : 'PENDING';
+let editStatusPrevValue = 'PENDING';
 
 function openLiquidationModal(data) {
     document.getElementById('liq_source').value = data.source;
@@ -1376,7 +1488,12 @@ document.getElementById('edit_status').addEventListener('change', function() {
 document.getElementById('liquidationUpdateForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
-    if (!validateAmountField('liq_total_expenses', 'Total Expenses', false)) return;
+    if (!document.getElementById('liq_date_released').value) {
+        showToast('error', 'Date Released Required', 'Please select a Date Released before marking this record as liquidated.');
+        document.getElementById('liq_date_released').focus();
+        return;
+    }
+    if (!validateAmountField('liq_total_expenses', 'Total Expenses', true)) return;
 
     showConfirm('Are you sure you want to update this record?', function() {
         _submitLiquidationUpdate();
@@ -1426,6 +1543,9 @@ function _submitLiquidationUpdate() {
         .catch(error => {
             console.error('Error:', error);
             showToast('error', 'Error', error.message || 'Error updating request');
+            // Re-open the liquidation modal so the user can correct the amount
+            // instead of silently losing the entered data.
+            document.getElementById('liquidationUpdateModal').style.display = 'block';
         });
     } else {
         fetch('/api/departmental-expenses', {
@@ -1451,6 +1571,7 @@ function _submitLiquidationUpdate() {
         .catch(error => {
             console.error('Error:', error);
             showToast('error', 'Error', error.message || 'Error adding request');
+            document.getElementById('liquidationUpdateModal').style.display = 'block';
         });
     }
 }
@@ -1639,21 +1760,21 @@ function _doEditRequest(id) {
     const cells = row.cells;
     
     document.getElementById('edit_id').value = id;
-    document.getElementById('edit_control_number').value = row.getAttribute('data-control') || cells[0].textContent.trim();
-    document.getElementById('edit_requestor_name').value = cells[1].textContent;
+    document.getElementById('edit_control_number').value = row.getAttribute('data-control') || cells[1].textContent.trim();
+    document.getElementById('edit_requestor_name').value = cells[2].textContent;
     
-    // Get original department value from data attribute
+    // Department is now stored consistently as the real Department name,
+    // so it's used directly (no more short-code mapping).
     const originalDepartment = row.getAttribute('data-department');
-    const mappedDepartment = mapDepartmentName(originalDepartment);
-    document.getElementById('edit_department').value = mappedDepartment;
+    document.getElementById('edit_department').value = originalDepartment;
     
-    updateEditCategoryDropdown(mappedDepartment);
+    updateEditCategoryDropdown(originalDepartment);
     
     setTimeout(() => {
-        document.getElementById('edit_category').value = cells[3].textContent;
+        document.getElementById('edit_category').value = cells[4].textContent;
     }, 100);
     
-    const dateRequested = cells[4].textContent.trim();
+    const dateRequested = cells[5].textContent.trim();
     if (dateRequested !== '-') {
         const [month, day, year] = dateRequested.split('/');
         document.getElementById('edit_date_requested').value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
@@ -1661,33 +1782,33 @@ function _doEditRequest(id) {
         document.getElementById('edit_date_requested').value = '';
     }
     
-    document.getElementById('edit_requested_amount').value = cells[5].textContent.replace('₱ ', '').replace(/,/g, '');
-    document.getElementById('edit_status').value = cells[6].querySelector('.status-badge').textContent.trim();
+    document.getElementById('edit_requested_amount').value = cells[6].textContent.replace('₱ ', '').replace(/,/g, '');
+    document.getElementById('edit_status').value = cells[7].querySelector('.status-badge').textContent.trim();
     editStatusPrevValue = document.getElementById('edit_status').value;
     syncLiquidationFieldsState('edit_');
     
-    if (cells[7].textContent !== '-') {
-        const dateReleased = cells[7].textContent.trim();
+    if (cells[8].textContent !== '-') {
+        const dateReleased = cells[8].textContent.trim();
         const [month, day, year] = dateReleased.split('/');
         document.getElementById('edit_date_released').value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     } else {
         document.getElementById('edit_date_released').value = '';
     }
     
-    if (cells[8].textContent !== '-') {
-        document.getElementById('edit_total_expenses').value = cells[8].textContent.replace('₱ ', '').replace(/,/g, '');
+    if (cells[9].textContent !== '-') {
+        document.getElementById('edit_total_expenses').value = cells[9].textContent.replace('₱ ', '').replace(/,/g, '');
     } else {
         document.getElementById('edit_total_expenses').value = '';
     }
     
-    if (cells[9].textContent !== '-') {
-        document.getElementById('edit_amount_returned').value = cells[9].textContent.replace('₱ ', '').replace(/,/g, '');
+    if (cells[10].textContent !== '-') {
+        document.getElementById('edit_amount_returned').value = cells[10].textContent.replace('₱ ', '').replace(/,/g, '');
     } else {
         document.getElementById('edit_amount_returned').value = '';
     }
     
-    if (cells[10].textContent !== '-') {
-        const dateReturned = cells[10].textContent.trim();
+    if (cells[11].textContent !== '-') {
+        const dateReturned = cells[11].textContent.trim();
         const [month, day, year] = dateReturned.split('/');
         document.getElementById('edit_date_of_amount_returned').value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     } else {
@@ -1706,22 +1827,22 @@ function viewRequest(id) {
     const row = document.querySelector(`tr[data-id="${id}"]`);
     const cells = row.cells;
     
-    document.getElementById('view_control_number').textContent = cells[0].textContent;
-    document.getElementById('view_requestor_name').textContent = cells[1].textContent;
-    document.getElementById('view_department').textContent = cells[2].textContent;
-    document.getElementById('view_category').textContent = cells[3].textContent;
-    document.getElementById('view_date_requested').textContent = cells[4].textContent;
-    document.getElementById('view_requested_amount').textContent = cells[5].textContent;
+    document.getElementById('view_control_number').textContent = cells[1].textContent;
+    document.getElementById('view_requestor_name').textContent = cells[2].textContent;
+    document.getElementById('view_department').textContent = cells[3].textContent;
+    document.getElementById('view_category').textContent = cells[4].textContent;
+    document.getElementById('view_date_requested').textContent = cells[5].textContent;
+    document.getElementById('view_requested_amount').textContent = cells[6].textContent;
     
-    const statusBadge = cells[6].querySelector('.status-badge').cloneNode(true);
+    const statusBadge = cells[7].querySelector('.status-badge').cloneNode(true);
     const statusContainer = document.getElementById('view_status');
     statusContainer.innerHTML = '';
     statusContainer.appendChild(statusBadge);
     
-    document.getElementById('view_date_released').textContent = cells[7].textContent;
-    document.getElementById('view_total_expenses').textContent = cells[8].textContent;
-    document.getElementById('view_amount_returned').textContent = cells[9].textContent;
-    document.getElementById('view_date_of_amount_returned').textContent = cells[10].textContent;
+    document.getElementById('view_date_released').textContent = cells[8].textContent;
+    document.getElementById('view_total_expenses').textContent = cells[9].textContent;
+    document.getElementById('view_amount_returned').textContent = cells[10].textContent;
+    document.getElementById('view_date_of_amount_returned').textContent = cells[11].textContent;
     
     document.getElementById('viewModal').style.display = 'block';
 }
@@ -1839,7 +1960,25 @@ document.getElementById('budgetUpdateForm').addEventListener('submit', function(
 
     if (!validateNameField('edit_requestor_name', 'Requestor Name')) return;
     if (!validateAmountField('edit_requested_amount', 'Requested Amount', true)) return;
-    if (!validateAmountField('edit_total_expenses', 'Total Expenses', false)) return;
+
+    if (!document.getElementById('edit_date_requested').value) {
+        showToast('error', 'Date Requested Required', 'Please select a Date Requested.');
+        document.getElementById('edit_date_requested').focus();
+        return;
+    }
+
+    const isLiquidated = document.getElementById('edit_status').value === 'LIQUIDATED';
+
+    if (isLiquidated) {
+        if (!document.getElementById('edit_date_released').value) {
+            showToast('error', 'Date Released Required', 'Please select a Date Released before saving a liquidated record.');
+            document.getElementById('edit_date_released').focus();
+            return;
+        }
+        if (!validateAmountField('edit_total_expenses', 'Total Expenses', true)) return;
+    } else {
+        if (!validateAmountField('edit_total_expenses', 'Total Expenses', false)) return;
+    }
 
     const id = document.getElementById('edit_id').value;
     const formData = {
@@ -1935,7 +2074,7 @@ const FILTERABLE_FIELDS = [
     { key: 'date_released',            label: 'Date Released',            dataAttr: 'data-date-released',    type: 'daterange' },
     { key: 'date_of_amount_returned',  label: 'Date of Amount Returned',  dataAttr: 'data-date-returned',    type: 'daterange' },
     { key: 'requested_amount',         label: 'Requested Amount',         dataAttr: 'data-requested-amount', type: 'text'  },
-    { key: 'status',                   label: 'Status',                   dataAttr: 'data-status',           type: 'select', options: ['FOR REQUEST', 'NOT LIQUIDATED', 'LIQUIDATED', 'REJECTED'] },
+    { key: 'status',                   label: 'Status',                   dataAttr: 'data-status',           type: 'select', options: ['PENDING', 'NOT LIQUIDATED', 'LIQUIDATED', 'REJECTED'] },
     { key: 'total_expenses',           label: 'Total Expenses',           dataAttr: 'data-total-expenses',   type: 'text'  },
     { key: 'amount_returned',          label: 'Amount Returned',          dataAttr: 'data-amount-returned',  type: 'text'  },
 ];
@@ -2147,13 +2286,62 @@ function checkNoResults() {
 
 // Initialize filters on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Map department names in table
-    document.querySelectorAll('.department-cell').forEach(cell => {
-        cell.textContent = mapDepartmentName(cell.textContent);
-    });
-
+    // Department names are now stored consistently as the real Department
+    // name (e.g. "Administrative"), so no more mapping needed here.
     applyFilters();
 });
+
+// ---- Row selection (checkboxes) + Print Selected ----
+function toggleSelectAll(cb) {
+    document.querySelectorAll('.row-select-checkbox').forEach(c => {
+        const row = c.closest('tr');
+        if (row.style.display !== 'none') c.checked = cb.checked;
+    });
+}
+
+function getSelectedPrintRows() {
+    return Array.from(document.querySelectorAll('.row-select-checkbox:checked'))
+        .map(cb => cb.closest('tr'))
+        .filter(row => row.style.display !== 'none');
+}
+
+function printSelectedRecords() {
+    const rows = getSelectedPrintRows();
+    if (rows.length === 0) {
+        showToast('warning', 'No Selection', 'Please select at least one record to print.');
+        return;
+    }
+
+    const headers = ['Control Number','Requestor Name','Department','Category','Date Requested','Requested Amount','Status','Date Released','Total Expenses','Amount Returned','Date of Amount Returned'];
+
+    let tableHtml = '<table class="print-table"><thead><tr>';
+    headers.forEach(h => tableHtml += `<th>${h}</th>`);
+    tableHtml += '</tr></thead><tbody>';
+
+    rows.forEach(row => {
+        const cells = row.cells;
+        tableHtml += '<tr>';
+        // cells[0] = checkbox column, cells[1..11] = data columns, skip Actions (last)
+        for (let i = 1; i <= 11; i++) {
+            tableHtml += `<td>${cells[i].textContent.trim()}</td>`;
+        }
+        tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    document.getElementById('printArea').innerHTML = `
+        <div class="print-header">
+            <h2>Departmental Expenses Report</h2>
+            <p>Generated on ${dateStr} — ${rows.length} record(s)</p>
+        </div>
+        ${tableHtml}
+    `;
+
+    window.print();
+}
 
 // Set active state for Departments nav item - run separately to avoid conflicts
 setTimeout(function() {
