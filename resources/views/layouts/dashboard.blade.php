@@ -1060,6 +1060,7 @@
     <script src="{{ asset('js/sidebar-toggle.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/sidebar-active.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/global-search.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/table-sort.js') }}?v={{ time() }}"></script>
 
     <script>
     // ===== REAL-TIME NOTIFICATION POLLING (every 30s) =====
