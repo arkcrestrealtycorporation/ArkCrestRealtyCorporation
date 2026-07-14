@@ -35,22 +35,21 @@ class CommissionStageService
         return 1;
     }
 
-    public function getTotalDownpayment(CommissionRequestSales $record): float
+   public function getTotalDownpayment(CommissionRequestSales $record): float
     {
         $label = strtoupper(trim((string) $record->terms_of_payment));
-        $tcp = max(0, (float) ($record->tcp ?? 0));
+        $netTcp = max(0, (float) ($record->net_tcp ?? 0));
 
         if ($label !== '' && str_contains($label, 'STRAIGHT PAYMENT')) {
-            return round($tcp, 2);
+            return round($netTcp, 2);
         }
 
         if ($label !== '' && preg_match('/(\d+(?:\.\d+)?)\s*%\s*DP/i', $label, $matches)) {
-            return round($tcp * ((float) $matches[1] / 100), 2);
+            return round($netTcp * ((float) $matches[1] / 100), 2);
         }
 
         return round(max(0, (float) ($record->downpayment_amount ?? 0)), 2);
     }
-
     public function getPaidTotal(CommissionRequestSales $record, ?float $totalDownpayment = null): float
     {
         $totalDownpayment ??= $this->getTotalDownpayment($record);
