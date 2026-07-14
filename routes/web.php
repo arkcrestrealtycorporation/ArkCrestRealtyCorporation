@@ -95,6 +95,8 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
 
     // Settings
     Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings');
+    Route::post('/settings/deleted/bulk-restore', [SettingsController::class, 'bulkRestoreRecords'])->name('settings.deleted.bulk-restore');
+    Route::post('/settings/deleted/bulk-delete', [SettingsController::class, 'bulkDeleteRecords'])->name('settings.deleted.bulk-delete');
 
     // Edit History / Audit Trail (Administrator only — dedicated controller & route)
     Route::get('/settings/edit-history', [App\Http\Controllers\Admin\EditHistoryController::class, 'index'])
@@ -163,6 +165,7 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     // Client Database
     Route::get('/client-database', [App\Http\Controllers\SalesMarketingController::class, 'clientDatabase'])->name('client-database');
     Route::get('/api/client-database/{id}/prefill', [App\Http\Controllers\SalesMarketingController::class, 'prefillCommission']);
+    Route::get('/api/commission-stage-requests/{id}/prefill', [App\Http\Controllers\SalesMarketingController::class, 'prefillCommissionStageRequest']);
     Route::get('/api/client-database/check-duplicate', [App\Http\Controllers\SalesMarketingController::class, 'checkDuplicate']);
     Route::get('/reserved-clients', [App\Http\Controllers\SalesMarketingController::class, 'reservedClients'])->name('reserved-clients');
     Route::post('/reserved-clients/add', [App\Http\Controllers\SalesMarketingController::class, 'storeReservedClient'])->name('reserved-clients.store');
@@ -180,6 +183,8 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::patch('/client-database/{id}/downpayment-status', [App\Http\Controllers\SalesMarketingController::class, 'updateDownpaymentStatus'])->name('client-database.downpayment-status');
     Route::patch('/client-database/{id}/downpayment-installment', [App\Http\Controllers\SalesMarketingController::class, 'updateDownpaymentInstallment'])->name('client-database.downpayment-installment');
     Route::get('/api/client-database/{id}/installments', [App\Http\Controllers\SalesMarketingController::class, 'getInstallments']);
+    Route::get('/api/client-database/{id}/downpayment-summary', [App\Http\Controllers\SalesMarketingController::class, 'downpaymentSummary']);
+    Route::post('/api/client-database/{id}/commission-request', [App\Http\Controllers\SalesMarketingController::class, 'requestCommissionStage'])->name('client-database.commission-request');
     Route::post('/api/client-database/{id}/installments/setup', [App\Http\Controllers\SalesMarketingController::class, 'setupInstallments']);
     Route::patch('/api/installments/{id}/amount', [App\Http\Controllers\SalesMarketingController::class, 'updateInstallmentAmount']);
     Route::patch('/api/installments/{id}/paid', [App\Http\Controllers\SalesMarketingController::class, 'markInstallmentPaid']);
