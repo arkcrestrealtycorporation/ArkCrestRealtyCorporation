@@ -21,6 +21,7 @@ class CommissionRequestSales extends Model
         'price_sqm',
         'tcp',
         'discount',
+        'discount_value',
         'net_tcp',
         'terms_of_payment',
         'agent_name',
@@ -33,11 +34,18 @@ class CommissionRequestSales extends Model
         'status',
         'client_status',
         'downpayment_status',
+        'downpayment_stage',
+        'downpayment_stage_total',
         'downpayment_amount',
         'downpayment_terms',
         'downpayment_per_term',
         'downpayment_date',
     ];
+
+    public function commissionRequests()
+    {
+        return $this->hasMany(CommissionRequest::class, 'source_client_record_id');
+    }
 
     protected $casts = [
         'date_requested' => 'date',
@@ -49,10 +57,13 @@ class CommissionRequestSales extends Model
         'price_sqm' => 'decimal:2',
         'tcp' => 'decimal:2',
         'discount' => 'decimal:2',
+        'discount_value' => 'decimal:2',
         'net_tcp' => 'decimal:2',
         'commission_percent' => 'decimal:4',
         'commission' => 'decimal:2',
         'number_of_units' => 'integer',
+        'downpayment_stage' => 'integer',
+        'downpayment_stage_total' => 'integer',
     ];
 
     // Same fix as CommissionRequest — prevents date-only fields from being

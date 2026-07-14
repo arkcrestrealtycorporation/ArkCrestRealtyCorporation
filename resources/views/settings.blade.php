@@ -178,8 +178,7 @@
 
 .st-panel.active { display: block !important; animation: panelIn .3s ease forwards; }
 
-@keyframes panelIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
+@keyframes panelIn { from { opacity: 0; } to { opacity: 1; } }
 /* Page header */
 
 .st-page-header { margin-bottom: 20px; padding: 32px 0 0 0; }
@@ -850,15 +849,9 @@
 
     <div class="{{ $panelClass('visibility') }}" id="panel-visibility">
 
-      <div class="st-page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
-        <div>
-          <div class="st-page-title">Page Visibility</div>
-          <div class="st-page-sub">Checked items are visible to the selected user. Uncheck to hide. Admin always sees everything.</div>
-        </div>
-        <button type="button" onclick="document.getElementById('addUserVisModal').style.display='flex'" class="st-btn st-btn-primary" style="display:flex;align-items:center;gap:6px;">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          Add User
-        </button>
+      <div class="st-page-header">
+        <div class="st-page-title">Page Visibility</div>
+        <div class="st-page-sub">Checked items are visible to the selected user. Uncheck to hide. Admin always sees everything.</div>
       </div>
 
       <div class="st-card"><div class="st-card-body">
@@ -871,6 +864,7 @@
               'summary-report'                   => 'Summary Report',
               'commission-monitoring'            => 'Commission Monitoring',
               'commission-monitoring.dashboard'  => '↳ Commission Dashboard',
+              'cash-advance'                     => 'Cash Advance',
               'calendar'                         => 'Calendar',
             ],
             'Sales & Marketing' => [
@@ -909,13 +903,55 @@
 
         {{-- User selector --}}
         <div style="margin-bottom:20px;">
-          <label style="font-weight:700;font-size:13px;color:#1e4575;display:block;margin-bottom:8px;">Page Visibility — Select User</label>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px;">
+            <label style="font-weight:700;font-size:13px;color:#1e4575;margin:0;">Page Visibility — Select User</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <select id="visDeptFilter" class="st-select" onchange="filterVisUserTabs()" style="min-width:170px;">
+                <option value="">All Departments</option>
+                <option value="finance">Finance</option>
+                <option value="sales & marketing">Sales & Marketing</option>
+                <option value="human resource">Human Resource</option>
+              </select>
+              <div style="position:relative;">
+                <input type="text" id="visUserSearch" class="st-input" placeholder="Search staff by name..." oninput="filterVisUserTabs()" style="width:220px;padding-left:32px;">
+                <svg width="14" height="14" fill="none" stroke="#94a3b8" viewBox="0 0 24 24" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);"><circle cx="11" cy="11" r="8" stroke-width="2"/><path d="m21 21-4.3-4.3" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </div>
+          </div>
           @if($staffUsers->isEmpty())
-            <div style="color:#6b7280;font-size:13px;padding:10px 0;">No users yet. Click "Add User" to add one.</div>
+            <div style="color:#6b7280;font-size:13px;padding:10px 0;">No users yet.</div>
           @else
+          @php
+            // Department filter is derived from each user's Position (the
+            // field editable on the Employee Data page), not a separate
+            // department column — so choosing "Finance" in the dropdown
+            // surfaces anyone whose position reads as a finance role
+            // (Finance Officer, Finance Manager, Accountant, etc.), not
+            // just users explicitly tagged with an exact department value.
+            // Add/adjust keywords below to match your actual position titles.
+            $deptPositionKeywords = [
+                'finance'           => ['finance', 'accounting', 'accountant', 'treasury', 'audit', 'bookkeep'],
+                'sales & marketing' => ['sales', 'marketing'],
+                'human resource'    => ['human resource', 'hr'],
+            ];
+            $resolveUserDept = function ($position) use ($deptPositionKeywords) {
+                $position = strtolower(trim($position ?? ''));
+                if ($position === '') return '';
+                foreach ($deptPositionKeywords as $dept => $keywords) {
+                    foreach ($keywords as $kw) {
+                        // word-boundary match so short keywords like "hr"
+                        // don't false-positive inside unrelated words
+                        if (preg_match('/\b' . preg_quote($kw, '/') . '\b/', $position)) {
+                            return $dept;
+                        }
+                    }
+                }
+                return '';
+            };
+          @endphp
           <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;" id="vis-user-tabs">
             @foreach($staffUsers as $u)
-              <button type="button" onclick="selectVisUser({{ $u->id }}, this, '{{ addslashes($u->name) }}')"
+              <button type="button" data-name="{{ strtolower($u->name) }}" data-department="{{ $resolveUserDept($u->position) }}" onclick="selectVisUser({{ $u->id }}, this, '{{ addslashes($u->name) }}')"
                 style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 18px;border-radius:12px;cursor:pointer;border:2px solid {{ $selectedUserId == $u->id ? '#1e4575' : '#e5e7eb' }};background:{{ $selectedUserId == $u->id ? '#1e4575' : '#fff' }};color:{{ $selectedUserId == $u->id ? '#fff' : '#374151' }};width:110px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
                 <div style="position:relative;">
                 @if($u->avatar)
@@ -934,6 +970,7 @@
               </button>
             @endforeach
           </div>
+          <div id="vis-user-no-results" style="display:none;color:#94a3b8;font-size:13px;padding:10px 0;">No users match your search.</div>
           @endif
         </div>
 
@@ -976,35 +1013,6 @@
 
       </div></div>
 
-    </div>
-
-    {{-- ADD USER MODAL --}}
-    <div id="addUserVisModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-      <div style="background:#fff;border-radius:12px;padding:28px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-          <h3 style="font-size:16px;font-weight:700;color:#1e4575;margin:0;">Select User</h3>
-          <button type="button" onclick="document.getElementById('addUserVisModal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280;">&times;</button>
-        </div>
-        @php $allStaff = \App\Models\User::where('role','!=','admin')->whereNotIn('status',['pre_registered'])->orderBy('name')->get(); @endphp
-        @if($allStaff->isEmpty())
-          <div style="color:#6b7280;font-size:13px;">No users found.</div>
-        @else
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            @foreach($allStaff as $u)
-            <button type="button" onclick="pickVisUser({{ $u->id }}, '{{ addslashes($u->name) }}')"
-              style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;cursor:pointer;text-align:left;width:100%;">
-              <div style="width:36px;height:36px;border-radius:50%;background:#1e4575;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">
-                {{ strtoupper(substr($u->name,0,1)) }}
-              </div>
-              <div>
-                <div style="font-weight:600;font-size:13px;color:#111827;">{{ $u->name }}</div>
-                <div style="font-size:12px;color:#6b7280;">{{ $u->position ?? '' }} · {{ ucfirst($u->status) }}</div>
-              </div>
-            </button>
-            @endforeach
-          </div>
-        @endif
-      </div>
     </div>
 
     @endif
@@ -1127,12 +1135,8 @@
           <td style="font-size:11px;color:#94a3b8;">{{ $exp->deleted_at ? $exp->deleted_at->format('M d, Y g:i A') : '—' }}</td>
           <td>
             <div style="display:flex;gap:6px;">
-              <form method="POST" action="{{ route('expenses.restore', $exp->id) }}">@csrf
-                <button type="submit" class="st-btn st-btn-primary st-btn-sm">Restore</button>
-              </form>
-              <form method="POST" action="{{ route('expenses.purge', $exp->id) }}" onsubmit="return confirm('Permanently delete this record?')">@csrf @method('DELETE')
-                <button type="submit" class="st-btn st-btn-danger st-btn-sm">Delete</button>
-              </form>
+              <button type="button" class="st-btn st-btn-primary st-btn-sm" onclick="delSingleAction('expense', {{ $exp->id }}, 'restore')">Restore</button>
+              <button type="button" class="st-btn st-btn-danger st-btn-sm" onclick="delSingleAction('expense', {{ $exp->id }}, 'delete')">Delete</button>
             </div>
           </td>
         </tr>
@@ -1173,13 +1177,9 @@
         </div>
         <div style="display:flex;gap:8px;flex-shrink:0;">
           @if($log->meta)
-          <form method="POST" action="{{ route('settings.deleted.restore', $log->id) }}">@csrf
-            <button type="submit" class="st-btn st-btn-primary st-btn-sm">Restore</button>
-          </form>
+          <button type="button" class="st-btn st-btn-primary st-btn-sm" onclick="delSingleAction('log', {{ $log->id }}, 'restore')">Restore</button>
           @endif
-          <form method="POST" action="{{ route('settings.deleted.purge', $log->id) }}" onsubmit="return confirm('Permanently delete?')">@csrf @method('DELETE')
-            <button type="submit" class="st-btn st-btn-danger st-btn-sm">Delete</button>
-          </form>
+          <button type="button" class="st-btn st-btn-danger st-btn-sm" onclick="delSingleAction('log', {{ $log->id }}, 'delete')">Delete</button>
         </div>
       </div>
       @endforeach
@@ -1216,7 +1216,7 @@
 
       
 
-    </div>
+
 
     
 
@@ -1913,24 +1913,24 @@ function selectVisUser(userId, btn, userName) {
         });
 }
 
-function pickVisUser(userId, userName) {
-    document.getElementById('addUserVisModal').style.display = 'none';
-    // Update hidden input
-    document.getElementById('vis_user_id').value = userId;
-    // Highlight the selected user tab if exists, else reload page with vis_user param
-    const tabs = document.querySelectorAll('#vis-user-tabs button');
-    let found = false;
-    tabs.forEach(btn => {
-        if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes('selectVisUser(' + userId + ',')) {
-            selectVisUser(userId, btn);
-            found = true;
-        }
+function filterVisUserTabs() {
+    var q = (document.getElementById('visUserSearch')?.value || '').toLowerCase().trim();
+    var dept = (document.getElementById('visDeptFilter')?.value || '').toLowerCase().trim();
+    var tabs = document.querySelectorAll('#vis-user-tabs button');
+    var visibleCount = 0;
+    tabs.forEach(function(b) {
+        var name = b.getAttribute('data-name') || '';
+        var department = b.getAttribute('data-department') || '';
+        var matchName = !q || name.includes(q);
+        var matchDept = !dept || department === dept;
+        var match = matchName && matchDept;
+        b.style.display = match ? '' : 'none';
+        if (match) visibleCount++;
     });
-    if (!found) {
-        // User not in tabs yet, reload to show them
-        window.location.href = window.location.pathname + '?vis_user=' + userId + '#panel-visibility';
-    }
+    var noResults = document.getElementById('vis-user-no-results');
+    if (noResults) noResults.style.display = (visibleCount === 0) ? 'block' : 'none';
 }
+
 function addEmailRow() {
     const row = document.createElement('div');
     row.className = 'email-row';
@@ -2291,25 +2291,75 @@ function clearDelSelection() {
     updateDelBulkBar();
 }
 
+// Single-row Restore/Delete for the Deleted Records list. These used to be plain
+// <form> submits, which caused a full-page navigation to the controller's raw JSON
+// response instead of showing a toast and refreshing in place. Route through the
+// same bulk endpoint with a one-item payload so the response is handled properly.
+// Shared POST helper for the deleted-records restore/delete actions. Always sends
+// Accept: application/json (and X-Requested-With) so Laravel returns a JSON error
+// body for validation failures, 403s, and exceptions too. Without this header,
+// Laravel treats the request as a normal page load and renders a full HTML error
+// page instead — which fails to parse as JSON and used to get silently swallowed,
+// reloading the page with no explanation and no actual restore/delete happening.
+function delPost(url, payload) {
+    var csrf = document.querySelector('meta[name=csrf-token]').content;
+    return fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrf
+        },
+        body: JSON.stringify(payload)
+    }).then(function(r) {
+        return r.json().catch(function() {
+            throw new Error('Server returned an unexpected response (HTTP ' + r.status + ').');
+        }).then(function(d) {
+            if (!r.ok && !d.message) {
+                throw new Error('Request failed (HTTP ' + r.status + ').');
+            }
+            return d;
+        });
+    });
+}
+
+function delSingleAction(type, id, kind) {
+    var url = kind === 'delete' ? '{{ route("settings.deleted.bulk-delete") }}' : '{{ route("settings.deleted.bulk-restore") }}';
+    var msg = kind === 'delete'
+        ? 'Permanently delete this record? This cannot be undone.'
+        : 'Restore this record?';
+
+    window.showConfirmModal(msg).then(function(confirmed) {
+        if (!confirmed) return;
+        delPost(url, { items: [{ type: type, id: id }] }).then(function(d) {
+            alert(d.message || 'Done.');
+            window.location.reload();
+        }).catch(function(err) {
+            alert('Something went wrong: ' + err.message);
+        });
+    });
+}
+
 function bulkAction(kind) {
     var checked = document.querySelectorAll('.del-select:checked');
     if (!checked.length) return;
-    if (!confirm(kind === 'delete'
-        ? 'Permanently delete ' + checked.length + ' record(s)? This cannot be undone.'
-        : 'Restore ' + checked.length + ' record(s)?')) return;
 
-    var items = Array.from(checked).map(c => ({ type: c.dataset.type, id: parseInt(c.dataset.id) }));
     var url = kind === 'delete' ? '{{ route("settings.deleted.bulk-delete") }}' : '{{ route("settings.deleted.bulk-restore") }}';
-    var csrf = document.querySelector('meta[name=csrf-token]').content;
+    var msg = kind === 'delete'
+        ? 'Permanently delete ' + checked.length + ' record(s)? This cannot be undone.'
+        : 'Restore ' + checked.length + ' record(s)?';
 
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','X-CSRF-TOKEN': csrf},
-        body: JSON.stringify({ items: items })
-    }).then(r => r.json()).then(function(d) {
-        alert(d.message || 'Done.');
-        window.location.reload();
-    }).catch(function(){ window.location.reload(); });
+    window.showConfirmModal(msg).then(function(confirmed) {
+        if (!confirmed) return;
+        var items = Array.from(checked).map(c => ({ type: c.dataset.type, id: parseInt(c.dataset.id) }));
+        delPost(url, { items: items }).then(function(d) {
+            alert(d.message || 'Done.');
+            window.location.reload();
+        }).catch(function(err) {
+            alert('Something went wrong: ' + err.message);
+        });
+    });
 }
 </script>
 @endsection
