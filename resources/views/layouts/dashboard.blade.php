@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/png" href="{{ asset('images/ArkCrest_Logo.png') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        // Applied before stylesheets load so there's no flash of the default theme.
+        if (localStorage.getItem('nightMode') === 'on') {
+            document.documentElement.classList.add('dark-mode');
+        }
+    </script>
     <title>{{ config('app.name', 'ARCKREST REALTY CORPORATION') }} - @yield('title', 'Dashboard')</title>
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}?v={{ time() }}{{ rand(1000, 9999) }}">
     <link rel="stylesheet" href="{{ asset('css/optimized-global.css') }}?v={{ time() }}">
@@ -57,6 +63,74 @@
             max-width: calc(100vw - 20px) !important;
         }
     }
+
+    /* ---------- Night Mode ---------- */
+    /* This app is styled with a lot of per-page inline colors rather than
+       shared CSS variables, so a hand-built dark theme would need edits in
+       dozens of files. Instead we invert page colors, then invert images/
+       icons/logo back so photos and the logo still look normal. Brightness
+       is kept fairly high and contrast low so it reads as a soft, warm
+       deep-blue dusk rather than a harsh black-and-white negative — a
+       gentle "moonlit beach at night" feel rather than pitch dark. A subtle
+       warm glow overlay adds the moonlight/sand warmth on top. The header
+       and sidebar are already dark navy in light mode, so we cancel the
+       invert on them (the exact reciprocal filter) to keep their original
+       branded look instead of turning them into a washed-out light bar. */
+    html.dark-mode {
+        filter: invert(1) hue-rotate(180deg) brightness(1.12) contrast(0.82) saturate(1.25);
+        background: #fff;
+    }
+    html.dark-mode img,
+    html.dark-mode svg image,
+    html.dark-mode video,
+    html.dark-mode iframe,
+    html.dark-mode .logo-img {
+        filter: invert(1) hue-rotate(180deg);
+    }
+    html.dark-mode .header,
+    html.dark-mode .sidebar {
+        /* exact reciprocal of the html.dark-mode filter, applied in reverse order */
+        filter: saturate(0.8) contrast(1.2195) brightness(0.8929) hue-rotate(180deg) invert(1);
+    }
+    html.dark-mode * {
+        transition: none !important; /* avoid a laggy color-swap animation on toggle */
+    }
+    html.dark-mode body::after {
+        /* Soft warm moonlight glow, purely decorative — sits above page
+           content but below modals/toasts so it never blocks anything. */
+        content: '';
+        position: fixed;
+        inset: 0;
+        background:
+            radial-gradient(ellipse 70% 45% at 25% -5%, rgba(255, 214, 165, 0.14), transparent 60%),
+            linear-gradient(180deg, rgba(40, 75, 120, 0.10), rgba(10, 25, 50, 0.16));
+        mix-blend-mode: soft-light;
+        pointer-events: none;
+        z-index: 9998;
+    }
+    #darkModeIconMoon, #darkModeIconSun { width: 22px; height: 22px; }
+
+    /* ---------- Printing always uses default colors ---------- */
+    /* CSS filters (used by Night Mode) still render on a printed page even
+       though most on-screen content is hidden by each page's own @media
+       print rules. Force them off here so anything printed — receipts,
+       reports, liquidation forms, etc. — always comes out in normal colors,
+       no matter what theme is active on screen. */
+    @media print {
+        html.dark-mode,
+        html.dark-mode .header,
+        html.dark-mode .sidebar,
+        html.dark-mode img,
+        html.dark-mode svg image,
+        html.dark-mode video,
+        html.dark-mode iframe,
+        html.dark-mode .logo-img {
+            filter: none !important;
+        }
+        html.dark-mode body::after {
+            display: none !important;
+        }
+    }
     </style>
 </head>
 <body>
@@ -79,6 +153,12 @@
 
                 <!-- Right Side: Search and Notification -->
                 <div class="header-right">
+                    <!-- Night Mode -->
+                    <button id="darkModeToggle" class="hdr-btn" title="Toggle night mode" onclick="toggleDarkMode()">
+                        <svg id="darkModeIconMoon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                        <svg id="darkModeIconSun" style="display:none;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    </button>
+
                     <!-- Search -->
                     <div class="search-container">
                         <button id="searchToggle" class="hdr-btn" title="Search">
@@ -693,6 +773,23 @@
     </div>
 
     <script>
+    // Night mode toggle. The 'dark-mode' class itself is applied earlier
+    // (inline script in <head>) to avoid a flash of light mode; this just
+    // wires up the button and keeps the moon/sun icon in sync.
+    function syncDarkModeIcon() {
+        var isDark = document.documentElement.classList.contains('dark-mode');
+        document.getElementById('darkModeIconMoon').style.display = isDark ? 'none' : '';
+        document.getElementById('darkModeIconSun').style.display = isDark ? '' : 'none';
+    }
+    function toggleDarkMode() {
+        var isDark = document.documentElement.classList.toggle('dark-mode');
+        localStorage.setItem('nightMode', isDark ? 'on' : 'off');
+        syncDarkModeIcon();
+    }
+    document.addEventListener('DOMContentLoaded', syncDarkModeIcon);
+    </script>
+
+    <script>
     // Fix: modals inside .main-content get clipped because .main-content,
     // .content-wrapper and .dashboard-container all use overflow:hidden.
     // A position:fixed element is still clipped by an overflow:hidden ancestor,
@@ -707,6 +804,7 @@
         });
     });
     </script>
+
 
     <script>
     // Close on Escape key - go back
