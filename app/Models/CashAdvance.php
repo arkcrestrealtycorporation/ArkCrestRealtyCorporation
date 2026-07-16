@@ -49,7 +49,7 @@ class CashAdvance extends Model
     public static function nextControlNumber(): string
     {
         $last = static::withTrashed()
-            ->selectRaw("MAX(CAST(SUBSTR(control_number, 4) AS INTEGER)) as max_num")
+            ->selectRaw('MAX(CAST(SUBSTRING(control_number, 4) AS UNSIGNED)) as max_num')
             ->value('max_num');
 
         $next = $last ? ((int) $last + 1) : 1001;
