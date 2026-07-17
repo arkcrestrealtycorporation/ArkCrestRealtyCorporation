@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Prevent deployment failure when the table already exists.
         if (Schema::hasTable('cash_advances')) {
             return;
         }
