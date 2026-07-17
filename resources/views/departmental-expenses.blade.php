@@ -663,6 +663,22 @@
 .print-only { display: none; }
 
 @media print {
+    /* The dashboard shell (html/body and the .dashboard-container /
+       .content-wrapper / .main-content chain — see the reparenting
+       comment in layouts.dashboard.blade.php) is overflow:hidden with a
+       fixed height for the on-screen scrollable layout. That clips
+       print output no matter where in the DOM #printArea lives. These
+       overrides only apply during printing, so the screen layout is
+       untouched. */
+    html, body,
+    .dashboard-container,
+    .content-wrapper,
+    .main-content,
+    .page-content {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+    }
     body * { visibility: hidden; }
     .print-only, .print-only * { visibility: visible; }
     .print-only {
@@ -686,6 +702,8 @@
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
+    .print-table tr { page-break-inside: avoid; }
+    .print-table thead { display: table-header-group; }
     @page { size: landscape; margin: 12mm; }
 }
 </style>
@@ -2332,13 +2350,32 @@ function printSelectedRecords() {
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    document.getElementById('printArea').innerHTML = `
+    const printArea = document.getElementById('printArea');
+    printArea.innerHTML = `
         <div class="print-header">
             <h2>Departmental Expenses Report</h2>
             <p>Generated on ${dateStr} — ${rows.length} record(s)</p>
         </div>
         ${tableHtml}
     `;
+
+    // #printArea normally sits inside .main-content, which (along with
+    // .content-wrapper / .dashboard-container in layouts.dashboard) uses
+    // overflow:hidden. That clips printed content to one viewport-sized
+    // box instead of letting it paginate. layouts.dashboard already works
+    // around this for position:fixed modals by moving them to <body> — we
+    // do the same here for #printArea, then move it back afterward so the
+    // page's DOM/layout is unaffected outside of printing.
+    const printAreaAnchor = document.createComment('printArea-anchor');
+    printArea.parentNode.insertBefore(printAreaAnchor, printArea);
+    document.body.appendChild(printArea);
+
+    function restorePrintArea() {
+        printAreaAnchor.parentNode.insertBefore(printArea, printAreaAnchor);
+        printAreaAnchor.remove();
+        window.removeEventListener('afterprint', restorePrintArea);
+    }
+    window.addEventListener('afterprint', restorePrintArea);
 
     window.print();
 }
