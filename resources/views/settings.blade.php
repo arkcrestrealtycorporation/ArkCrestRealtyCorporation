@@ -1247,8 +1247,13 @@
         </div>
       </div>
 
+      {{-- Search Teams --}}
+      <div style="margin-bottom:16px;">
+        <input type="text" id="teamSearchInput" class="st-input" placeholder="Search for Team Name" oninput="filterTeams()" style="max-width:320px;">
+      </div>
+
       @foreach($salesTeams as $team)
-      <div style="background:white;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden;border:1px solid #e2e8f0;">
+      <div class="team-card" data-team-name="{{ strtolower($team->team_name) }}" style="background:white;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden;border:1px solid #e2e8f0;">
 
         {{-- Team Header --}}
         <div style="background:linear-gradient(135deg,#0f2444,#1e4575);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
@@ -1866,6 +1871,13 @@ function closeAddContactModal() { document.getElementById('contactAddModal').sty
 
 // Team Management JS
 var _editTeamId = null, _editAgentId = null;
+function filterTeams() {
+    var q = document.getElementById('teamSearchInput').value.trim().toLowerCase();
+    document.querySelectorAll('.team-card').forEach(function(card) {
+        var name = card.getAttribute('data-team-name') || '';
+        card.style.display = name.includes(q) ? '' : 'none';
+    });
+}
 function openEditTeam(id, name, leader, manager) {
     _editTeamId = id;
     document.getElementById('editTeamForm').action = '/settings/teams/' + id;
