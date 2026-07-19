@@ -255,12 +255,12 @@ private function getDeletedExpenses()
         $request->validate([
             'team_name'     => 'required|string|max:255',
             'sales_manager' => 'nullable|string|max:255',
-            'leader_name'   => 'nullable|string|max:255',
+            'leader_name'   => 'required|string|max:255',
         ]);
         \App\Models\SalesTeam::create([
             'team_name'     => $request->team_name,
             'sales_manager' => $request->sales_manager,
-            'leader_name'   => $request->leader_name ?? $request->sales_manager,
+            'leader_name'   => $request->leader_name,
         ]);
         return redirect()->route('settings')->with('success', 'Team added.')->with('open_section', 'teams');
     }
@@ -380,7 +380,7 @@ private function getDeletedExpenses()
     {
         if (!auth()->user()->isAdmin()) abort(403);
         $request->validate([
-            'leader_name'   => 'nullable|string|max:255',
+            'leader_name'   => 'required|string|max:255',
             'sales_manager' => 'nullable|string|max:255',
             'team_name'     => 'nullable|string|max:255',
         ]);

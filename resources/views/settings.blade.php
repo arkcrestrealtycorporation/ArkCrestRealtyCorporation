@@ -1240,7 +1240,7 @@
             <div class="st-form-grid">
               <div class="st-form-group"><label class="st-label">Team Name</label><input class="st-input" type="text" name="team_name" required></div>
               <div class="st-form-group"><label class="st-label">Sales Manager <span style="font-weight:400;color:#94a3b8;font-size:11px">(optional)</span></label><input class="st-input" type="text" name="sales_manager"></div>
-              <div class="st-form-group"><label class="st-label">Team Leader</label><input class="st-input" type="text" name="leader_name"></div>
+              <div class="st-form-group"><label class="st-label">Team Leader</label><input class="st-input" type="text" name="leader_name" required></div>
             </div>
             <div style="margin-top:14px;"><button type="submit" class="st-btn st-btn-primary">Add Team</button></div>
           </form>
@@ -1381,7 +1381,7 @@
           <form id="editTeamForm" method="POST">@csrf @method('PUT')
             <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px;">
               <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Team Name</label><input class="st-input" type="text" id="edit_team_name" name="team_name" required></div>
-              <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Team Leader</label><input class="st-input" type="text" id="edit_leader_name" name="leader_name"></div>
+              <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Team Leader</label><input class="st-input" type="text" id="edit_leader_name" name="leader_name" required></div>
               <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Sales Manager <span style="font-weight:400;color:#94a3b8;">(optional)</span></label><input class="st-input" type="text" id="edit_sales_manager" name="sales_manager"></div>
             </div>
             <div style="display:flex;gap:10px;">
