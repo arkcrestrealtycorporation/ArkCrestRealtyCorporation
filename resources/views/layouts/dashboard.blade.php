@@ -245,7 +245,7 @@
                 <div class="profile-content">
                     <div class="profile-avatar">
                         @if(auth()->user()->avatar)
-                            <img src="{{ str_starts_with(auth()->user()->avatar, 'avatars/') ? \Storage::disk('public')->url(auth()->user()->avatar) : asset(auth()->user()->avatar) }}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                            <img src="{{ str_starts_with(auth()->user()->avatar, 'avatars/') ? route('avatar.show', basename(auth()->user()->avatar)) : asset(auth()->user()->avatar) }}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                         @else
                             <span>{{ substr(auth()->user()->name ?? 'U', 0, 1) }}</span>
                         @endif

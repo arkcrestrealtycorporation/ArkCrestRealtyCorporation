@@ -285,6 +285,15 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
 
 }); // end auth middleware
 
+// Serves avatar images straight from storage/app/public/avatars without relying
+// on the public/storage symlink (php artisan serve on Windows frequently fails
+// to follow that symlink, which shows as a broken image icon in the browser).
+Route::get('/avatar-file/{filename}', function ($filename) {
+    $path = storage_path('app/public/avatars/' . basename($filename));
+    abort_unless(file_exists($path), 404);
+    return response()->file($path);
+})->name('avatar.show');
+
 // External scheduler trigger (called by GitHub Actions)
 Route::post('/api/run-reminders', function (\Illuminate\Http\Request $request) {
     $secret = config('app.scheduler_secret');
