@@ -108,11 +108,22 @@ class DepartmentalExpensesController extends Controller
         // DepartmentalExpense records — used by the "Departments Allowable
         // Budgets" card grid so Remaining/progress bar reflect real spend.
         $commitments = [];
+        $commitments = [];
+        $recentExpenses = [];
         foreach ($departments as $dept) {
             $commitments[$dept->name] = $this->remainingBudget($dept->name);
+
+            // 3 most recent LIQUIDATED expenses for this department,
+            // most recently released first
+            $recentExpenses[$dept->name] = DepartmentalExpense::where('department', $dept->name)
+                ->where('status', 'LIQUIDATED')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->take(3)
+                ->get();
         }
 
-        return view('departmental-expenses', compact('requests', 'categories', 'departments', 'requestorNames', 'commitments'));
+        return view('departmental-expenses', compact('requests', 'categories', 'departments', 'requestorNames', 'commitments', 'recentExpenses'));
     }
 
     public function store(Request $request)
@@ -142,6 +153,10 @@ class DepartmentalExpensesController extends Controller
             }
         }
 
+        // TEMPORARILY DISABLED — budget amounts aren't set up on Departments yet,
+        // so this check blocks everything. Re-enable by uncommenting once
+        // budgets are configured. (Disabled: {{ today's date }})
+        /*
         if ($validated['status'] === 'LIQUIDATED') {
             $totalExpenses = (float) ($validated['total_expenses'] ?? 0);
             $budget = $this->remainingBudget($validated['department']);
@@ -157,6 +172,7 @@ class DepartmentalExpensesController extends Controller
                 ], 422);
             }
         }
+        */
 
         if (!empty($validated['date_requested']) && !empty($validated['date_released'])) {
             $dateRequested = \Carbon\Carbon::parse($validated['date_requested']);
@@ -273,6 +289,8 @@ class DepartmentalExpensesController extends Controller
             return response()->json(['success' => false, 'message' => $e->validator->errors()->first()], 422);
         }
 
+        // TEMPORARILY DISABLED — see matching note in store() above.
+        /*
         if ($validated['status'] === 'LIQUIDATED') {
             $totalExpenses = (float) ($validated['total_expenses'] ?? 0);
             $budget = $this->remainingBudget($validated['department'], (int) $id);
@@ -288,6 +306,7 @@ class DepartmentalExpensesController extends Controller
                 ], 422);
             }
         }
+        */
 
         if (!empty($validated['date_requested']) && !empty($validated['date_released'])) {
             $dateRequested = \Carbon\Carbon::parse($validated['date_requested']);

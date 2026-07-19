@@ -99,65 +99,47 @@
     }
     </script>
 
-    <!-- Department Budget Overview -->
+    <!-- Department Expenses Overview (observation only — budget tracking removed) -->
     @if(!in_array('departments.budget-cards', $hiddenSections))
     <div class="budget-overview-container">
         <h3 class="budget-overview-title">
             <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px;">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            Departments Allowable Budgets
+            Departments Expenses
         </h3>
         <div class="budget-cards-grid">
             @foreach($departments as $dept)
                 @if($dept->slug !== 'capex')
                 @php
                     $totalExpenses = $commitments[$dept->name]['liquidated'] ?? 0;
-                    $remaining = $dept->allowable_budget - $totalExpenses;
-                    $pct = $dept->allowable_budget > 0 ? min(100, ($totalExpenses / $dept->allowable_budget) * 100) : 0;
-                    $barColor = $pct >= 90 ? '#ef4444' : ($pct >= 70 ? '#f59e0b' : '#16a34a');
                 @endphp
                 <div class="budget-card-compact" onclick="selectDepartmentFromCard('{{ $dept->name }}')" style="cursor:pointer;" title="Click to select {{ $dept->name }}">
                     <div class="budget-card-header-compact" style="padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-bottom:10px;">
                         <h4 style="font-size:13px;font-weight:700;color:#fff;margin:0;white-space:normal;word-break:break-word;">{{ $dept->name }}</h4>
-                        @if($dept->budget_from || $dept->budget_to)
-                        <div style="font-size:12px;color:rgba(255,255,255,0.9);margin-top:5px;font-weight:500;">
-                            {{ $dept->budget_from?->format('M d, Y') ?? '—' }} → {{ $dept->budget_to?->format('M d, Y') ?? '—' }}
-                        </div>
-                        @else
-                        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:5px;font-style:italic;">No date set</div>
-                        @endif
                     </div>
                     <div class="budget-card-body-compact">
-                        <div style="display:flex;flex-direction:column;gap:6px;">
-                            <div style="display:flex;justify-content:space-between;font-size:12px;">
-                                <span style="color:#6b7280;">Budget</span>
-                                <span style="font-weight:700;color:#1e4575;" id="budget_display_{{ $dept->id }}">₱{{ number_format($dept->allowable_budget, 2) }}</span>
-                            </div>
-                            <div style="display:flex;justify-content:space-between;font-size:12px;">
-                                <span style="color:#6b7280;">Expenses</span>
-                                <span style="font-weight:600;color:#dc2626;">₱{{ number_format($totalExpenses, 2) }}</span>
-                            </div>
-                            <div style="display:flex;justify-content:space-between;font-size:12px;">
-                                <span style="color:#6b7280;">Remaining</span>
-                                <span style="font-weight:700;color:{{ $remaining >= 0 ? '#16a34a' : '#dc2626' }};" id="remaining_display_{{ $dept->id }}">₱{{ number_format($remaining, 2) }}</span>
-                            </div>
+                        <div style="display:flex;justify-content:space-between;font-size:12px;">
+                            <span style="color:#6b7280;">Expenses</span>
+                            <span style="font-weight:600;color:#dc2626;">₱{{ number_format($totalExpenses, 2) }}</span>
                         </div>
-                        {{-- Progress bar --}}
-                        <div style="margin-top:10px;background:#f3f4f6;border-radius:99px;height:6px;overflow:hidden;">
-                            <div style="height:100%;width:{{ $pct }}%;background:{{ $barColor }};border-radius:99px;"></div>
-                        </div>
-                        <div style="font-size:10px;color:#9ca3af;text-align:right;margin-top:2px;">{{ number_format($pct, 1) }}% used</div>
-                        @if(auth()->user()->isAdmin())
-                        <div style="display:flex;gap:8px;margin-top:10px;">
-                            <button onclick="event.stopPropagation();openBudgetModal({{ $dept->id }}, '{{ $dept->name }}', {{ $dept->allowable_budget }}, '{{ $dept->budget_from?->format('Y-m-d') ?? '' }}', '{{ $dept->budget_to?->format('Y-m-d') ?? '' }}')" class="btn-update-budget" style="flex:1;justify-content:center;">
-                                <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                Edit
-                            </button>
-                            <button onclick="event.stopPropagation();deleteDepartment({{ $dept->id }}, '{{ $dept->name }}')" style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
-                                <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                Delete
-                            </button>
+
+                        @php $recent = $recentExpenses[$dept->name] ?? collect(); @endphp
+                        @if($recent->isNotEmpty())
+                        <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e5e7eb;">
+                            <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">
+                                Recent Expenses
+                            </div>
+                            @foreach($recent as $exp)
+                            <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px;">
+                                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;" title="{{ $exp->category }}">
+                                    {{ $exp->category }}
+                                </span>
+                                <span style="color:#059669;font-weight:600;">
+                                    ₱{{ number_format($exp->total_expenses, 2) }}
+                                </span>
+                            </div>
+                            @endforeach
                         </div>
                         @endif
                     </div>
@@ -663,13 +645,23 @@
 .print-only { display: none; }
 
 @media print {
-    body * { visibility: hidden; }
-    .print-only, .print-only * { visibility: visible; }
+    /* #printArea is reparented to be a direct child of <body> by
+       printSelectedRecords() right before printing. Hiding every OTHER
+       direct child of body (display:none, not visibility:hidden) removes
+       it from layout entirely, instead of just hiding it visually while
+       it still reserves its full height — that reserved height was what
+       produced several blank pages when only one row was selected. */
+    body > *:not(.print-only) {
+        display: none !important;
+    }
+    html, body {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+    }
     .print-only {
-        display: block;
-        position: absolute;
-        top: 0;
-        left: 0;
+        display: block !important;
+        position: static !important;
         width: 100%;
     }
     .print-header { margin-bottom: 20px; }
@@ -686,6 +678,8 @@
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
+    .print-table tr { page-break-inside: avoid; }
+    .print-table thead { display: table-header-group; }
     @page { size: landscape; margin: 12mm; }
 }
 </style>
@@ -935,67 +929,60 @@
             <span class="close" onclick="closeViewModal()">&times;</span>
         </div>
         <div class="modal-body">
-            <div class="view-details">
-                <!-- Header Section with Control Number -->
-                <div class="view-header-section">
-                    <div class="view-control-label">Control Number</div>
-                    <div class="view-control-number" id="view_control_number"></div>
+            <div class="de-modal-grid">
+                <div class="de-modal-field full-width">
+                    <label>Control Number</label>
+                    <div class="de-field-value" id="view_control_number">-</div>
                 </div>
 
-                <!-- Requestor Information -->
-                <div class="section-title-view">Requestor Information</div>
-                
-                <div class="detail-row full-width">
-                    <span class="detail-label">Requestor Name</span>
-                    <span class="detail-value" id="view_requestor_name"></span>
-                </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Department</span>
-                    <span class="detail-value" id="view_department"></span>
-                </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Category</span>
-                    <span class="detail-value" id="view_category"></span>
-                </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Date Requested</span>
-                    <span class="detail-value" id="view_date_requested"></span>
+                <div class="de-modal-field full-width">
+                    <label>Requestor Name</label>
+                    <div class="de-field-value" id="view_requestor_name">-</div>
                 </div>
 
-                <!-- Financial Information -->
-                <div class="section-title-view">Financial Information</div>
-                
-                <div class="detail-row highlight-row">
-                    <span class="detail-label">Requested Amount</span>
-                    <span class="detail-value amount" id="view_requested_amount"></span>
+                <div class="de-modal-field">
+                    <label>Department</label>
+                    <div class="de-field-value" id="view_department">-</div>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Status</span>
-                    <span class="detail-value" id="view_status"></span>
+
+                <div class="de-modal-field">
+                    <label>Category</label>
+                    <div class="de-field-value" id="view_category">-</div>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Date Released</span>
-                    <span class="detail-value" id="view_date_released"></span>
+
+                <div class="de-modal-field">
+                    <label>Date Requested</label>
+                    <div class="de-field-value" id="view_date_requested">-</div>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Total Expenses</span>
-                    <span class="detail-value" id="view_total_expenses"></span>
+
+                <div class="de-modal-field">
+                    <label>Requested Amount</label>
+                    <div class="de-field-value" id="view_requested_amount">-</div>
                 </div>
-                
-                <div class="detail-row highlight-row">
-                    <span class="detail-label">Amount Returned</span>
-                    <span class="detail-value amount" id="view_amount_returned"></span>
+
+                <div class="de-modal-field">
+                    <label>Status</label>
+                    <div class="de-field-value" id="view_status">-</div>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Date of Amount Returned</span>
-                    <span class="detail-value" id="view_date_of_amount_returned"></span>
+
+                <div class="de-modal-field">
+                    <label>Date Released</label>
+                    <div class="de-field-value" id="view_date_released">-</div>
+                </div>
+
+                <div class="de-modal-field">
+                    <label>Total Expenses</label>
+                    <div class="de-field-value" id="view_total_expenses">-</div>
+                </div>
+
+                <div class="de-modal-field">
+                    <label>Amount Returned</label>
+                    <div class="de-field-value" id="view_amount_returned">-</div>
+                </div>
+
+                <div class="de-modal-field full-width">
+                    <label>Date of Amount Returned</label>
+                    <div class="de-field-value" id="view_date_of_amount_returned">-</div>
                 </div>
             </div>
         </div>
@@ -2332,13 +2319,32 @@ function printSelectedRecords() {
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    document.getElementById('printArea').innerHTML = `
+    const printArea = document.getElementById('printArea');
+    printArea.innerHTML = `
         <div class="print-header">
             <h2>Departmental Expenses Report</h2>
             <p>Generated on ${dateStr} — ${rows.length} record(s)</p>
         </div>
         ${tableHtml}
     `;
+
+    // #printArea normally sits inside .main-content, which (along with
+    // .content-wrapper / .dashboard-container in layouts.dashboard) uses
+    // overflow:hidden. That clips printed content to one viewport-sized
+    // box instead of letting it paginate. layouts.dashboard already works
+    // around this for position:fixed modals by moving them to <body> — we
+    // do the same here for #printArea, then move it back afterward so the
+    // page's DOM/layout is unaffected outside of printing.
+    const printAreaAnchor = document.createComment('printArea-anchor');
+    printArea.parentNode.insertBefore(printAreaAnchor, printArea);
+    document.body.appendChild(printArea);
+
+    function restorePrintArea() {
+        printAreaAnchor.parentNode.insertBefore(printArea, printAreaAnchor);
+        printAreaAnchor.remove();
+        window.removeEventListener('afterprint', restorePrintArea);
+    }
+    window.addEventListener('afterprint', restorePrintArea);
 
     window.print();
 }
