@@ -6,6 +6,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -65,5 +67,29 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (!$this->avatar) {
+            return null;
+        }
+
+        // Already a full external URL.
+        if (
+            Str::startsWith($this->avatar, 'http://') ||
+            Str::startsWith($this->avatar, 'https://')
+        ) {
+            return $this->avatar;
+        }
+
+        // Uploaded avatar from the configured filesystem.
+        if (Str::startsWith($this->avatar, 'avatars/')) {
+            return Storage::disk(config('filesystems.default'))
+                ->url($this->avatar);
+        }
+
+        // Existing static image inside the public directory.
+        return asset($this->avatar);
     }
 }
