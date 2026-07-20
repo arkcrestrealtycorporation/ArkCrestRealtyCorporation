@@ -126,7 +126,7 @@ class CashAdvanceController extends Controller
         $record = CashAdvance::findOrFail($id);
 
         ActivityLog::log('delete', 'Cash Advance', "Deleted cash advance {$record->control_number} for {$record->employee_name}", [
-            'model_class'    => CashAdvance::class,
+             'model_class'    => CashAdvance::class,
             'record_id'      => $record->id,
             'id'             => $record->id,
             'control_number' => $record->control_number,

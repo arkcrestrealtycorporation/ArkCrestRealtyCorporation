@@ -35,7 +35,6 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Exception $e) {
             // Table may already be mid-creation or DB not reachable yet.
         }
-
         // Auto-seed departments if empty
         try {
             if (\App\Models\Department::count() === 0) {

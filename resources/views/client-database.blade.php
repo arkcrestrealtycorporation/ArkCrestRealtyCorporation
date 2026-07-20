@@ -111,6 +111,40 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
   .column-filter-chip input,.column-filter-chip select{flex:1 1 auto;min-width:0;width:100%}
   .clear-column-filters-btn{width:100%;text-align:center}
 }
+
+/* Print Selected — same feature/fix as Departmental Expenses */
+.cd-print-only{display:none}
+@media print{
+    /* #cdPrintArea is reparented to be a direct child of <body> by
+       cdPrintSelectedRecords() right before printing. Hiding every OTHER
+       direct child of body (display:none, not visibility:hidden) removes
+       it from layout entirely, instead of just hiding it visually while
+       it still reserves its full height — that reserved height was what
+       produced several blank pages when only one row was selected. */
+    body > *:not(.cd-print-only){
+        display:none !important;
+    }
+    html, body{
+        overflow:visible !important;
+        height:auto !important;
+        max-height:none !important;
+    }
+    .cd-print-only{
+        display:block !important;
+        position:static !important;
+        width:100%;
+    }
+    .cd-print-header{margin-bottom:20px}
+    .cd-print-header h2{margin:0 0 4px;font-size:18px;color:#1e4575}
+    .cd-print-header p{margin:0;font-size:12px;color:#555}
+    .cd-print-table{width:100%;border-collapse:collapse;font-size:11px}
+    .cd-print-table th,.cd-print-table td{border:1px solid #999;padding:6px 8px;text-align:left}
+    .cd-print-table th{background:#eef2f7 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .cd-print-table tr{page-break-inside:avoid}
+    .cd-print-table thead{display:table-header-group}
+    @page{size:landscape;margin:12mm}
+}
+
 </style>
 
 <div class="cd-wrap">
@@ -123,7 +157,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
     <div class="cd-header">
         <div style="position:relative;z-index:2;">
             <div class="cd-header-eyebrow">Sales & Marketing</div>
-            <h1>Client Database</h1>
+            <h1>Clients</h1>
             <p>Manage client records and commission requests</p>
         </div>
         <div style="position:absolute;top:0;right:0;width:300px;height:100%;pointer-events:none;">
@@ -307,6 +341,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                     <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#6b7280" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <input type="text" id="cdSearch" placeholder="Search request..." style="width:340px;max-width:100%;padding:9px 12px 9px 36px;border:2px solid #d0d5dd;border-radius:8px;font-size:13px;box-sizing:border-box;outline:none;" oninput="cdFilter()">
                 </div>
+                <button id="cdPrintSelectedBtn" class="cd-bulk-btn" style="background:#1e4575;" onclick="cdPrintSelectedRecords()">Print Selected</button>
                 <button id="cdBulkDeleteBtn" class="cd-bulk-btn" disabled onclick="cdDeleteSelected()">Delete Selected (0)</button>
                 <span id="cdCount" style="font-size:12px;color:#94a3b8;white-space:nowrap;"></span>
                 <button onclick="cdClearAll()" style="padding:9px 14px;background:#f1f5f9;border:2px solid #d0d5dd;border-radius:8px;font-size:13px;color:#64748b;cursor:pointer;">Clear</button>
@@ -321,7 +356,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                             <input type="checkbox" id="cdSelectAll" onchange="cdToggleSelectAll(this)" title="Select all">
                         </th>
                         <th class="cd-sticky-col cd-sticky-index" style="padding:14px 8px;color:white;text-transform:uppercase;font-size:11px;">#</th>
-                        @foreach(['Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Units','Downpayment Date','Agent','Client Status','DP Stage','Downpayment Status','Actions'] as $h)
+                        @foreach(['Control Number','Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Units','Downpayment Date','Agent','Client Status','DP Stage','Downpayment Status','Actions'] as $h)
                         <th style="padding:14px 12px;text-align:left;font-weight:600;color:white;text-transform:uppercase;font-size:11px;white-space:nowrap">{{ $h }}</th>
                         @endforeach
                     </tr>
@@ -330,7 +365,8 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                     @forelse($commissionRequests ?? [] as $req)
                     @php $discVal = $req->tcp && $req->discount ? $req->tcp * ($req->discount / 100) : null; @endphp
                     <tr data-id="{{ $req->id }}"
-                        data-search="{{ strtolower($req->client_name ?? '') }} {{ strtolower($req->agent_name ?? '') }} {{ strtolower($req->project_name ?? '') }} {{ strtolower($req->developer_name ?? '') }} {{ strtolower($req->block_lot_number ?? '') }}"
+                        data-search="{{ strtolower($req->control_number ?? '') }} {{ strtolower($req->client_name ?? '') }} {{ strtolower($req->agent_name ?? '') }} {{ strtolower($req->project_name ?? '') }} {{ strtolower($req->developer_name ?? '') }} {{ strtolower($req->block_lot_number ?? '') }}"
+                        data-control="{{ strtolower($req->control_number ?? '') }}"
                         data-developer="{{ strtolower($req->developer_name ?? '') }}"
                         data-project="{{ strtolower($req->project_name ?? '') }}"
                         data-block-lot="{{ strtolower($req->block_lot_number ?? '') }}"
@@ -354,6 +390,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                             <input type="checkbox" class="cd-row-checkbox" value="{{ $req->id }}" onchange="cdUpdateBulkBar()">
                         </td>
                         <td class="cd-sticky-col cd-sticky-index" style="padding:14px 8px;color:#374151;font-weight:600">{{ $loop->iteration }}</td>
+                        <td style="padding:14px 12px;white-space:nowrap"><span style="font-family:monospace;background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:12px;color:#1e4575;font-weight:600;">{{ $req->control_number ?? '-' }}</span></td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->developer_name ?? '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->project_name ?? '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->block_lot_number ?? '-' }}</td>
@@ -388,8 +425,29 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                                 </select>
                             </form>
                         </td>
+                        @php
+                            $latestCommissionRecord = $req->commissionRequests->first();
+                            $latestSalesRequest = $req->commissionStageRequests->first();
+                            $latestCommissionStage = (int) ($latestCommissionRecord->commission_stage ?? 0);
+                            $latestSalesStage = (int) ($latestSalesRequest->commission_stage ?? 0);
+
+                            if ($latestCommissionRecord && $latestCommissionStage >= $latestSalesStage) {
+                                $dpStageStatus = $latestCommissionRecord->status === 'Not Released'
+                                    ? 'Not Yet Released'
+                                    : ($latestCommissionRecord->status ?: 'Not Yet Released');
+                            } elseif ($latestSalesRequest) {
+                                $dpStageStatus = 'Requested';
+                            } elseif ($req->status === 'For Request') {
+                                $dpStageStatus = 'Ready to request';
+                            } else {
+                                $dpStageStatus = null;
+                            }
+                        @endphp
                         <td id="dpStage_{{ $req->id }}" style="padding:10px 12px;white-space:nowrap;text-align:center;font-weight:700;color:#1e4575">
-                            {{ ($req->downpayment_stage ?? 0).'/'.($req->downpayment_stage_total ?? 1) }}
+                            <div id="dpStageValue_{{ $req->id }}">{{ ($req->downpayment_stage ?? 0).'/'.($req->downpayment_stage_total ?? 1) }}</div>
+                            <div id="dpStageStatus_{{ $req->id }}" style="display:{{ $dpStageStatus ? 'block' : 'none' }};margin-top:3px;font-size:9px;font-weight:800;text-transform:uppercase;color:{{ $dpStageStatus === 'Released' ? '#166534' : ($dpStageStatus === 'Not Yet Released' ? '#92400e' : ($dpStageStatus === 'Requested' ? '#1d4ed8' : '#A37929')) }};">
+                                {{ $dpStageStatus ?? '' }}
+                            </div>
                         </td>
                         <td style="padding:10px 12px;white-space:nowrap">
                             <button id="dpBtn_{{ $req->id }}" onclick="openDPModalFromBtn(this)"
@@ -399,7 +457,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                                 data-per-term="{{ $req->downpayment_per_term ?? 0 }}"
                                 data-status="{{ addslashes($req->downpayment_status ?? '') }}"
                                 data-dp-date="{{ $req->downpayment_date ? $req->downpayment_date->format('Y-m-d') : '' }}"
-                                data-tcp="{{ $req->tcp ?? 0 }}"
+                                data-net-tcp="{{ $req->net_tcp ?? 0 }}"
                                 data-terms-label="{{ addslashes($req->terms_of_payment ?? '') }}"
                                 data-stage="{{ $req->downpayment_stage ?? 0 }}"
                                 data-stage-total="{{ $req->downpayment_stage_total ?? 1 }}"
@@ -434,7 +492,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="21" style="text-align:center;padding:40px;color:#6b7280">No client records yet.</td></tr>
+                    <tr><td colspan="22" style="text-align:center;padding:40px;color:#6b7280">No client records yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -442,6 +500,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
         <div id="cdScrollTrack" class="cd-scroll-track">
             <div id="cdScrollThumb" class="cd-scroll-thumb"></div>
         </div>
+        <div id="cdPrintArea" class="cd-print-only"></div>
     </div>
 </div>
 
@@ -888,7 +947,7 @@ function viewRow(id){
             ['Downpayment Amount',fmtP(d.downpayment_amount)],
             ['Downpayment Terms',d.downpayment_terms?d.downpayment_terms+' month'+(d.downpayment_terms>1?'s':''):'-'],
             ['DP Stage',(d.downpayment_stage ?? 0)+'/'+(d.downpayment_stage_total ?? 1)],
-            ['Commission Status',fmt(d.status || 'Not Released')],
+            ['Commission Status',fmt(d.status || 'Not Yet Released')],
             ['Date of Downpayment',fmtD(d.downpayment_date || d.date_of_downpayment)],
         ];
         document.getElementById('viewContent').innerHTML=fields.map(([l,v])=>`<div style="display:flex;flex-direction:column;gap:4px"><label style="font-size:11px;font-weight:700;color:#1e4575;text-transform:uppercase">${l}</label><div style="font-size:14px;color:#374151;font-weight:500;padding:10px 14px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb">${v}</div></div>`).join('');
@@ -1248,6 +1307,7 @@ function cdInitScrollbar() {
 
 /* ---- Filter dropdown + chips ---- */
 var CD_FILTERABLE_FIELDS = [
+    { key: 'control',            label: 'Control Number',     dataAttr: 'data-control',           type: 'text'   },
     { key: 'developer',          label: 'Developer',          dataAttr: 'data-developer',        type: 'text'   },
     { key: 'project',            label: 'Project',            dataAttr: 'data-project',           type: 'text'   },
     { key: 'block-lot',          label: 'Block & Lot',        dataAttr: 'data-block-lot',         type: 'text'   },
@@ -1571,6 +1631,89 @@ function cdConfirmBulkDelete() {
     });
 }
 
+// ── Print Selected ──
+function cdGetSelectedPrintRows() {
+    return Array.from(document.querySelectorAll('.cd-row-checkbox:checked'))
+        .map(function(cb) { return cb.closest('tr'); })
+        .filter(function(row) { return row.style.display !== 'none'; });
+}
+
+// Most cells are plain text, but Client Status (a <select>) and DP Stage
+// (two stacked <div>s) aren't — textContent on those would include every
+// option or run the two divs together, so they're pulled out explicitly.
+function cdGetPrintCellText(row, index) {
+    const cells = row.cells;
+    if (index === 18) { // Client Status
+        const sel = cells[18].querySelector('select');
+        if (sel) return sel.value || '— No Status —';
+        return cells[18].textContent.trim();
+    }
+    if (index === 19) { // DP Stage
+        const valueEl = cells[19].querySelector('div[id^="dpStageValue_"]');
+        const statusEl = cells[19].querySelector('div[id^="dpStageStatus_"]');
+        const val = valueEl ? valueEl.textContent.trim() : '';
+        const status = (statusEl && statusEl.style.display !== 'none') ? statusEl.textContent.trim() : '';
+        return status ? (val + ' (' + status + ')') : val;
+    }
+    return cells[index].textContent.trim();
+}
+
+function cdPrintSelectedRecords() {
+    const rows = cdGetSelectedPrintRows();
+    if (rows.length === 0) {
+        if (typeof showToast === 'function') {
+            showToast('Please select at least one record to print.', 'warning', 'No Selection');
+        } else {
+            alert('Please select at least one record to print.');
+        }
+        return;
+    }
+
+    const headers = ['Control Number','Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Units','Downpayment Date','Agent','Client Status','DP Stage','Downpayment Status'];
+
+    let tableHtml = '<table class="cd-print-table"><thead><tr>';
+    headers.forEach(function(h) { tableHtml += '<th>' + h + '</th>'; });
+    tableHtml += '</tr></thead><tbody>';
+
+    rows.forEach(function(row) {
+        tableHtml += '<tr>';
+        // cells 0=checkbox, 1=#, 2..20=data columns above, 21=Actions (skipped)
+        for (let i = 2; i <= 20; i++) {
+            tableHtml += '<td>' + cdGetPrintCellText(row, i) + '</td>';
+        }
+        tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const printArea = document.getElementById('cdPrintArea');
+    printArea.innerHTML = `
+        <div class="cd-print-header">
+            <h2>Client Database Report</h2>
+            <p>Generated on ${dateStr} — ${rows.length} record(s)</p>
+        </div>
+        ${tableHtml}
+    `;
+
+    // Reparent out of the clipped ancestor chain for the duration of the
+    // print, same fix as Departmental Expenses — the @media print overflow
+    // overrides above handle the rest.
+    const printAreaAnchor = document.createComment('cdPrintArea-anchor');
+    printArea.parentNode.insertBefore(printAreaAnchor, printArea);
+    document.body.appendChild(printArea);
+
+    function restoreCdPrintArea() {
+        printAreaAnchor.parentNode.insertBefore(printArea, printAreaAnchor);
+        printAreaAnchor.remove();
+        window.removeEventListener('afterprint', restoreCdPrintArea);
+    }
+    window.addEventListener('afterprint', restoreCdPrintArea);
+
+    window.print();
+}
+
 
 
 // ── Clear button — uses the app's real confirm modal, since window.confirm ──
@@ -1695,7 +1838,7 @@ function goToDuplicateRecord() {
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                 <div>
-                    <label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px">TCP</label>
+                    <label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px">Net TCP</label>
                     <div id="dp_summary_tcp" style="font-size:14px;font-weight:700;color:#374151;">₱0.00</div>
                 </div>
                 <div>
@@ -1841,7 +1984,7 @@ function goToDuplicateRecord() {
             </p>
             <div style="display:flex;gap:10px;justify-content:flex-end;">
                 <button onclick="dismissCommissionReadyModal()" style="padding:9px 18px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;">Not Now</button>
-                <button onclick="continueToCommissionRequest()" style="padding:9px 20px;background:linear-gradient(135deg,#1e4575,#2563eb);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Continue</button>
+                <button id="commissionRequestBtn" onclick="requestCommissionStage()" style="padding:9px 20px;background:linear-gradient(135deg,#1e4575,#2563eb);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">Request</button>
             </div>
         </div>
     </div>
@@ -1849,9 +1992,9 @@ function goToDuplicateRecord() {
 
 <script>
 let _dpRecordId = null;
-let _dpTcp = 0;
+let _dpNetTcp = 0;
 let _dpTermsLabel = '';
-let _dpTotalAmount = 0; // total downpayment amount, computed from TCP x DP%
+let _dpTotalAmount = 0; // total downpayment amount, computed from Net TCP x DP%
 let _dpPaidAmount = 0;
 let _dpRemainingBalance = 0;
 let _dpStage = 0;
@@ -1860,6 +2003,7 @@ let _dpNextCommissionStage = null;
 let _dpCommissionReady = false;
 let _dpAllCommissionStagesRequested = false;
 let _dpCommissionStages = [];
+let _dpHasFiledCommissionStage = false;
 let _dpPendingReload = false; // set true when a page reload was deferred so the commission-ready popup could show first
 const _dpCsrf = document.querySelector('meta[name=csrf-token]')?.content || '';
 const _isAdmin = {{ auth()->user()->isAdmin() ? 'true' : 'false' }};
@@ -1872,7 +2016,7 @@ function openDPModalFromBtn(btn) {
         parseFloat(btn.dataset.perTerm) || 0,
         btn.dataset.status || '',
         btn.dataset.dpDate || '',
-        parseFloat(btn.dataset.tcp) || 0,
+        parseFloat(btn.dataset.netTcp) || 0,
         btn.dataset.termsLabel || '',
         parseInt(btn.dataset.stage) || 0,
         parseInt(btn.dataset.stageTotal) || 1
@@ -1881,7 +2025,7 @@ function openDPModalFromBtn(btn) {
 
 // Parses the DP percentage out of a terms-of-payment label.
 // Examples: "30% DP - 70% BAL 5 YRS" -> 0.30, "50% DP - 50% BAL 5 YRS" -> 0.50,
-// "STRAIGHT PAYMENT" -> 1 (the full TCP is due, no separate "DP" concept).
+// "STRAIGHT PAYMENT" -> 1 (the full Net TCP is due, no separate "DP" concept).
 // Falls back to 0.30 if nothing recognizable is found, since 30% DP is the
 // most common plan — this keeps the header from showing ₱0.00 on odd/legacy labels.
 function parseDPPercent(termsLabel) {
@@ -1925,6 +2069,10 @@ function renderCommissionStageProgress(stages) {
         var icon = '○';
 
         if (status === 'requested') {
+            bg = '#eff6ff'; border = '#bfdbfe'; color = '#1d4ed8'; icon = '↗';
+        } else if (status === 'not_yet_released') {
+            bg = '#fffbeb'; border = '#fde68a'; color = '#92400e'; icon = '◷';
+        } else if (status === 'released') {
             bg = '#f0fdf4'; border = '#bbf7d0'; color = '#166534'; icon = '✓';
         } else if (status === 'ready') {
             bg = '#fffbeb'; border = '#fde68a'; color = '#92400e'; icon = '●';
@@ -1957,16 +2105,41 @@ function refreshDPStageSummary(summary) {
         _dpCommissionStages = Array.isArray(summary.commission_stages)
             ? summary.commission_stages
             : [];
+        _dpHasFiledCommissionStage = Array.isArray(summary.filed_stages)
+            ? summary.filed_stages.length > 0
+            : _dpCommissionStages.some(function (stage) { return !!stage.is_requested; });
     }
 
     var stageEl = document.getElementById('dp_summary_stage');
     var nextEl = document.getElementById('dp_summary_next_stage');
-    var rowStageEl = document.getElementById('dpStage_' + _dpRecordId);
+    var rowStageValueEl = document.getElementById('dpStageValue_' + _dpRecordId);
+    var rowStageStatusEl = document.getElementById('dpStageStatus_' + _dpRecordId);
     var button = document.getElementById('dpBtn_' + _dpRecordId);
 
     var stageText = _dpStage + '/' + _dpStageTotal;
     if (stageEl) stageEl.textContent = stageText;
-    if (rowStageEl) rowStageEl.textContent = stageText;
+    if (rowStageValueEl) rowStageValueEl.textContent = stageText;
+
+    if (rowStageStatusEl) {
+        var rowStatus = '';
+        for (var statusIndex = _dpCommissionStages.length - 1; statusIndex >= 0; statusIndex--) {
+            if (_dpCommissionStages[statusIndex].is_requested) {
+                rowStatus = _dpCommissionStages[statusIndex].status_label || 'Requested';
+                break;
+            }
+        }
+        if (!rowStatus && _dpCommissionReady) {
+            rowStatus = 'Ready to request';
+        }
+
+        rowStageStatusEl.textContent = rowStatus;
+        rowStageStatusEl.style.display = rowStatus ? 'block' : 'none';
+        rowStageStatusEl.style.color = rowStatus === 'Released'
+            ? '#166534'
+            : (rowStatus === 'Not Yet Released'
+                ? '#92400e'
+                : (rowStatus === 'Requested' ? '#1d4ed8' : '#A37929'));
+    }
 
     if (button) {
         button.dataset.stage = _dpStage;
@@ -2005,6 +2178,10 @@ async function loadDownpaymentSummary(showReadyPopup) {
         refreshDPSummaryHeader(summary.paid_total);
         refreshDPStageSummary(summary);
 
+        // Re-render paid rows after the request state arrives so the Admin undo
+        // action disappears as soon as any commission stage has been filed.
+        if (_dpHasFiledCommissionStage) loadInstallments();
+
         if (showReadyPopup) handleCommissionTrigger(summary);
         return summary;
     } catch (error) {
@@ -2012,7 +2189,7 @@ async function loadDownpaymentSummary(showReadyPopup) {
     }
 }
 
-// Recomputes and redraws the read-only summary header (Terms / TCP / Total DP / Remaining).
+// Recomputes and redraws the read-only summary header (Terms / Net TCP / Total DP / Remaining).
 // paidSum = however much of the total DP has actually been paid so far
 // (sum of paid installment amounts, or the full spot amount once paid).
 function refreshDPSummaryHeader(paidSum) {
@@ -2026,7 +2203,7 @@ function refreshDPSummaryHeader(paidSum) {
     _dpRemainingBalance = Math.max(0, _dpTotalAmount - _dpPaidAmount);
 
     document.getElementById('dp_summary_terms').textContent = _dpTermsLabel || '—';
-    document.getElementById('dp_summary_tcp').textContent = fmtPeso(_dpTcp);
+    document.getElementById('dp_summary_tcp').textContent = fmtPeso(_dpNetTcp);
     document.getElementById('dp_summary_total').textContent = fmtPeso(_dpTotalAmount);
     document.getElementById('dp_summary_remaining').textContent = fmtPeso(_dpRemainingBalance);
 }
@@ -2059,8 +2236,73 @@ function dismissCommissionReadyModal() {
     document.getElementById('commissionReadyModal').style.display = 'none';
     if (_dpPendingReload) { _dpPendingReload = false; window.location.reload(); }
 }
-function continueToCommissionRequest() {
-    window.location.href = '/commission-monitoring?add_request_for=' + _dpRecordId;
+function requestCommissionStage() {
+    if (!_dpRecordId || !_dpCommissionReady) {
+        if (typeof showToast === 'function') {
+            showToast('This commission stage is not ready to request yet.', 'error', 'Not Ready');
+        }
+        return;
+    }
+
+    var stageText = _dpNextCommissionStage
+        ? _dpNextCommissionStage + '/' + _dpStageTotal
+        : 'the next eligible stage';
+
+    var submitRequest = function () {
+        var button = document.getElementById('commissionRequestBtn');
+        if (button) {
+            button.disabled = true;
+            button.textContent = 'Sending...';
+        }
+
+        fetch('/api/client-database/' + _dpRecordId + '/commission-request', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': _dpCsrf
+            },
+            body: JSON.stringify({})
+        })
+        .then(async function (response) {
+            var data = await response.json().catch(function () { return {}; });
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Unable to send the commission request.');
+            }
+
+            _dpPendingReload = false;
+            refreshDPStageSummary(data);
+            document.getElementById('commissionReadyModal').style.display = 'none';
+
+            if (typeof showToast === 'function') {
+                showToast(data.message, 'success', 'Request Sent');
+            }
+
+            setTimeout(function () { window.location.reload(); }, 700);
+        })
+        .catch(function (error) {
+            if (button) {
+                button.disabled = false;
+                button.textContent = 'Request';
+            }
+
+            if (typeof showToast === 'function') {
+                showToast(error.message, 'error', 'Request Failed');
+            } else {
+                alert(error.message);
+            }
+        });
+    };
+
+    var message = 'Are you sure you want to request commission for DP stage ' + stageText + '? Finance will be notified and this stage cannot be requested again.';
+
+    if (window.showConfirmModal) {
+        window.showConfirmModal(message).then(function (confirmed) {
+            if (confirmed) submitRequest();
+        });
+    } else if (confirm(message)) {
+        submitRequest();
+    }
 }
 
 function updateClientStatusSelect(id, clientStatus) {
@@ -2088,17 +2330,18 @@ function updateDPStatusBadge(id, status, terms, amount) {
     if (amount !== undefined) btn.dataset.amount = amount;
 }
 
-function openDPModal(id, amount, terms, perTerm, status, dpDate, tcp, termsLabel, stage, stageTotal) {
+function openDPModal(id, amount, terms, perTerm, status, dpDate, netTcp, termsLabel, stage, stageTotal) {
     _dpRecordId    = id;
-    _dpTcp         = parseFloat(tcp) || 0;
+    _dpNetTcp      = parseFloat(netTcp) || 0;
     _dpTermsLabel  = termsLabel || '';
-    _dpTotalAmount = _dpTcp * parseDPPercent(_dpTermsLabel);
+    _dpTotalAmount = _dpNetTcp * parseDPPercent(_dpTermsLabel);
     _dpStage = parseInt(stage) || 0;
     _dpStageTotal = parseInt(stageTotal) || 1;
     _dpNextCommissionStage = null;
     _dpCommissionReady = false;
     _dpAllCommissionStagesRequested = false;
     _dpCommissionStages = [];
+    _dpHasFiledCommissionStage = false;
     refreshDPStageSummary();
 
     const isSpotPaid = status === 'Spot Paid';
@@ -2206,7 +2449,7 @@ function saveSpotDP() {
     const amount = _dpTotalAmount;
     const date   = document.getElementById('dp_spot_date').value;
     if (!amount || parseFloat(amount) <= 0) {
-        alert('The total downpayment could not be calculated from TCP and Terms of Payment.');
+        alert('The total downpayment could not be calculated from Net TCP and Terms of Payment.');
         return;
     }
     if (!date) {
@@ -2285,7 +2528,7 @@ function setupInstallments() {
         return;
     }
     if (!amount || amount <= 0) {
-        alert('The total downpayment could not be calculated from TCP and Terms of Payment.');
+        alert('The total downpayment could not be calculated from Net TCP and Terms of Payment.');
         return;
     }
     fetch(`/api/client-database/${_dpRecordId}/installments/setup`, {
@@ -2318,9 +2561,9 @@ function renderInstallments(list) {
         const paidDate = inst.paid_date ? `<span style="font-size:10px;color:#16a34a;margin-left:6px;">${inst.paid_date}</span>` : '';
 
         const actionBtn = inst.is_paid
-            ? (_isAdmin
+            ? (_isAdmin && !_dpHasFiledCommissionStage
                 ? `<button onclick="unmarkPaid(${inst.id})" style="padding:10px 14px;background:#dcfce7;color:#166534;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border-left:1.5px solid #bbf7d0;" title="Click to undo">✓ Paid ↩</button>`
-                : `<span style="padding:10px 14px;background:#dcfce7;color:#166534;font-size:12px;font-weight:700;white-space:nowrap;border-left:1.5px solid #bbf7d0;">✓ Paid</span>`)
+                : `<span style="padding:10px 14px;background:#dcfce7;color:#166534;font-size:12px;font-weight:700;white-space:nowrap;border-left:1.5px solid #bbf7d0;" title="${_dpHasFiledCommissionStage ? 'Locked because a commission request has been recorded' : 'Paid'}">✓ Paid${_dpHasFiledCommissionStage ? ' 🔒' : ''}</span>`)
             : `<button onclick="markPaidWithDate(${inst.id}, this)" style="padding:10px 16px;background:linear-gradient(135deg,#A37929,#d4a03a);color:white;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Paid</button>`;
 
         // Amount input — editable for both admin and staff BEFORE paid; locked after paid
@@ -2359,20 +2602,33 @@ function getInstallmentApiError(data, fallback) {
     return fallback || 'Unable to save the installment.';
 }
 
-function readInstallmentAmount(instId) {
+function readInstallmentAmount(instId, silent) {
     var amountEl = document.getElementById('inst_amount_' + instId);
     var rawAmount = amountEl ? amountEl.value.trim() : '';
     var amount = Number(rawAmount);
 
+    function showAmountError(message) {
+        if (!amountEl || silent) return;
+        amountEl.setCustomValidity(message);
+        amountEl.reportValidity();
+        amountEl.focus();
+        amountEl.addEventListener('input', function clearV() {
+            amountEl.setCustomValidity('');
+            amountEl.removeEventListener('input', clearV);
+        }, { once: true });
+    }
+
     if (!rawAmount || !Number.isFinite(amount) || amount <= 0) {
-        throw new Error('Enter a valid finite payment amount greater than zero.');
+        showAmountError('Enter a valid finite payment amount greater than zero.');
+        return null;
     }
 
     if (_dpRemainingBalance > 0 && amount > _dpRemainingBalance + 0.01) {
-        throw new Error(
+        showAmountError(
             'The payment cannot exceed the remaining DP balance of '
             + fmtPeso(_dpRemainingBalance) + '.'
         );
+        return null;
     }
 
     return {
@@ -2383,15 +2639,8 @@ function readInstallmentAmount(instId) {
 }
 
 async function saveInstallmentAmount(instId, silent) {
-    var payment;
-
-    try {
-        payment = readInstallmentAmount(instId);
-    } catch (error) {
-        if (!silent) alert(error.message);
-        return false;
-    }
-
+    var payment = readInstallmentAmount(instId, silent);
+    if (!payment) return false;
     try {
         var response = await fetch(`/api/installments/${instId}/amount`, {
             method: 'PATCH',
@@ -2418,7 +2667,13 @@ async function saveInstallmentAmount(instId, silent) {
         payment.element.reportValidity();
         payment.element.setCustomValidity('');
 
-        if (!silent) alert(error.message);
+        if (!silent) {
+            if (typeof showToast === 'function') {
+                showToast(error.message, 'error', 'Payment Error');
+            } else {
+                alert(error.message);
+            }
+        }
         return false;
     }
 }
@@ -2431,24 +2686,51 @@ function markPaid(instId) {
     markPaidWithDate(instId, btn);
 }
 
+function showFieldTooltip(el, message) {
+    var existing = document.getElementById('_fieldTooltip');
+    if (existing) existing.remove();
+
+    var rect = el.getBoundingClientRect();
+    var tip = document.createElement('div');
+    tip.id = '_fieldTooltip';
+    tip.style.cssText = 'position:fixed;top:' + (rect.bottom + 8) + 'px;left:' + rect.left + 'px;'
+        + 'z-index:99999;background:white;border:1px solid #d1d5db;border-radius:6px;'
+        + 'box-shadow:0 4px 12px rgba(0,0,0,.15);padding:8px 12px;display:flex;align-items:center;'
+        + 'gap:8px;font-size:13px;color:#1f2937;max-width:280px;';
+    tip.innerHTML =
+        '<span style="flex-shrink:0;width:18px;height:18px;background:#dc2626;color:white;'
+        + 'border-radius:3px;display:flex;align-items:center;justify-content:center;font-weight:700;'
+        + 'font-size:12px;">!</span><span>' + message + '</span>'
+        + '<div style="position:absolute;top:-6px;left:16px;width:12px;height:12px;background:white;'
+        + 'border-left:1px solid #d1d5db;border-top:1px solid #d1d5db;transform:rotate(45deg);"></div>';
+
+    document.body.appendChild(tip);
+    el.focus();
+
+    function remove() {
+        tip.remove();
+        el.removeEventListener('input', remove);
+        document.removeEventListener('click', onOutsideClick);
+    }
+    function onOutsideClick(e) {
+        if (!tip.contains(e.target) && e.target !== el) remove();
+    }
+    el.addEventListener('input', remove, { once: true });
+    setTimeout(function() { document.addEventListener('click', onOutsideClick); }, 0);
+    setTimeout(remove, 4000);
+}
+
 async function markPaidWithDate(instId, btn) {
     var dateEl = document.getElementById('inst_date_' + instId);
     var date = dateEl ? dateEl.value : '';
 
     if (!date) {
-        alert('Date of payment is required.');
-        if (dateEl) dateEl.focus();
+        if (dateEl) showFieldTooltip(dateEl, 'Date of payment is required.');
         return;
     }
 
-    var payment;
-
-    try {
-        payment = readInstallmentAmount(instId);
-    } catch (error) {
-        alert(error.message);
-        return;
-    }
+    var payment = readInstallmentAmount(instId);
+    if (!payment) return;
 
     if (!confirm('Mark this term as paid for ' + fmtPeso(payment.value) + '?')) {
         return;
@@ -2497,7 +2779,11 @@ async function markPaidWithDate(instId, btn) {
         refreshDPStageSummary(res);
         handleCommissionTrigger(res);
     } catch (error) {
-        alert(error.message);
+        if (typeof showToast === 'function') {
+            showToast(error.message, 'error', 'Payment Error');
+        } else {
+            alert(error.message);
+        }
 
         if (btn) {
             btn.disabled = false;
@@ -2512,11 +2798,21 @@ function unmarkPaid(instId) {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': _dpCsrf },
         body: JSON.stringify({})
-    }).then(r => r.json()).then(res => {
+    }).then(async r => {
+        const res = await r.json().catch(() => ({}));
+        if (!r.ok || !res.success) throw new Error(res.message || 'Unable to undo this payment.');
+        return res;
+    }).then(res => {
         loadInstallments();
         updateDPStatusBadge(_dpRecordId, res.status || '');
         updateClientStatusSelect(_dpRecordId, res.client_status || 'Pending');
         refreshDPStageSummary(res);
+    }).catch(error => {
+        if (typeof showToast === 'function') {
+            showToast(error.message, 'error', 'Undo Failed');
+        } else {
+            alert(error.message);
+        }
     });
 }
 </script>

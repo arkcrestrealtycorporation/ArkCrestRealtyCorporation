@@ -1,4 +1,4 @@
-@extends('layouts.dashboard')
+﻿@extends('layouts.dashboard')
 
 @section('content')
 <div class="commission-monitoring-container">
@@ -36,15 +36,15 @@
             </div>
         </div>
 
-        <div class="stat-card card-yellow" onclick="filterByStat('Not Released')" style="cursor:pointer;" title="Click to view Not Released requests">
+        <div class="stat-card card-yellow" onclick="filterByStat('__pending_release__')" style="cursor:pointer;" title="Click to view Requested and Not Yet Released records">
             <div class="stat-icon">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
             <div class="stat-content">
-                <div class="stat-label">Not Released</div>
-                <div class="stat-value" id="statNotReleased">{{ $commissionRequests->where('status', 'Not Released')->count() }}</div>
+                <div class="stat-label">Pending Release</div>
+                <div class="stat-value" id="statNotReleased">{{ $commissionRequests->whereIn('status', ['Requested', 'Not Yet Released', 'Not Released'])->count() }}</div>
             </div>
         </div>
 
@@ -82,6 +82,7 @@
         <form id="cmAddForm" class="commission-form" action="{{ route('commission-monitoring.store') }}" method="POST" onsubmit="return previewCommissionSubmit(event)">
             @csrf
             <input type="hidden" name="source_client_record_id" id="cm_source_client_record_id">
+            <input type="hidden" name="commission_stage_request_id" id="cm_commission_stage_request_id">
             <input type="hidden" name="commission_stage" id="cm_commission_stage">
             <input type="hidden" name="commission_stage_total" id="cm_commission_stage_total">
             <input type="hidden" name="stage_threshold_amount" id="cm_stage_threshold_amount">
@@ -207,7 +208,8 @@
                     <div class="form-group">
                         <label>STATUS <span class="required">*</span></label>
                         <select name="status" required>
-                            <option value="Not Released">Not Released</option>
+                            <option value="">— Select status —</option>
+                            <option value="Not Yet Released">Not Yet Released</option>
                             <option value="Released">Released</option>
                         </select>
                     </div>
@@ -249,6 +251,9 @@
                 @if($isAdmin)
                 <div style="display:flex;gap:8px;">
                     <button type="button" id="cmSelectModeBtn" class="clear-dates-btn" onclick="cmToggleSelectMode()">Select</button>
+                    <button type="button" id="cmPrintSelectedBtn" class="clear-dates-btn" style="background:#1e4575;color:#fff;border-color:#1e4575;display:none;" onclick="cmPrintSelectedRecords()">
+                        Print Selected (<span id="cmPrintSelectedCount">0</span>)
+                    </button>
                     <button type="button" id="cmDeleteSelectedBtn" class="clear-dates-btn" style="background:#fee2e2;color:#dc2626;border-color:#fecaca;display:none;" onclick="cmDeleteSelected()">
                         Delete Selected (<span id="cmSelectedCount">0</span>)
                     </button>
@@ -291,6 +296,7 @@
                         @endif
                         <th class="col-sticky col-sticky-index">#</th>
                         <th class="col-sticky col-sticky-name">Client's Name</th>
+                        <th>Control Number</th>
                         <th>Reservation Date</th>
                         <th>Project Name</th>
                         <th>Property Details (Block & Lot No.)</th>
@@ -327,6 +333,7 @@
                         $rowHlClasses = trim(($isOverdue ? 'cm-row-overdue ' : '') . ($isHighValue ? 'cm-row-highvalue ' : ''));
                     @endphp
                     <tr id="cm-{{ $request->id }}" class="{{ $rowHlClasses }}" data-id="{{ $request->id }}"
+                        data-control="{{ $request->control_number }}"
                         data-status="{{ $request->status }}"
                         data-commission-stage="{{ $request->commission_stage ? $request->commission_stage.'/'.($request->commission_stage_total ?: 1) : '' }}"
                         data-date-requested="{{ $request->date_requested ? $request->date_requested->format('Y-m-d') : '' }}"
@@ -355,6 +362,7 @@
                         @endif
                         <td class="col-sticky col-sticky-index">{{ $loop->iteration }}</td>
                         <td class="col-sticky col-sticky-name">{{ $request->client_name ?? '-' }}</td>
+                        <td style="font-weight:700;color:#1e4575;white-space:nowrap;">{{ $request->control_number ?? '—' }}</td>
                         <td>{{ $request->reservation_date ? $request->reservation_date->format('M d, Y') : '-' }}</td>
                         <td>{{ $request->project_name ?? '-' }}</td>
                         <td>{{ $request->property_details ?? '-' }}</td>
@@ -385,7 +393,7 @@
                                 @if($request->status == 'Released') status-released
                                 @else status-pending
                                 @endif">
-                                {{ $request->status }}
+                                {{ $request->status === 'Not Released' ? 'Not Yet Released' : $request->status }}
                             </span>
                             @if($isOverdue || $isRecent || $isHighValue)
                             <div class="cm-highlight-badges">
@@ -400,8 +408,8 @@
                                 <button class="btn-action-text btn-view" title="View" onclick="viewCommission({{ $request->id }})">
                                     VIEW
                                 </button>
-                                <button class="btn-action-text btn-edit" title="Edit" onclick="requireAdmin(() => editCommission({{ $request->id }}))">
-                                    EDIT
+                                <button class="btn-action-text btn-edit" title="{{ $request->status === 'Requested' ? 'Fill up commission details' : 'Edit' }}" onclick="requireAdmin(() => editCommission({{ $request->id }}))">
+                                    {{ $request->status === 'Requested' ? 'FILL UP' : 'EDIT' }}
                                 </button>
                                 @if($isAdmin)
                                 <form action="{{ route('commission-monitoring.destroy', $request->id) }}" method="POST" style="display: inline-flex; align-items: center;" onsubmit="return confirm('Are you sure you want to delete this commission request? This action cannot be undone.')">
@@ -440,6 +448,7 @@
                 <div style="font-size:13px;">Try adjusting your search or filter criteria</div>
             </div>
         </div>
+        <div id="cmPrintArea" class="cm-print-only"></div>
     </div>
     @endif
 </div>
@@ -1561,12 +1570,46 @@
             grid-template-columns: 1fr !important;
         }
     }
-</style>
 
+    /* Print Selected — same feature/fix as Departmental Expenses / Client Database */
+    .cm-print-only{display:none}
+    @media print{
+        /* #cmPrintArea is reparented to be a direct child of <body> by
+           cmPrintSelectedRecords() right before printing. Hiding every
+           OTHER direct child of body (display:none, not
+           visibility:hidden) removes it from layout entirely, instead of
+           just hiding it visually while it still reserves its full
+           height — that reserved height was what produced several blank
+           pages when only one row was selected. */
+        body > *:not(.cm-print-only){
+            display:none !important;
+        }
+        html, body{
+            overflow:visible !important;
+            height:auto !important;
+            max-height:none !important;
+        }
+        .cm-print-only{
+            display:block !important;
+            position:static !important;
+            width:100%;
+        }
+        .cm-print-header{margin-bottom:20px}
+        .cm-print-header h2{margin:0 0 4px;font-size:18px;color:#1e4575}
+        .cm-print-header p{margin:0;font-size:12px;color:#555}
+        .cm-print-table{width:100%;border-collapse:collapse;font-size:10px}
+        .cm-print-table th,.cm-print-table td{border:1px solid #999;padding:5px 7px;text-align:left}
+        .cm-print-table th{background:#eef2f7 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .cm-print-table tr{page-break-inside:avoid}
+        .cm-print-table thead{display:table-header-group}
+        @page{size:landscape;margin:10mm}
+    }
+</style>
 <script>
 // ---- Column Filter fields (matches the "All Expenses" filter dropdown pattern) ----
 // Date Requested / Date Released are handled separately as range pickers above.
 const FILTERABLE_FIELDS = [
+    { key: 'control_number',    label: 'Control Number',            dataAttr: 'data-control',                type: 'text'  },
     { key: 'client_name',       label: "Client's Name",             dataAttr: 'data-client',                type: 'text'  },
     { key: 'project_name',      label: 'Project Name',              dataAttr: 'data-project',                type: 'text'  },
     { key: 'property_details',  label: 'Property Details',          dataAttr: 'data-property',               type: 'text'  },
@@ -1591,7 +1634,7 @@ const FILTERABLE_FIELDS = [
     { key: 'commission_terms',  label: 'Commission Terms',          dataAttr: 'data-commission-terms',        type: 'text'  },
     { key: 'value_commission_terms', label: 'Value of Commission Terms', dataAttr: 'data-value-commission-terms', type: 'text' },
     { key: 'commission_stage',  label: 'DP Stage',          dataAttr: 'data-commission-stage',        type: 'text' },
-    { key: 'status',            label: 'Status',                    dataAttr: 'data-status',                  type: 'select', options: ['For Request', 'Not Released', 'Released'] },
+    { key: 'status',            label: 'Status',                    dataAttr: 'data-status',                  type: 'select', options: ['Requested', 'Not Yet Released', 'Released'] },
 ];
 
 // Active per-column filters: { fieldKey: currentValue }
@@ -1743,6 +1786,11 @@ function matchesColumnFilters(row) {
         if (!filterVal) continue;
         const rowVal = (row.getAttribute(f.dataAttr) || '').toString().toLowerCase();
 
+        if (key === 'status' && filterVal === '__pending_release__') {
+            if (!['requested', 'not yet released', 'not released'].includes(rowVal)) return false;
+            continue;
+        }
+
         if (f.type === 'date') {
             if (rowVal !== filterVal) return false;
         } else if (f.type === 'select') {
@@ -1800,7 +1848,7 @@ function filterByStat(status) {
     applyFilters();
 
     document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('stat-card-selected'));
-    const cardMap = { '': 'card-blue', 'Not Released': 'card-yellow', 'Released': 'card-green' };
+    const cardMap = { '': 'card-blue', '__pending_release__': 'card-yellow', 'Released': 'card-green' };
     const activeCard = document.querySelector('.stat-card.' + cardMap[status]);
     if (activeCard) activeCard.classList.add('stat-card-selected');
 
@@ -1835,7 +1883,7 @@ function resetFilters() {
         if (row.cells.length === 1) continue;
         total++;
         const s = row.getAttribute('data-status');
-        if (s === 'Not Released') notReleased++;
+        if (['Requested', 'Not Yet Released', 'Not Released'].includes(s)) notReleased++;
         if (s === 'Released') released++;
     }
 
@@ -1978,8 +2026,11 @@ function editCommission(id) {
             document.getElementById('cm_edit_commission_percent').value = data.commission_percent ?? '';
             document.getElementById('cm_edit_commission').value = data.commission ?? '';
             document.getElementById('cm_edit_date_released').value = d(data.date_released);
-            document.getElementById('cm_edit_status').value = data.status ?? 'Not Released';
+            document.getElementById('cm_edit_status').value = data.status === 'Released' ? 'Released' : 'Not Yet Released';
             document.getElementById('cm_edit_remarks').value = data.remarks ?? '';
+            if (data.status === 'Requested' && !data.date_released) {
+                calcCmDateReleased('cm_edit');
+            }
             document.getElementById('cmEditModal').classList.add('active');
         });
 }
@@ -2294,6 +2345,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Finance notification: open the exact requested commission record and
+    // place the cursor directly in the form used to complete commission details.
+    const _requestParams = new URLSearchParams(window.location.search);
+    const _openRequestId = _requestParams.get('open_request');
+    if (_openRequestId) {
+        setTimeout(function () {
+            const row = document.getElementById('cm-' + _openRequestId);
+            if (row) {
+                row.style.background = 'rgba(163,121,41,.14)';
+                row.style.outline = '2px solid #A37929';
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            editCommission(parseInt(_openRequestId, 10));
+        }, 500);
+        window.history.replaceState({}, '', window.location.pathname);
+    }
+
     // Auto-open edit/delete after admin approval redirect
     const _hlParams = new URLSearchParams(window.location.search);
     const _hlId     = _hlParams.get('highlight');
@@ -2415,9 +2483,102 @@ function cmUpdateSelectedCount() {
     if (countEl) countEl.textContent = checked.length;
     if (btn) btn.style.display = checked.length > 0 ? 'inline-flex' : 'none';
 
+    const printBtn = document.getElementById('cmPrintSelectedBtn');
+    const printCountEl = document.getElementById('cmPrintSelectedCount');
+    if (printCountEl) printCountEl.textContent = checked.length;
+    if (printBtn) printBtn.style.display = checked.length > 0 ? 'inline-flex' : 'none';
+
     const selectAll = document.getElementById('cmSelectAll');
     const allBoxes = document.querySelectorAll('.cm-row-check');
     if (selectAll) selectAll.checked = allBoxes.length > 0 && checked.length === allBoxes.length;
+}
+
+// ── Print Selected ──
+// Reads headers/cells straight from the DOM rather than hardcoded indices,
+// since several columns (Price/SQM, Lot Area, Discount, Commission %,
+// Commission, and the checkbox column) only render for admins — hardcoded
+// positions would silently misalign depending on who's viewing the page.
+function cmGetSelectedPrintRows() {
+    return Array.from(document.querySelectorAll('.cm-row-check:checked'))
+        .map(function(cb) { return cb.closest('tr'); })
+        .filter(function(row) { return row.style.display !== 'none'; });
+}
+
+function cmGetPrintHeaders() {
+    const ths = Array.from(document.querySelectorAll('.monitoring-table thead th'));
+    return ths
+        .filter(function(th) { return !th.classList.contains('col-sticky-check') && !th.classList.contains('col-sticky-index'); })
+        .slice(0, -1) // drop Actions (always last)
+        .map(function(th) { return th.textContent.trim(); });
+}
+
+function cmGetPrintRowCells(row) {
+    const tds = Array.from(row.querySelectorAll('td'));
+    const filtered = tds.filter(function(td) {
+        return !td.classList.contains('col-sticky-check') && !td.classList.contains('col-sticky-index');
+    });
+    filtered.pop(); // drop Actions (always last)
+    return filtered.map(function(td) {
+        // Status cell has a .status-badge plus optional highlight badges
+        // (Overdue/Updated/High Value) — only the badge text belongs in print.
+        const badge = td.querySelector('.status-badge');
+        if (badge) return badge.textContent.trim();
+        return td.textContent.trim();
+    });
+}
+
+function cmPrintSelectedRecords() {
+    const rows = cmGetSelectedPrintRows();
+    if (rows.length === 0) {
+        if (typeof showToast === 'function') {
+            showToast('Please select at least one record to print.', 'warning', 'No Selection');
+        } else {
+            alert('Please select at least one record to print.');
+        }
+        return;
+    }
+
+    const headers = cmGetPrintHeaders();
+
+    let tableHtml = '<table class="cm-print-table"><thead><tr>';
+    headers.forEach(function(h) { tableHtml += '<th>' + h + '</th>'; });
+    tableHtml += '</tr></thead><tbody>';
+
+    rows.forEach(function(row) {
+        const cells = cmGetPrintRowCells(row);
+        tableHtml += '<tr>';
+        cells.forEach(function(c) { tableHtml += '<td>' + c + '</td>'; });
+        tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const printArea = document.getElementById('cmPrintArea');
+    printArea.innerHTML = `
+        <div class="cm-print-header">
+            <h2>Commission Monitoring Report</h2>
+            <p>Generated on ${dateStr} — ${rows.length} record(s)</p>
+        </div>
+        ${tableHtml}
+    `;
+
+    // Reparent out of the clipped ancestor chain for the duration of the
+    // print — same fix as Departmental Expenses / Client Database; the
+    // @media print overflow overrides above handle the rest.
+    const printAreaAnchor = document.createComment('cmPrintArea-anchor');
+    printArea.parentNode.insertBefore(printAreaAnchor, printArea);
+    document.body.appendChild(printArea);
+
+    function restoreCmPrintArea() {
+        printAreaAnchor.parentNode.insertBefore(printArea, printAreaAnchor);
+        printAreaAnchor.remove();
+        window.removeEventListener('afterprint', restoreCmPrintArea);
+    }
+    window.addEventListener('afterprint', restoreCmPrintArea);
+
+    window.print();
 }
 
 function cmDeleteSelected() {
@@ -2658,7 +2819,7 @@ function submitCmPermRequest() {
                     <div class="modal-field">
                         <label>Status <span style="color:#ef4444">*</span></label>
                         <select id="cm_edit_status" name="status" required>
-                            <option value="Not Released">Not Released</option>
+                            <option value="Not Yet Released">Not Yet Released</option>
                             <option value="Released">Released</option>
                         </select>
                     </div>
@@ -2728,6 +2889,7 @@ function submitCmPermRequest() {
 // ── Prefill form from Client Database or notification ──
 (function() {
     const params = new URLSearchParams(window.location.search);
+    const stageRequestId = params.get('stage_request');
     const sourceId = params.get('add_request_for');
 
     function applyPrefill(data, stage) {
@@ -2743,6 +2905,7 @@ function submitCmPermRequest() {
         var resolvedStage = data.commission_stage || stage || data.next_commission_stage;
         var resolvedStageTotal = data.commission_stage_total || data.downpayment_stage_total || 1;
 
+        set('commission_stage_request_id', data.commission_stage_request_id || stageRequestId);
         set('source_client_record_id', data.source_client_record_id || data.id || sourceId);
         set('commission_stage', resolvedStage);
         set('commission_stage_total', resolvedStageTotal);
@@ -2789,7 +2952,40 @@ function submitCmPermRequest() {
         window.history.replaceState({}, '', window.location.pathname);
     }
 
+    function showPrefillError(message) {
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;'
+            + 'display:flex;align-items:center;justify-content:center;';
+        overlay.innerHTML =
+            '<div style="background:white;border-radius:16px;max-width:420px;width:90%;padding:28px;'
+            + 'box-shadow:0 24px 64px rgba(0,0,0,.3);text-align:center;">'
+            + '<div style="width:48px;height:48px;border-radius:50%;background:#fef2f2;display:flex;'
+            + 'align-items:center;justify-content:center;margin:0 auto 16px;">'
+            + '<svg width="24" height="24" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24">'
+            + '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>'
+            + '</svg></div>'
+            + '<p style="font-size:14px;color:#1f2937;margin:0 0 20px;line-height:1.5;">' + message + '</p>'
+            + '<button id="_prefillErrOk" style="padding:10px 28px;background:#1e4575;color:white;'
+            + 'border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">OK</button>'
+            + '</div>';
+        document.body.appendChild(overlay);
+        document.getElementById('_prefillErrOk').addEventListener('click', function() { overlay.remove(); });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        if (stageRequestId) {
+            fetch('/api/commission-stage-requests/' + encodeURIComponent(stageRequestId) + '/prefill')
+                .then(async r => {
+                    var data = await r.json().catch(() => ({}));
+                    if (!r.ok) throw new Error(data.message || 'Unable to load the requested commission stage.');
+                    return data;
+                })
+                .then(data => applyPrefill(data, data.commission_stage))
+                .catch(err => showPrefillError(err.message));
+            return;
+        }
+
         if (sourceId) {
             fetch('/api/client-database/' + encodeURIComponent(sourceId) + '/prefill')
                 .then(async r => {
@@ -2798,7 +2994,7 @@ function submitCmPermRequest() {
                     return data;
                 })
                 .then(data => applyPrefill(data, data.commission_stage || data.next_commission_stage))
-                .catch(err => alert(err.message));
+                .catch(err => showPrefillError(err.message));
             return;
         }
 
