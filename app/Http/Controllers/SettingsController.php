@@ -550,11 +550,10 @@ private function getDeletedExpenses()
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'preferred_address' => ['nullable', 'string', 'max:255'],
-            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif', 'max:2048'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif', 'max:8192'], // 8MB,
         ]);
 
-        $disk = config('filesystems.default');
-
+        $disk = 'public';
         $data = [
             'name' => $validated['name'],
             'preferred_address' => $validated['preferred_address'] ?? null,
