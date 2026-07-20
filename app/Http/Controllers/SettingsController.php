@@ -553,7 +553,7 @@ private function getDeletedExpenses()
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif', 'max:8192'], // 8MB,
         ]);
 
-        $disk = 'public';
+        $disk = config('filesystems.avatar_disk', 'public');
         $data = [
             'name' => $validated['name'],
             'preferred_address' => $validated['preferred_address'] ?? null,
@@ -563,7 +563,16 @@ private function getDeletedExpenses()
         $newAvatar = null;
 
         if ($request->hasFile('avatar')) {
-            $newAvatar = $request->file('avatar')->store('avatars', $disk);
+            try {
+                $newAvatar = $request->file('avatar')->store('avatars', $disk);
+            } catch (\Throwable $exception) {
+                report($exception);
+
+                return back()
+                    ->withInput()
+                    ->with('error', 'Profile photo upload failed. Please try again.')
+                    ->with('open_section', 'profile');
+            }
 
             if (!$newAvatar) {
                 return back()
@@ -575,7 +584,19 @@ private function getDeletedExpenses()
             $data['avatar'] = $newAvatar;
         }
 
-        $user->update($data);
+        try {
+            $user->update($data);
+        } catch (\Throwable $exception) {
+            if ($newAvatar) {
+                try {
+                    Storage::disk($disk)->delete($newAvatar);
+                } catch (\Throwable $cleanupException) {
+                    report($cleanupException);
+                }
+            }
+
+            throw $exception;
+        }
 
         // Delete the previous uploaded avatar only after the replacement
         // was successfully stored and the user record was updated.
@@ -585,7 +606,15 @@ private function getDeletedExpenses()
             str_starts_with($oldAvatar, 'avatars/') &&
             $oldAvatar !== $newAvatar
         ) {
-            Storage::disk($disk)->delete($oldAvatar);
+            foreach (array_unique([$disk, 'public']) as $oldAvatarDisk) {
+                try {
+                    if (Storage::disk($oldAvatarDisk)->exists($oldAvatar)) {
+                        Storage::disk($oldAvatarDisk)->delete($oldAvatar);
+                    }
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
+            }
         }
 
         return redirect()

@@ -446,7 +446,7 @@
                   Select Photo
                   <input type="file" name="avatar" id="avatarFileInput" accept=".jpg,.jpeg,.png,.gif" style="display:none;" onchange="previewAvatarFile(this)">
                 </label>
-                <span style="font-size:11px;color:#94a3b8;">JPG, PNG or GIF. Max 2MB.</span>
+                <span style="font-size:11px;color:#94a3b8;">JPG, PNG or GIF. Max 8MB.</span>
                 <div id="avatarChooseError" style="display:none;color:#dc2626;font-size:12px;margin-top:12px;text-align:center;"></div>
               </div>
 
