@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -60,6 +61,32 @@ class User extends Authenticatable
             'date_hired' => 'date',
             'hidden_pages' => 'array',
         ];
+    }
+
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (!$this->avatar) {
+            return null;
+        }
+
+        if (Str::startsWith($this->avatar, ['http://', 'https://'])) {
+            return $this->avatar;
+        }
+
+        if (Str::startsWith($this->avatar, 'avatars/')) {
+            return route('users.avatar', [
+                'user' => $this->getKey(),
+                'v' => optional($this->updated_at)->timestamp,
+            ]);
+        }
+
+        return asset(ltrim($this->avatar, '/'));
+    }
+
+    public function avatarStorageDisk(): string
+    {
+        return config('filesystems.avatar_disk', 'public');
     }
 
     public function isAdmin(): bool

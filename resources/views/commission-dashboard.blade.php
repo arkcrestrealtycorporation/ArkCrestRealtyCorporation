@@ -18,8 +18,8 @@
 .cd-card-hdr{padding:14px 18px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .cd-card-hdr h3{font-size:14px;font-weight:700;color:#0f172a;margin:0}
 .cd-table{width:100%;border-collapse:collapse}
-.cd-table thead tr{background:linear-gradient(135deg,#0f2a4a,#1e4575)}
-.cd-table thead th{padding:11px 16px;text-align:left;font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap}
+.cd-table thead tr{background:#1e4575}
+.cd-table thead th{padding:11px 16px;text-align:left;font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap;position:sticky;top:0;background:#1e4575;z-index:4;box-shadow:0 2px 4px -2px rgba(0,0,0,.25)}
 .cd-table tbody tr{border-bottom:1px solid #f1f5f9;transition:background .15s}
 .cd-table tbody tr:hover{background:#f8fafc}
 .cd-table tbody tr:last-child{border-bottom:none}
@@ -151,7 +151,7 @@ $byAgent = $all->groupBy('agent_name')->map(function($rows, $agent) {
         </div>
     </div>
     <div class="cd-table-scroll" style="overflow-x:auto;">
-    <table class="cd-table" id="cdAgentTable">
+    <table class="cd-table js-sort-table" id="cdAgentTable">
         <thead>
             <tr>
                 <th>#</th>
@@ -226,7 +226,7 @@ $byAgent = $all->groupBy('agent_name')->map(function($rows, $agent) {
         </div>
     </div>
     <div class="cd-table-scroll" style="overflow-x:auto;">
-    <table class="cd-table" id="cdTxTable">
+    <table class="cd-table js-sort-table" id="cdTxTable">
         <thead>
             <tr>
                 <th>#</th>
@@ -248,7 +248,7 @@ $byAgent = $all->groupBy('agent_name')->map(function($rows, $agent) {
                 data-net-tcp="{{ $tx->net_tcp ?? 0 }}"
                 data-commission="{{ $tx->commission ?? 0 }}"
                 data-date="{{ $tx->date_requested ? $tx->date_requested->format('Y-m-d') : '' }}"
-                data-status="{{ $tx->status ?: 'Not Yet Released' }}">
+                data-status="{{ $tx->status === 'Not Released' ? 'Not Yet Released' : ($tx->status ?: 'Not Yet Released') }}">
                 <td style="color:#cbd5e1;font-weight:600;text-align:center;">{{ $i + 1 }}</td>
                 <td style="font-weight:600;color:#0f172a;">{{ $tx->agent_name ?: '—' }}</td>
                 <td>{{ $tx->client_name ?: '—' }}</td>
@@ -257,7 +257,7 @@ $byAgent = $all->groupBy('agent_name')->map(function($rows, $agent) {
                 <td style="color:#16a34a;font-weight:600;">{{ $tx->commission ? '₱'.number_format($tx->commission, 2) : '—' }}</td>
                 <td style="color:#64748b;">{{ $tx->date_requested ? $tx->date_requested->format('M d, Y') : '—' }}</td>
                 <td>
-                    <span class="cd-badge {{ $tx->status === 'Released' ? 'cd-badge-released' : 'cd-badge-pending' }}">{{ $tx->status ?: 'Not Yet Released' }}</span>
+                    <span class="cd-badge {{ $tx->status === 'Released' ? 'cd-badge-released' : 'cd-badge-pending' }}">{{ $tx->status === 'Not Released' ? 'Not Yet Released' : ($tx->status ?: 'Not Yet Released') }}</span>
                 </td>
             </tr>
             @empty
@@ -407,7 +407,7 @@ var CD_TX_COLUMNS = [
     { key: 'net-tcp',    label: 'Net TCP',    type: 'number', data: 'netTcp' },
     { key: 'commission', label: 'Commission', type: 'number', data: 'commission' },
     { key: 'date',       label: 'Date',       type: 'daterange',   data: 'date' },
-    { key: 'status',     label: 'Status',     type: 'select', data: 'status', options: ['Released', 'Not Yet Released'] },
+    { key: 'status',     label: 'Status',     type: 'select', data: 'status', options: ['Requested', 'Not Yet Released', 'Released'] },
 ];
 var cdTxFilters = {};
 

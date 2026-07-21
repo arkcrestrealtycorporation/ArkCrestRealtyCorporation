@@ -6,15 +6,16 @@
 .arc-header{background:linear-gradient(135deg,#1e4575 0%,#2563eb 100%);border-radius:16px;padding:36px 40px;margin-bottom:24px;color:white}
 .arc-header h1{font-size:24px;font-weight:700;margin:0 0 4px}
 .arc-header p{font-size:13px;color:rgba(255,255,255,.7);margin:0}
-.arc-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.arc-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+@media (max-width:900px){.arc-cards{grid-template-columns:repeat(2,1fr)}}
 .arc-card{background:white;border-radius:12px;padding:20px;border:1px solid #e8ecf0;box-shadow:0 1px 4px rgba(0,0,0,.05)}
 .arc-card-label{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
 .arc-card-value{font-size:22px;font-weight:800;color:#0f172a}
 .arc-table-wrap{background:white;border-radius:12px;border:1px solid #e8ecf0;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
 .arc-table-scroll{overflow-x:auto !important;overflow-y:visible !important;max-height:none !important;}
 .arc-table{width:100%;border-collapse:collapse}
-.arc-table thead tr{background:linear-gradient(135deg,#0f2a4a,#1e4575)}
-.arc-table thead th{padding:11px 14px;text-align:left;font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap}
+.arc-table thead tr{background:#1e4575}
+.arc-table thead th{padding:11px 14px;text-align:left;font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap;position:sticky;top:0;background:#1e4575;z-index:4;box-shadow:0 2px 4px -2px rgba(0,0,0,.25)}
 .arc-table tbody tr{border-bottom:1px solid #f1f5f9}
 .arc-table tbody tr:hover{background:#f8fafc}
 .arc-table td{padding:11px 14px;font-size:13px;color:#374151;vertical-align:middle}
@@ -90,6 +91,11 @@
             <div class="arc-card-value" style="color:#16a34a;" id="arcTotalDisplay">₱{{ number_format($totalArkcrestCommission, 2) }}</div>
             <div style="font-size:12px;color:#64748b;margin-top:4px;">ArkCrest commission income</div>
         </div>
+        <div class="arc-card">
+            <div class="arc-card-label">Total Units Sold</div>
+            <div class="arc-card-value" style="color:#A37929;" id="arcUnitsDisplay">{{ number_format($totalUnits) }}</div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px;">units from released commissions</div>
+        </div>
     </div>
 
 
@@ -122,7 +128,7 @@
         <div style="padding:40px;text-align:center;color:#94a3b8;font-size:14px;">No released commissions for this period.</div>
         @else
         <div class="arc-table-scroll" style="overflow-x:auto;">
-        <table class="arc-table">
+        <table class="arc-table js-sort-table">
             <thead>
                 <tr>
                     <th>#</th>
@@ -130,6 +136,7 @@
                     <th>Client</th>
                     <th>Project</th>
                     <th>Agent</th>
+                    <th>Units</th>
                     <th>Net TCP</th>
                     <th>Commission Terms</th>
                     <th>ARC % </th>
@@ -144,6 +151,7 @@
                 data-client="{{ $r->client_name ?? '' }}"
                 data-project="{{ $r->project_name ?? '' }}"
                 data-agent="{{ $r->agent_name ?? '' }}"
+                data-units="{{ $r->number_of_units ?? 0 }}"
                 data-net-tcp="{{ $r->net_tcp ?? 0 }}"
                 data-commission-terms="{{ $r->payment_type ?? '' }}"
                 data-arc-percent="{{ $rate ? $rate->arkcrest_percent : '' }}"
@@ -153,6 +161,7 @@
                 <td style="font-weight:600;color:#0f172a;">{{ $r->client_name ?? '—' }}</td>
                 <td style="color:#64748b;">{{ $r->project_name ?? '—' }}</td>
                 <td>{{ $r->agent_name ?? '—' }}</td>
+                <td style="text-align:center;font-weight:600;color:#A37929;">{{ $r->number_of_units ?? '—' }}</td>
                 <td style="font-weight:600;color:#1e4575;">₱{{ number_format($r->net_tcp ?? 0, 2) }}</td>
                 <td>
                     <select id="terms-{{ $r->id }}" onchange="onTermsChange({{ $r->id }}, {{ $r->net_tcp ?? 0 }})"
@@ -180,7 +189,10 @@
             </tbody>
             <tfoot>
                 <tr style="background:#f8fafc;border-top:2px solid #e2e8f0;">
-                    <td colspan="8" style="padding:12px 14px;font-size:13px;font-weight:700;color:#0f172a;text-align:right;">ARC Gross Sales Total:</td>
+                    <td colspan="9" style="padding:12px 14px;font-size:13px;font-weight:700;color:#0f172a;text-align:right;">
+                        Total Units Sold: <span id="arcUnitsFooterTotal" style="color:#A37929;">{{ number_format($totalUnits) }}</span>
+                        &nbsp;&nbsp;·&nbsp;&nbsp; ARC Gross Sales Total:
+                    </td>
                     <td style="padding:12px 14px;font-size:14px;font-weight:800;color:#16a34a;" id="arcFooterTotal">₱{{ number_format($totalArkcrestCommission, 2) }}</td>
                 </tr>
             </tfoot>
@@ -260,12 +272,13 @@ var FILTERABLE_COLUMNS = [
     { key: 'date-released',     label: 'Date Released',     type: 'daterange',   data: 'dateReleased' },
     { key: 'client',            label: 'Client',             type: 'text',   data: 'client' },
     { key: 'project',           label: 'Project',            type: 'text',   data: 'project' },
-    { key: 'agent',             label: 'Agent',               type: 'text',   data: 'agent' },
-    { key: 'net-tcp',           label: 'Net TCP',            type: 'number', data: 'netTcp' },
+    { key: 'agent',              label: 'Agent',               type: 'text',   data: 'agent' },
+    { key: 'units',              label: 'Units',               type: 'number', data: 'units' },
+    { key: 'net-tcp',            label: 'Net TCP',            type: 'numrange', data: 'netTcp' },
     { key: 'commission-terms',  label: 'Commission Terms',   type: 'select', data: 'commissionTerms',
         options: ['Full Payment', '2 Months Commission', '3 Months Commission'] },
     { key: 'arc-percent',       label: 'ARC %',               type: 'number', data: 'arcPercent' },
-    { key: 'arc-commission',    label: 'ARC Commission',     type: 'number', data: 'arcCommission' }
+    { key: 'arc-commission',    label: 'ARC Commission',     type: 'numrange', data: 'arcCommission' }
 ];
 
 var activeArcFilters = {}; // key -> current value
@@ -294,7 +307,8 @@ function toggleArcFilterColumn(key) {
     if (activeArcFilters.hasOwnProperty(key)) {
         delete activeArcFilters[key];
     } else {
-        activeArcFilters[key] = '';
+        var col = FILTERABLE_COLUMNS.find(function (c) { return c.key === key; });
+        activeArcFilters[key] = (col && (col.type === 'daterange' || col.type === 'numrange')) ? { from: '', to: '' } : '';
     }
     renderColumnFilterMenu();
     renderActiveFilterChips();
@@ -364,6 +378,40 @@ function renderActiveFilterChips() {
             input.appendChild(fromInput);
             input.appendChild(toLabel);
             input.appendChild(toInput);
+        } else if (col.type === 'numrange') {
+            if (!activeArcFilters[key] || typeof activeArcFilters[key] !== 'object') {
+                activeArcFilters[key] = { from: '', to: '' };
+            }
+            var numRange = activeArcFilters[key];
+
+            input = document.createElement('span');
+            input.style.display = 'flex';
+            input.style.alignItems = 'center';
+            input.style.gap = '6px';
+
+            var numFromInput = document.createElement('input');
+            numFromInput.type = 'number';
+            numFromInput.step = 'any';
+            numFromInput.placeholder = 'Min';
+            numFromInput.style.width = '100px';
+            numFromInput.value = numRange.from || '';
+            numFromInput.oninput = numFromInput.onchange = function () { numRange.from = this.value; applyArcFilters(); };
+
+            var numToLabel = document.createElement('span');
+            numToLabel.textContent = 'to';
+            numToLabel.style.cssText = 'color:#8a9bad;font-size:12px;';
+
+            var numToInput = document.createElement('input');
+            numToInput.type = 'number';
+            numToInput.step = 'any';
+            numToInput.placeholder = 'Max';
+            numToInput.style.width = '100px';
+            numToInput.value = numRange.to || '';
+            numToInput.oninput = numToInput.onchange = function () { numRange.to = this.value; applyArcFilters(); };
+
+            input.appendChild(numFromInput);
+            input.appendChild(numToLabel);
+            input.appendChild(numToInput);
         } else if (col.type === 'select') {
             input = document.createElement('select');
             var optAll = document.createElement('option');
@@ -437,6 +485,17 @@ function applyArcFilters() {
                 continue;
             }
 
+            if (col.type === 'numrange') {
+                var numRangeVal = activeArcFilters[key];
+                if (!numRangeVal || (numRangeVal.from === '' && numRangeVal.to === '')) continue;
+                var rawCell = (row.dataset[col.data] || '').toString().replace(/[^0-9.\-]/g, '');
+                var cellNum = rawCell === '' ? NaN : parseFloat(rawCell);
+                if (isNaN(cellNum)) { visible = false; break; }
+                if (numRangeVal.from !== '' && cellNum < parseFloat(numRangeVal.from)) { visible = false; break; }
+                if (numRangeVal.to !== '' && cellNum > parseFloat(numRangeVal.to)) { visible = false; break; }
+                continue;
+            }
+
             var val = (activeArcFilters[key] || '').toString().trim();
             if (!val) continue;
             var cellVal = (row.dataset[col.data] || '').toString();
@@ -444,9 +503,9 @@ function applyArcFilters() {
             if (col.type === 'date') {
                 if (cellVal !== val) { visible = false; break; }
             } else if (col.type === 'number') {
-                var cleanCell = cellVal.replace(/[^0-9.]/g, '');
-                var cleanVal = val.replace(/[^0-9.]/g, '');
-                if (!cleanCell.includes(cleanVal)) { visible = false; break; }
+                var cleanCell = parseFloat(cellVal.replace(/[^0-9.\-]/g, ''));
+                var cleanVal = parseFloat(val.replace(/[^0-9.\-]/g, ''));
+                if (isNaN(cleanVal) || cleanCell !== cleanVal) { visible = false; break; }
             } else if (col.type === 'select') {
                 if (cellVal !== val) { visible = false; break; }
             } else {
@@ -461,6 +520,15 @@ function applyArcFilters() {
 
         row.style.display = visible ? '' : 'none';
     });
+
+    var visibleUnits = 0;
+    document.querySelectorAll('.arc-table tbody tr').forEach(function (row) {
+        if (row.style.display !== 'none') {
+            visibleUnits += parseInt(row.dataset.units || 0, 10);
+        }
+    });
+    var unitsEl = document.getElementById('arcUnitsFooterTotal');
+    if (unitsEl) unitsEl.textContent = visibleUnits.toLocaleString();
 }
 
 document.addEventListener('click', function (e) {

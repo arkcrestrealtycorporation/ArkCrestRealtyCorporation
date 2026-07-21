@@ -22,16 +22,16 @@
         cursor: default;
     }
     table tbody tr:hover {
-        background: #eff6ff !important;
+        background: #fdf6e8 !important;
         transform: scaleY(1.03);
-        box-shadow: 0 2px 8px rgba(30,69,117,.10);
+        box-shadow: 0 2px 8px rgba(163,121,41,.20);
         position: relative;
         z-index: 1;
     }
     table tbody tr:hover td {
-        color: #1e3a5f !important;
+        color: #bf932a !important;
         font-weight: 600;
-    }    .tbl-wrap::-webkit-scrollbar,
+    }   .tbl-wrap::-webkit-scrollbar,
     .table-wrapper::-webkit-scrollbar,
     .table-container::-webkit-scrollbar,
     .tbl-scroll::-webkit-scrollbar { height: 8px; }
@@ -180,19 +180,19 @@
                                 @if(isset($sysNotifs) && $sysNotifs->count() > 0)
                                     @foreach($sysNotifs as $notif)
                                     <div class="notification-item {{ $notif->is_read ? '' : 'unread' }}"
-                                        style="cursor:{{ in_array($notif->type, ['note_reminder','user_pending','permission_request','commission_reminder','downpayment_reminder','tripping_reminder']) ? 'pointer' : 'default' }};{{ $notif->is_read && !in_array($notif->type, ['user_pending','permission_request','note_reminder','commission_reminder','downpayment_reminder','tripping_reminder']) ? 'opacity:0.5;pointer-events:none;' : '' }}"
+                                        style="cursor:{{ in_array($notif->type, ['note_reminder','user_pending','commission_reminder','commission_request_submitted','downpayment_reminder','tripping_reminder']) ? 'pointer' : 'default' }};{{ $notif->is_read && !in_array($notif->type, ['user_pending','note_reminder','commission_reminder','commission_request_submitted','downpayment_reminder','tripping_reminder']) ? 'opacity:0.5;pointer-events:none;' : '' }}"
                                         @if($notif->type === 'note_reminder')
                                         onclick="event.stopPropagation();openNoteModal({{ $notif->note_id ?? 0 }}, '{{ addslashes($notif->title) }}', '{{ addslashes($notif->message) }}', this, {{ $notif->id }})"
                                         @elseif($notif->type === 'commission_reminder')
                                         onclick="event.stopPropagation();window.location='{{ route('commission-monitoring') }}'"
+                                        @elseif($notif->type === 'commission_request_submitted')
+                                        onclick="event.stopPropagation();handleCommissionRequestNotifClick({{ $notif->id }}, {{ $notif->note_id ?? 0 }})"
                                         @elseif($notif->type === 'downpayment_reminder')
                                         onclick="event.stopPropagation();window.location='{{ route('commission-monitoring') }}'"
                                         @elseif($notif->type === 'tripping_reminder')
                                         onclick="event.stopPropagation();window.location='{{ route('site-visit-database') }}'"
                                         @elseif($notif->type === 'user_pending')
                                         onclick="event.stopPropagation();window.location='{{ route('settings') }}?panel=users'"
-                                        @elseif($notif->type === 'permission_request' && auth()->user()->isAdmin())
-                                        onclick="event.stopPropagation();window.location='{{ route('settings') }}?panel=permission-requests'"
                                         @elseif(in_array($notif->type, ['permission_approved','permission_rejected','permission_sent']))
                                         onclick="event.stopPropagation();handlePermissionNotifClick({{ $notif->id }}, '{{ $notif->note_id }}')"
                                         @endif>
@@ -242,8 +242,8 @@
             <div class="user-profile">
                 <div class="profile-content">
                     <div class="profile-avatar">
-                        @if(auth()->user()->avatar)
-                            <img src="{{ str_starts_with(auth()->user()->avatar, 'avatars/') ? \Storage::disk('public')->url(auth()->user()->avatar) : asset(auth()->user()->avatar) }}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                        @if(auth()->user()->avatar_url)
+                            <img src="{{ auth()->user()->avatar_url }}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
                         @else
                             <span>{{ substr(auth()->user()->name ?? 'U', 0, 1) }}</span>
                         @endif
@@ -276,7 +276,7 @@
                 <ul class="nav-list">
                     <!-- Finance with Dropdown -->
                     @php
-                    $financeChildren = array_filter(['departments','summary-report','commission-monitoring'], fn($k) => $canSee($k));
+                    $financeChildren = array_filter(['departments','summary-report','commission-monitoring','cash-advance'], fn($k) => $canSee($k));
                     @endphp
                     @if(count($financeChildren) > 0)
                     <li class="nav-item-wrapper">
@@ -300,7 +300,7 @@
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                                     </svg>
-                                    <span class="sidebar-text">Departments</span>
+                                    <span class="sidebar-text">Departmental Expenses</span>
                                 </a>
                             </li>
                             @endif
@@ -349,6 +349,16 @@
                                 </ul>
                             </li>
                             @endif
+                            @if($canSee('cash-advance'))
+                            <li>
+                                <a href="{{ route('cash-advance') }}" class="nav-subitem" data-page="cash-advance">
+                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                    </svg>
+                                    <span class="sidebar-text">Cash Advance</span>
+                                </a>
+                            </li>
+                            @endif
                             @if($canSee('calendar'))
                             <li>
                                 <a href="{{ route('calendar') }}" class="nav-subitem" data-page="calendar">
@@ -386,7 +396,7 @@
                                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                                         </svg>
-                                        <span class="sidebar-text">Client Database</span>
+                                        <span class="sidebar-text">Clients</span>
                                     </a>
                                     <button class="dropdown-toggle-btn" id="clientDbDropdownToggle" type="button" onclick="toggleClientDbDropdown(event)">
                                         <svg class="dropdown-arrow" id="clientDbArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -414,7 +424,7 @@
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                     </svg>
-                                    <span class="sidebar-text">Site Visit Database</span>
+                                    <span class="sidebar-text">Site Visits</span>
                                 </a>
                             </li>
                             <li>
@@ -553,10 +563,10 @@
                             </li>
                             @php
                                 $isAdminUser = auth()->check() && auth()->user()->isAdmin();
-                                $sHiddenGlobal = $isAdminUser ? [] : (auth()->user()->hidden_pages ?? []);
-                                $canSeeSetting = fn($k) => $isAdminUser || !in_array($k, $sHiddenGlobal);
+                                $userHiddenSettings = $isAdminUser ? [] : ($allHidden ?? []);
+                                $canSeeSetting = fn($k) => $isAdminUser || !in_array($k, $userHiddenSettings);
                             @endphp
-                            @if($isAdminUser || array_filter(['settings.users','settings.visibility','settings.activity','settings.deleted','settings.permissions','settings.teams','settings.period-lock'], fn($k) => !in_array($k, $sHiddenGlobal)))
+                            @if($isAdminUser || array_filter(['settings.users','settings.visibility','settings.activity','settings.deleted','settings.teams','settings.period-lock','settings.backup','settings.export'], fn($k) => !in_array($k, $userHiddenSettings)))
                             <li class="nav-submenu-label">Admin</li>
                             @endif
                             @if($canSeeSetting('settings.users'))
@@ -583,6 +593,14 @@
                                 </a>
                             </li>
                             @endif
+                            @if($isAdminUser)
+                            <li>
+                                <a href="{{ route('settings.edit-history') }}" class="nav-subitem" data-page="settings-edit-history">
+                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span class="sidebar-text">Edit History</span>
+                                </a>
+                            </li>
+                            @endif
                             @if($canSeeSetting('settings.deleted'))
                             <li>
                                 <a href="{{ route('settings') }}?panel=deleted" class="nav-subitem" data-page="settings-deleted">
@@ -591,21 +609,27 @@
                                 </a>
                             </li>
                             @endif
-                            @if($canSeeSetting('settings.permissions'))
-                            <li>
-                                <a href="{{ route('settings') }}?panel=permission-requests" class="nav-subitem" data-page="settings-permission-requests">
-                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
-                                    <span class="sidebar-text">Permission Requests</span>
-                                    @php $pendingPerms = \App\Models\PermissionRequest::where('status','pending')->count(); @endphp
-                                    @if($pendingPerms > 0)<span style="background:#ef4444;color:white;border-radius:20px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:auto;">{{ $pendingPerms }}</span>@endif
-                                </a>
-                            </li>
-                            @endif
                             @if($canSeeSetting('settings.teams'))
                             <li>
                                 <a href="{{ route('settings') }}?panel=teams" class="nav-subitem" data-page="settings-teams">
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                     <span class="sidebar-text">Team Management</span>
+                                </a>
+                            </li>
+                            @endif
+                            @if($canSeeSetting('settings.backup'))
+                            <li>
+                                <a href="{{ route('backup.index') }}" class="nav-subitem" data-page="settings-backup">
+                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-4 8v4m0 0l-2-2m2 2l2-2M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    <span class="sidebar-text">Backup &amp; Restore</span>
+                                </a>
+                            </li>
+                            @endif
+                            @if($canSeeSetting('settings.export'))
+                            <li>
+                                <a href="{{ route('admin.export') }}" class="nav-subitem" data-page="settings-export">
+                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M7 10l5 5 5-5M12 15V3"/></svg>
+                                    <span class="sidebar-text">Export Records</span>
                                 </a>
                             </li>
                             @endif
@@ -693,6 +717,18 @@
                 }
             })
             .catch(() => { window.location.href = '/dashboard'; });
+    }
+
+    function handleCommissionRequestNotifClick(notifId, stageRequestId) {
+        const panel = document.getElementById('notificationPanel');
+        if (panel) panel.classList.remove('show');
+
+        fetch('/notifications/' + notifId + '/read', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' }
+        }).catch(() => {});
+
+        window.location.href = '/commission-monitoring?stage_request=' + encodeURIComponent(stageRequestId);
     }
 
     function handleClientDoneNotifClick(notifId, recordId) {
@@ -1036,6 +1072,7 @@
     <script src="{{ asset('js/sidebar-toggle.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/sidebar-active.js') }}?v={{ time() }}"></script>
     <script src="{{ asset('js/global-search.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/table-sort.js') }}?v={{ time() }}"></script>
 
     <script>
     // ===== REAL-TIME NOTIFICATION POLLING (every 30s) =====
@@ -1072,6 +1109,7 @@
             permission_approved: '<svg fill="none" stroke="#16a34a" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
             permission_rejected: '<svg fill="none" stroke="#dc2626" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
             trip_done:           '<svg fill="none" stroke="#16a34a" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
+            commission_request_submitted: '<svg fill="none" stroke="#A37929" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
             client_done:         '<svg fill="none" stroke="#16a34a" viewBox="0 0 24 24" style="width:14px;height:14px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
         };
         const iconBg = {
@@ -1080,11 +1118,12 @@
             note_reminder:       'background:#dbeafe;',
             trip_done:           'background:#dcfce7;',
             client_done:         'background:#dcfce7;',
+            commission_request_submitted: 'background:#fef3c7;',
         };
         const icon = typeIcons[n.type] || typeIcons.permission_sent;
         const bg = iconBg[n.type] || '';
         const isRead = n.is_read;
-        const nonClickable = isRead && !['user_pending','permission_request','note_reminder'].includes(n.type);
+        const nonClickable = isRead && !['user_pending','note_reminder','commission_request_submitted'].includes(n.type);
         const opacity = nonClickable ? 'opacity:0.5;pointer-events:none;' : '';
 
         let onclick = '';
@@ -1094,14 +1133,14 @@
             onclick = `onclick="event.stopPropagation();openNoteModal(${n.note_id || 0}, '${safeTitle}', '${safeMsg}', this, ${n.id})"`;
         } else if (n.type === 'user_pending') {
             onclick = `onclick="event.stopPropagation();window.location='/settings?panel=users'"`;
-        } else if (n.type === 'permission_request') {
-            onclick = `onclick="event.stopPropagation();window.location='/settings?panel=permission-requests'"`;
         } else if (['permission_approved','permission_rejected','permission_sent'].includes(n.type)) {
             onclick = `onclick="event.stopPropagation();handlePermissionNotifClick(${n.id}, '${n.note_id || ''}')"`;
         } else if (n.type === 'trip_done' && n.note_id) {
             onclick = `onclick="event.stopPropagation();handleTripDoneNotifClick(${n.id}, ${n.note_id})"`;
         } else if (n.type === 'client_done' && n.note_id) {
             onclick = `onclick="event.stopPropagation();handleClientDoneNotifClick(${n.id}, ${n.note_id})"`;
+        } else if (n.type === 'commission_request_submitted' && n.note_id) {
+            onclick = `onclick="event.stopPropagation();handleCommissionRequestNotifClick(${n.id}, ${n.note_id})"`;
         }
 
         return `<div class="notification-item ${isRead ? '' : 'unread'}" style="cursor:${onclick ? 'pointer' : 'default'};${opacity}" ${onclick}>
@@ -1239,6 +1278,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         pollNotifications();
     });
+    </script>
     @endif
 
     <style>

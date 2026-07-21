@@ -95,6 +95,15 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
 
     // Settings
     Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings');
+    Route::get('/users/{user}/avatar', [App\Http\Controllers\UserAvatarController::class, 'show'])
+        ->whereNumber('user')
+        ->name('users.avatar');
+    Route::post('/settings/deleted/bulk-restore', [App\Http\Controllers\SettingsController::class, 'bulkRestoreRecords'])->name('settings.deleted.bulk-restore');
+    Route::post('/settings/deleted/bulk-delete', [App\Http\Controllers\SettingsController::class, 'bulkDeleteRecords'])->name('settings.deleted.bulk-delete');
+
+    // Edit History / Audit Trail (Administrator only — dedicated controller & route)
+    Route::get('/settings/edit-history', [App\Http\Controllers\Admin\EditHistoryController::class, 'index'])
+        ->name('settings.edit-history')->middleware('admin');
     Route::post('/settings/notifications', [App\Http\Controllers\SettingsController::class, 'saveNotifications'])->name('settings.notifications');
     Route::post('/settings/smtp', [App\Http\Controllers\SettingsController::class, 'saveSmtp'])->name('settings.smtp');
     Route::post('/settings/profile', [App\Http\Controllers\SettingsController::class, 'updateProfile'])->name('settings.profile');
@@ -112,6 +121,19 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::delete('/expenses/{id}/purge', [App\Http\Controllers\DepartmentalExpensesController::class, 'purge'])->name('expenses.purge');
     Route::post('/settings/period-lock', [App\Http\Controllers\SettingsController::class, 'lockPeriod'])->name('settings.period-lock.store');
     Route::delete('/settings/period-lock/{id}', [App\Http\Controllers\SettingsController::class, 'unlockPeriod'])->name('settings.period-lock.destroy');
+
+    // Backup & Restore
+    Route::get('/settings/backup', [App\Http\Controllers\BackupController::class, 'index'])->name('backup.index');
+    Route::post('/settings/backup/create-csv', [App\Http\Controllers\BackupController::class, 'createCsv'])->name('backup.create-csv');
+    Route::post('/settings/backup/create-pdf', [App\Http\Controllers\BackupController::class, 'createPdf'])->name('backup.create-pdf');
+    Route::post('/settings/backup/upload-restore', [App\Http\Controllers\BackupController::class, 'uploadAndRestore'])->name('backup.upload-restore');
+    Route::get('/settings/backup/{filename}/download', [App\Http\Controllers\BackupController::class, 'download'])->name('backup.download');
+    Route::post('/settings/backup/{filename}/restore', [App\Http\Controllers\BackupController::class, 'restore'])->name('backup.restore');
+    Route::delete('/settings/backup/{filename}', [App\Http\Controllers\BackupController::class, 'destroy'])->name('backup.destroy');
+
+    // Export Records
+    Route::get('/admin/export', [App\Http\Controllers\AdminExportController::class, 'index'])->name('admin.export');
+    Route::post('/admin/export/download', [App\Http\Controllers\AdminExportController::class, 'download'])->name('admin.export.download');
 
     // User management (admin only)
     Route::get('/settings/users', [App\Http\Controllers\SettingsController::class, 'users'])->name('settings.users');
@@ -146,6 +168,7 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     // Client Database
     Route::get('/client-database', [App\Http\Controllers\SalesMarketingController::class, 'clientDatabase'])->name('client-database');
     Route::get('/api/client-database/{id}/prefill', [App\Http\Controllers\SalesMarketingController::class, 'prefillCommission']);
+    Route::get('/api/commission-stage-requests/{id}/prefill', [App\Http\Controllers\SalesMarketingController::class, 'prefillCommissionStageRequest']);
     Route::get('/api/client-database/check-duplicate', [App\Http\Controllers\SalesMarketingController::class, 'checkDuplicate']);
     Route::get('/reserved-clients', [App\Http\Controllers\SalesMarketingController::class, 'reservedClients'])->name('reserved-clients');
     Route::post('/reserved-clients/add', [App\Http\Controllers\SalesMarketingController::class, 'storeReservedClient'])->name('reserved-clients.store');
@@ -163,6 +186,8 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::patch('/client-database/{id}/downpayment-status', [App\Http\Controllers\SalesMarketingController::class, 'updateDownpaymentStatus'])->name('client-database.downpayment-status');
     Route::patch('/client-database/{id}/downpayment-installment', [App\Http\Controllers\SalesMarketingController::class, 'updateDownpaymentInstallment'])->name('client-database.downpayment-installment');
     Route::get('/api/client-database/{id}/installments', [App\Http\Controllers\SalesMarketingController::class, 'getInstallments']);
+    Route::get('/api/client-database/{id}/downpayment-summary', [App\Http\Controllers\SalesMarketingController::class, 'downpaymentSummary']);
+    Route::post('/api/client-database/{id}/commission-request', [App\Http\Controllers\SalesMarketingController::class, 'requestCommissionStage'])->name('client-database.commission-request');
     Route::post('/api/client-database/{id}/installments/setup', [App\Http\Controllers\SalesMarketingController::class, 'setupInstallments']);
     Route::patch('/api/installments/{id}/amount', [App\Http\Controllers\SalesMarketingController::class, 'updateInstallmentAmount']);
     Route::patch('/api/installments/{id}/paid', [App\Http\Controllers\SalesMarketingController::class, 'markInstallmentPaid']);
@@ -212,6 +237,13 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::put('/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'update'])->name('commission-monitoring.update');
     Route::delete('/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'destroy'])->name('commission-monitoring.destroy');
     Route::post('/commission-monitoring/bulk-delete', [App\Http\Controllers\CommissionMonitoringController::class, 'bulkDestroy'])->name('commission-monitoring.bulk-delete');
+
+    // Cash Advance
+    Route::get('/cash-advance', [App\Http\Controllers\CashAdvanceController::class, 'index'])->name('cash-advance')->middleware('page.visible');
+    Route::post('/cash-advance', [App\Http\Controllers\CashAdvanceController::class, 'store'])->name('cash-advance.store');
+    Route::post('/cash-advance/{id}/approve', [App\Http\Controllers\CashAdvanceController::class, 'approve'])->name('cash-advance.approve');
+    Route::post('/cash-advance/{id}/reject', [App\Http\Controllers\CashAdvanceController::class, 'reject'])->name('cash-advance.reject');
+    Route::delete('/cash-advance/{id}', [App\Http\Controllers\CashAdvanceController::class, 'destroy'])->name('cash-advance.destroy');
 
     // Calendar
     Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'index'])->name('calendar')->middleware('page.visible');

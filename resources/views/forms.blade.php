@@ -5,6 +5,7 @@
 .frm-wrap{padding:24px 30px;max-width:816px;margin:0 auto}
 .btn-clear-f{padding:10px 24px;background:#f3f4f6;color:#374151;border:2px solid #d0d5dd;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer}
 .btn-print-f{display:inline-flex;align-items:center;gap:8px;padding:10px 24px;background:#1e4575;color:white;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer}
+.btn-print-f:disabled{opacity:.45;cursor:not-allowed;background:#8b98ab}
 .btn-submit-f{display:inline-flex;align-items:center;gap:8px;padding:10px 24px;background:linear-gradient(135deg,#1e4575 0%,#2563eb 60%,#1e4575 100%);background-size:200% auto;color:white;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;transition:all .2s}
 .btn-submit-f:disabled{opacity:.55;cursor:not-allowed}
 .frm-card{background:white;padding:32px 48px 32px 48px;border:1px solid #ccc;font-family:Arial,sans-serif;color:#000;width:816px;box-sizing:border-box;margin:0 auto;}
@@ -130,6 +131,17 @@
     #frmPreviewModal, #frmPreviewModal *{visibility:visible}
     #frmPreviewModal{position:fixed;inset:0;background:#fff;padding:0;margin:0;display:flex!important;align-items:flex-start;justify-content:center;overflow:visible;}
     #frmPreviewModal .modal-bar{display:none!important}
+    #frmPreviewModal .frm-preview-frame{
+    width:auto!important;
+    height:auto!important;
+    overflow:visible!important;
+    }
+    #frmPreviewModal .modal-body-pad{
+    display:block!important;
+    overflow:visible!important;
+    height:auto!important;
+    padding:0!important;
+    }
     #frmPreviewBody{box-shadow:none!important;width:auto!important;height:auto!important;background:transparent!important;padding:0!important}
     #frmPreviewBody .frm-card{
     position:static;
@@ -312,9 +324,13 @@
 
     <!-- Buttons (screen only) -->
     <div class="frm-btns dept-sel">
-    <button class="btn-clear-f" onclick="openClearConfirm('budget')">Clear</button>    <button class="btn-print-f" onclick="openPreview('frmCard','Budget Request Form')">
+    <button class="btn-clear-f" onclick="openClearConfirm('budget')">Clear</button>    <button class="btn-print-f" id="btnSubmitBudget" onclick="openPreview('frmCard','Budget Request Form','submit')">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+    Submit
+    </button>
+    <button class="btn-print-f" id="btnPrintBudget" onclick="openPreview('frmCard','Budget Request Form','print')" disabled title="Submit the form first to enable printing">
     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-    Print and Submit
+    Print
     </button>
     </div>
 
@@ -413,7 +429,9 @@
     @foreach($properties as $prop)
     <option value="{{ $prop->name }}" data-developer="{{ $prop->developer }}">{{ $prop->name }}{{ $prop->developer ? ' ('.$prop->developer.')' : '' }}</option>
     @endforeach
+    <option value="__others__">Others (type property name)</option>
     </select>
+    <input type="text" id="sv_property_other" placeholder="Type property name, then press Enter or click away" autocomplete="off" style="display:none;margin-top:4px;" onkeydown="if(event.key==='Enter'){event.preventDefault();commitOtherPropertySV(this);}" onblur="commitOtherPropertySV(this)">
     @else
     <input type="text" id="sv_property" required placeholder="Type property name..." autocomplete="off" oninput="svPropertyAutocomplete(this.value)" onblur="setTimeout(checkDuplicateSV,300)">
     <div id="svPropertyAcList" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid #ccc;border-radius:0 0 6px 6px;box-shadow:0 6px 18px rgba(0,0,0,.12);z-index:999;max-height:150px;overflow-y:auto;font-size:12px;"></div>
@@ -494,7 +512,7 @@
     {{-- Shared Preview / Print Modal  --}}
     {{-- ============================= --}}
     <div id="frmPreviewModal" class="frm-preview-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;overflow:hidden;padding:0;">
-    <div style="background:white;width:100vw;height:100vh;display:flex;flex-direction:column;box-shadow:none;overflow:hidden;">
+    <div class="frm-preview-frame" style="background:white;width:100vw;height:100vh;display:flex;flex-direction:column;box-shadow:none;overflow:hidden;">
     {{-- Modal Header --}}
     <div class="modal-bar" style="background:linear-gradient(135deg,#1e4575,#2563eb);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;">
     <div style="color:white;font-weight:700;font-size:16px;" id="frmPreviewLabel">Preview</div>
@@ -786,6 +804,12 @@ function clearForm(){
     document.querySelectorAll('.liq-date-input,.liq-receipt-input,.liq-particulars-input,.liq-amount-input').forEach(function(el){el.value='';});
     document.getElementById('f_dept').value='HUMAN RESOURCES';
     updDept();
+    // A cleared form is a fresh, unsaved request — Print stays locked
+    // until it's actually submitted again, and we grab a new preview
+    // control number for whatever gets filled in next.
+    _budgetSubmitted = false;
+    updatePrintButtonState();
+    loadControlNumberPreview();
 }
 // Live comma formatting for peso amount fields (e.g. 10000 -> 10,000)
 // Keeps the cursor in place relative to the end of the value so typing
@@ -826,6 +850,7 @@ function loadControlNumberPreview(){
     });
 }
 loadControlNumberPreview();
+updatePrintButtonState();
 
 // Reads a peso-formatted input (which may contain thousands separators)
 // and returns a plain number, or null if the field is empty/invalid.
@@ -891,12 +916,24 @@ function collectBudgetRequestData(){
     };
 }
 
+// Whether the form currently on screen has already been saved to All
+// Expenses. Print is gated on this — it only unlocks once a real,
+// saved record (with an assigned control number) exists, so a printed
+// copy always reflects something that was actually submitted. Reset
+// whenever the form is cleared or a fresh one is started.
+var _budgetSubmitted = false;
+function updatePrintButtonState(){
+    var btn = document.getElementById('btnPrintBudget');
+    if(!btn) return;
+    btn.disabled = !_budgetSubmitted;
+    btn.title = _budgetSubmitted ? '' : 'Submit the form first to enable printing';
+}
 var _budgetSubmitting = false;
-function submitBudgetRequestAndPrint(){
+function submitBudgetRequest(){
     if(_budgetSubmitting) return;
     var data = collectBudgetRequestData();
     if(!data.requestor_name || !data.category || !data.requested_amount){
-    showToast('Please fill in Name, Particular, and Amount Requested before printing.', 'error', 'Missing details');
+    showToast('Please fill in Name, Particular, and Amount Requested before submitting.', 'error', 'Missing details');
     return;
     }
     _budgetSubmitting = true;
@@ -918,9 +955,9 @@ function submitBudgetRequestAndPrint(){
     var previewCtrl = document.querySelector('#frmPreviewBody #ctrlNumDisplay');
     if(previewCtrl) previewCtrl.innerHTML = document.getElementById('ctrlNumDisplay').innerHTML;
     showToast('Added to All Expenses — Control Number: ' + res.d.control_number, 'success', 'Submitted');
-    window.print();
-    // Get the next control number ready for whatever request comes next
-    loadControlNumberPreview();
+    _budgetSubmitted = true;
+    updatePrintButtonState();
+    closePreview();
     }).catch(function(){
     _budgetSubmitting = false;
     showToast('Network error. Please try again.', 'error');
@@ -947,10 +984,55 @@ function fetchAgentName(){
 }
 document.addEventListener('DOMContentLoaded', fetchAgentName);
 
+// Handles the Property Name <select>. When the user picks "Others",
+// reveal the free-text field instead of treating "__others__" as a
+// real property. When a real property is picked, auto-fill the
+// developer and run the usual duplicate check.
 function onPropertySelectSV(sel){
+    var otherInput = document.getElementById('sv_property_other');
+    if(sel.value === '__others__'){
+    // Reveal the free-text field and wait for a name — skip the
+    // duplicate check / developer auto-fill until it's actually typed.
+    if(otherInput){
+    otherInput.style.display = '';
+    otherInput.value = '';
+    otherInput.focus();
+    }
+    return;
+    }
+    if(otherInput) otherInput.style.display = 'none';
     var opt = sel.options[sel.selectedIndex];
     var dev = opt ? opt.getAttribute('data-developer') : '';
     if (dev) document.getElementById('sv_company').value = dev;
+    checkDuplicateSV();
+}
+
+// Commits whatever was typed in the "Others" field as a new option on
+// <select id="sv_property">, so the select stays the single source of
+// truth for everything downstream (duplicate check, submission, print
+// preview, PDF) without any of that code needing to change.
+function commitOtherPropertySV(input){
+    var sel = document.getElementById('sv_property');
+    if(!sel) return;
+    var name = input.value.trim();
+    if(!name){
+    sel.value = '';
+    input.style.display = 'none';
+    return;
+    }
+    var existing = Array.prototype.filter.call(sel.options, function(o){
+    return o.value === name && o.value !== '__others__';
+    })[0];
+    if(!existing){
+    existing = document.createElement('option');
+    existing.value = name;
+    existing.textContent = name;
+    existing.setAttribute('data-custom', '1');
+    sel.insertBefore(existing, sel.querySelector('option[value="__others__"]'));
+    }
+    sel.value = name;
+    input.style.display = 'none';
+    input.value = '';
     checkDuplicateSV();
 }
 
@@ -996,7 +1078,7 @@ function checkDuplicateSV(){
     var property = propEl ? propEl.value.trim() : '';
     var warn = document.getElementById('svDupWarning');
     var btn = document.getElementById('svSubmitBtn');
-    if(!client || !property){ warn.classList.remove('show'); return; }
+    if(!client || !property || property === '__others__'){ warn.classList.remove('show'); return; }
     fetch('/api/tripping/check-duplicate?client_name='+encodeURIComponent(client)+'&property_name='+encodeURIComponent(property))
     .then(function(r){return r.json();})
     .then(function(d){
@@ -1046,7 +1128,17 @@ function clearSVForm(){
     if(el) el.value = '';
     });
     var propEl = document.getElementById('sv_property');
-    if(propEl) propEl.value = '';
+    if(propEl){
+    if(propEl.tagName === 'SELECT'){
+    // Remove any custom "Others" options added during this session so
+    // a cleared form doesn't leave stale one-off property names sitting
+    // in the dropdown for the next entry.
+    Array.prototype.slice.call(propEl.querySelectorAll('option[data-custom="1"]')).forEach(function(o){ o.remove(); });
+    }
+    propEl.value = '';
+    }
+    var propOtherEl = document.getElementById('sv_property_other');
+    if(propOtherEl){ propOtherEl.style.display = 'none'; propOtherEl.value = ''; }
     var teamSelect = document.getElementById('sv_team_select');
     if(teamSelect) teamSelect.value = '';
     document.getElementById('svDupWarning').classList.remove('show');
@@ -1063,7 +1155,7 @@ function submitSiteVisit(){
     var data = collectSVData();
     var errors = [];
     if(!data.client_name) errors.push('Client name is required.');
-    if(!data.property_name) errors.push('Property name is required.');
+    if(!data.property_name || data.property_name === '__others__') errors.push('Property name is required.');
     if(!data.tripping_date) errors.push('Visit date is required.');
     if(!data.tripping_time) errors.push('Visit time is required.');
     if(!data.tripping_type) errors.push('Mode of visit is required.');
@@ -1147,10 +1239,71 @@ function formatFriendlyTime(timeStr){
     return h12 + ':' + m + ' ' + ampm;
 }
 
-function openPreview(cardId, label){
+function openPreview(cardId, label, action){
+    if(cardId === 'frmCard' && action === 'print' && !_budgetSubmitted){
+    showToast('Please submit the form first before printing.', 'error', 'Not submitted yet');
+    return;
+    }
     document.body.appendChild(document.getElementById('frmPreviewModal'));
     var clone = document.getElementById(cardId).cloneNode(true);
     clone.querySelectorAll('.frm-btns,.dept-sel,.no-print-sv').forEach(function(el){ el.remove(); });
+
+    // The "Others" free-text input for Property Name is an editing aid
+    // only — by preview time its value has already been committed onto
+    // the <select>, so drop the raw input element from the printed clone.
+    var propOtherClone = clone.querySelector('#sv_property_other');
+    if(propOtherClone) propOtherClone.remove();
+
+    // Mode of Visit and Property Name are the two Site Visit fields paired
+    // with a sibling "suggestion" element in the same cell (a <datalist>
+    // for Mode of Visit; a <select> or a custom autocomplete box for
+    // Property Name, depending on whether properties exist in the DB).
+    // Rather than rely on clone/list-attribute/select quirks to carry the
+    // value across, read it directly from the live, connected element and
+    // drop it in as plain text.
+    if(cardId === 'frmCardSV'){
+    var propOtherLive = document.getElementById('sv_property_other');
+    if(propOtherLive && propOtherLive.style.display !== 'none' && propOtherLive.value.trim()){
+        commitOtherPropertySV(propOtherLive);
+    }
+
+    var modeLive = document.getElementById('sv_mode');
+    var modeClone = clone.querySelector('#sv_mode');
+    if(modeClone){
+    var modeSpan = document.createElement('span');
+    modeSpan.textContent = modeLive ? modeLive.value : '';
+    var modeCs = getComputedStyle(modeLive || modeClone);
+    modeSpan.style.font = modeCs.font;
+    modeSpan.style.display = 'inline-block';
+    modeSpan.style.width = '100%';
+    modeClone.parentNode.replaceChild(modeSpan, modeClone);
+    }
+    var svModeDatalist = clone.querySelector('#svVisitTypeOptions');
+    if(svModeDatalist) svModeDatalist.remove();
+
+    var propLive = document.getElementById('sv_property');
+    var propClone = clone.querySelector('#sv_property');
+    if(propClone){
+    var propText = '';
+    if(propLive){
+    if(propLive.tagName === 'SELECT'){
+    var liveOpt = propLive.options[propLive.selectedIndex];
+    propText = (liveOpt && liveOpt.value && liveOpt.value !== '__others__') ? liveOpt.text : '';
+    } else {
+    propText = propLive.value || '';
+    }
+    }
+    var propSpan = document.createElement('span');
+    propSpan.textContent = propText;
+    var propCs = getComputedStyle(propLive || propClone);
+    propSpan.style.font = propCs.font;
+    propSpan.style.display = 'inline-block';
+    propSpan.style.width = '100%';
+    propClone.parentNode.replaceChild(propSpan, propClone);
+    }
+    var svPropAcList = clone.querySelector('#svPropertyAcList');
+    if(svPropAcList) svPropAcList.remove();
+    }
 
     // Strip placeholder text from every field so empty inputs show blank
     // in the print preview and actual print/PDF output, instead of
@@ -1185,13 +1338,14 @@ function openPreview(cardId, label){
     field.parentNode.replaceChild(span, field);
     });
 
-    // <select> fields (e.g. Team) show their first/default option text
-    // when nothing meaningful is selected. Replace with plain text of the
-    // selected option, or blank if the selected value is empty.
+    // <select> fields (e.g. Team, Property) show their first/default
+    // option text when nothing meaningful is selected. Replace with plain
+    // text of the selected option, or blank if the selected value is
+    // empty or still the "Others" placeholder value.
     clone.querySelectorAll('select').forEach(function(field){
     var opt = field.options[field.selectedIndex];
     var span = document.createElement('span');
-    span.textContent = (opt && opt.value) ? opt.text : '';
+    span.textContent = (opt && opt.value && opt.value !== '__others__') ? opt.text : '';
     var cs = getComputedStyle(field);
     span.style.font = cs.font;
     span.style.display = 'inline-block';
@@ -1215,8 +1369,15 @@ function openPreview(cardId, label){
     document.getElementById('frmPreviewLabel').textContent = label + ' — Preview';
     var modal = document.getElementById('frmPreviewModal');
     modal.dataset.source = cardId;
+    modal.dataset.action = action || '';
     var printLabelEl = document.getElementById('frmPreviewPrintLabel');
-    if(printLabelEl) printLabelEl.textContent = (cardId === 'frmCard') ? 'Print and Submit' : 'Print';
+    if(printLabelEl){
+    if(cardId === 'frmCard'){
+    printLabelEl.textContent = (action === 'submit') ? 'Submit' : 'Print';
+    } else {
+    printLabelEl.textContent = 'Print';
+    }
+    }
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     setTimeout(fitPreviewCard, 0);
@@ -1226,8 +1387,18 @@ function closePreview(){
     document.body.style.overflow = '';
 }
 function previewPrint(){
-    var src = document.getElementById('frmPreviewModal').dataset.source;
-    if(src === 'frmCard'){ submitBudgetRequestAndPrint(); } else { window.print(); }
+    var modal = document.getElementById('frmPreviewModal');
+    var src = modal.dataset.source;
+    var action = modal.dataset.action;
+    if(src === 'frmCard' && action === 'submit'){
+    submitBudgetRequest();
+    } else {
+    // Either the Site Visit form, or the budget form's Print action —
+    // by the time Print is reachable the form has already been
+    // submitted (the button is disabled/gated until then), so this
+    // never triggers another save.
+    window.print();
+    }
 }
 function previewDownload(){
     var src = document.getElementById('frmPreviewModal').dataset.source;
@@ -1256,10 +1427,15 @@ function generatePDF(cardId, filename, incrementCtrl){
 
     el.querySelectorAll('input,textarea,select').forEach(function(field){
     if(field.classList.contains('friendly-date-hidden')) return;
+    // Skip fields that are already hidden for other reasons (e.g. the
+    // inactive "Others" property text input) — capturing/replacing them
+    // would force them visible again once cleanup() restores display.
+    if(field.style.display === 'none') return;
     var span=document.createElement('span');
     var value;
     if(field.tagName==='SELECT'){
-    value = field.options[field.selectedIndex]?.text || '';
+    var selOpt = field.options[field.selectedIndex];
+    value = (selOpt && selOpt.value !== '__others__') ? (selOpt.text || '') : '';
     } else if(field.type === 'date'){
     value = field.value ? formatFriendlyDate(field.value) : '';
     } else {
@@ -1274,12 +1450,13 @@ function generatePDF(cardId, filename, incrementCtrl){
     span.style.padding=cs.padding;
     span.style.margin=cs.margin;
     span.style.border='none';
+    var originalDisplay = field.style.display;
     field.style.display='none';
     field.parentNode.insertBefore(span,field);
-    replacements.push({field:field,span:span});
+    replacements.push({field:field,span:span,originalDisplay:originalDisplay});
 });
     function cleanup(){
-    replacements.forEach(r=>{r.span.remove();r.field.style.display='';});
+    replacements.forEach(r=>{r.span.remove();r.field.style.display=r.originalDisplay;});
     el.querySelectorAll('.frm-btns,.dept-sel,.no-print-sv').forEach(e=>e.style.display='');
     if(dlBtn) dlBtn.disabled=false;
     // Re-apply mobile auto-fit scaling now that the full-size capture is done

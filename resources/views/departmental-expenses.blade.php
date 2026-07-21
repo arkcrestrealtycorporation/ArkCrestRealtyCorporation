@@ -99,65 +99,47 @@
     }
     </script>
 
-    <!-- Department Budget Overview -->
+    <!-- Department Expenses Overview (observation only — budget tracking removed) -->
     @if(!in_array('departments.budget-cards', $hiddenSections))
     <div class="budget-overview-container">
         <h3 class="budget-overview-title">
             <svg class="title-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 24px; height: 24px;">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            Departments Allowable Budgets
+            Departments Expenses
         </h3>
         <div class="budget-cards-grid">
             @foreach($departments as $dept)
                 @if($dept->slug !== 'capex')
                 @php
-                    $totalExpenses = \App\Models\CommissionRequest::where('department', $dept->name)->sum('requested_amount');
-                    $remaining = $dept->allowable_budget - $totalExpenses;
-                    $pct = $dept->allowable_budget > 0 ? min(100, ($totalExpenses / $dept->allowable_budget) * 100) : 0;
-                    $barColor = $pct >= 90 ? '#ef4444' : ($pct >= 70 ? '#f59e0b' : '#16a34a');
+                    $totalExpenses = $commitments[$dept->name]['liquidated'] ?? 0;
                 @endphp
                 <div class="budget-card-compact" onclick="selectDepartmentFromCard('{{ $dept->name }}')" style="cursor:pointer;" title="Click to select {{ $dept->name }}">
                     <div class="budget-card-header-compact" style="padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-bottom:10px;">
                         <h4 style="font-size:13px;font-weight:700;color:#fff;margin:0;white-space:normal;word-break:break-word;">{{ $dept->name }}</h4>
-                        @if($dept->budget_from || $dept->budget_to)
-                        <div style="font-size:12px;color:rgba(255,255,255,0.9);margin-top:5px;font-weight:500;">
-                            {{ $dept->budget_from?->format('M d, Y') ?? '—' }} → {{ $dept->budget_to?->format('M d, Y') ?? '—' }}
-                        </div>
-                        @else
-                        <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:5px;font-style:italic;">No date set</div>
-                        @endif
                     </div>
                     <div class="budget-card-body-compact">
-                        <div style="display:flex;flex-direction:column;gap:6px;">
-                            <div style="display:flex;justify-content:space-between;font-size:12px;">
-                                <span style="color:#6b7280;">Budget</span>
-                                <span style="font-weight:700;color:#1e4575;" id="budget_display_{{ $dept->id }}">₱{{ number_format($dept->allowable_budget, 2) }}</span>
-                            </div>
-                            <div style="display:flex;justify-content:space-between;font-size:12px;">
-                                <span style="color:#6b7280;">Expenses</span>
-                                <span style="font-weight:600;color:#dc2626;">₱{{ number_format($totalExpenses, 2) }}</span>
-                            </div>
-                            <div style="display:flex;justify-content:space-between;font-size:12px;">
-                                <span style="color:#6b7280;">Remaining</span>
-                                <span style="font-weight:700;color:{{ $remaining >= 0 ? '#16a34a' : '#dc2626' }};" id="remaining_display_{{ $dept->id }}">₱{{ number_format($remaining, 2) }}</span>
-                            </div>
+                        <div style="display:flex;justify-content:space-between;font-size:12px;">
+                            <span style="color:#6b7280;">Expenses</span>
+                            <span style="font-weight:600;color:#dc2626;">₱{{ number_format($totalExpenses, 2) }}</span>
                         </div>
-                        {{-- Progress bar --}}
-                        <div style="margin-top:10px;background:#f3f4f6;border-radius:99px;height:6px;overflow:hidden;">
-                            <div style="height:100%;width:{{ $pct }}%;background:{{ $barColor }};border-radius:99px;"></div>
-                        </div>
-                        <div style="font-size:10px;color:#9ca3af;text-align:right;margin-top:2px;">{{ number_format($pct, 1) }}% used</div>
-                        @if(auth()->user()->isAdmin())
-                        <div style="display:flex;gap:8px;margin-top:10px;">
-                            <button onclick="event.stopPropagation();openBudgetModal({{ $dept->id }}, '{{ $dept->name }}', {{ $dept->allowable_budget }}, '{{ $dept->budget_from?->format('Y-m-d') ?? '' }}', '{{ $dept->budget_to?->format('Y-m-d') ?? '' }}')" class="btn-update-budget" style="flex:1;justify-content:center;">
-                                <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                Edit
-                            </button>
-                            <button onclick="event.stopPropagation();deleteDepartment({{ $dept->id }}, '{{ $dept->name }}')" style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px;">
-                                <svg style="width:13px;height:13px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                Delete
-                            </button>
+
+                        @php $recent = $recentExpenses[$dept->name] ?? collect(); @endphp
+                        @if($recent->isNotEmpty())
+                        <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e5e7eb;">
+                            <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">
+                                Recent Expenses
+                            </div>
+                            @foreach($recent as $exp)
+                            <div style="display:flex;justify-content:space-between;font-size:11px;color:#374151;margin-bottom:2px;">
+                                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%;" title="{{ $exp->category }}">
+                                    {{ $exp->category }}
+                                </span>
+                                <span style="color:#059669;font-weight:600;">
+                                    ₱{{ number_format($exp->total_expenses, 2) }}
+                                </span>
+                            </div>
+                            @endforeach
                         </div>
                         @endif
                     </div>
@@ -220,8 +202,8 @@
                 <!-- Row 2: 2 fields -->
                 <div class="form-row-inline">
                     <div class="form-group">
-                        <label>Date Requested</label>
-                        <input type="date" id="date_requested" name="date_requested" class="form-control">
+                        <label>Date Requested <span class="required">*</span></label>
+                        <input type="date" id="date_requested" name="date_requested" class="form-control" required>
                     </div>
 
                     <div class="form-group">
@@ -237,9 +219,9 @@
                 <div class="form-row-inline">
                     <div class="form-group">
                         <label>Status <span class="required">*</span></label>
-                        <select id="status" name="status" class="form-control" required>
-                            <option value="FOR REQUEST">FOR REQUEST</option>
-                            <option value="NOT LIQUIDATED">NOT LIQUIDATED</option>
+                            <select id="status" name="status" class="form-control" required>
+                            <option value="PENDING">PENDING</option>
+                            <option value="NOT YET LIQUIDATED">NOT YET LIQUIDATED</option>
                             <option value="LIQUIDATED">LIQUIDATED</option>
                             <option value="REJECTED">REJECTED</option>
                         </select>
@@ -286,6 +268,10 @@
             <!-- Filters and Search below title -->
             <div class="expenses-filters-bar" style="display: flex; flex-direction: column; gap: 14px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0;">
                 <div class="expenses-filters-row" style="display: flex; justify-content: flex-start; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <button type="button" id="printSelectedBtn" onclick="printSelectedRecords()" style="display:flex;align-items:center;gap:6px;padding:9px 14px;background:#1e4575;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;height:40px;box-sizing:border-box;">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                        Print Selected
+                    </button>
                     <div class="expenses-search-wrapper" style="display: flex; align-items: center; gap: 10px; width: 100%; max-width: 560px;">
                         <div class="column-filter-dropdown" id="columnFilterDropdown" style="position: relative;">
                             <button type="button" id="columnFilterBtn" class="column-filter-btn" onclick="toggleColumnFilterMenu(event)">
@@ -308,9 +294,12 @@
             </div>
         </div>
         <div class="table-wrapper">
-            <table class="requests-table">
+            <table class="requests-table js-sort-table">
                 <thead>
                     <tr>
+                        <th style="width: 40px; min-width: 40px;">
+                            <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)">
+                        </th>
                         <th style="min-width: 150px;">Control Number</th>
                         <th style="min-width: 180px;">Requestor Name</th>
                         <th style="min-width: 180px;">Department</th>
@@ -328,6 +317,7 @@
                 <tbody id="requestsTableBody">
                     @foreach($requests as $req)
                     <tr id="expense-{{ $req->id }}" data-id="{{ $req->id }}" data-department="{{ $req->department }}" data-date-requested="{{ $req->date_requested ? $req->date_requested->format('Y-m-d') : '' }}" data-date-released="{{ $req->date_released ? $req->date_released->format('Y-m-d') : '' }}" data-control="{{ $req->control_number }}" data-requestor="{{ $req->requestor_name }}" data-category="{{ $req->category }}" data-status="{{ $req->status }}" data-requested-amount="{{ $req->requested_amount }}" data-total-expenses="{{ $req->total_expenses }}" data-amount-returned="{{ $req->amount_returned }}" data-date-returned="{{ $req->date_of_amount_returned ? $req->date_of_amount_returned->format('Y-m-d') : '' }}">
+                        <td><input type="checkbox" class="row-select-checkbox" value="{{ $req->id }}"></td>
                         <td>{{ $req->control_number }}</td>
                         <td>{{ $req->requestor_name }}</td>
                         <td class="department-cell">{{ $req->department }}</td>
@@ -342,7 +332,7 @@
                         <td>
                             <div class="action-buttons">
                                 <button onclick="viewRequest({{ $req->id }})" class="btn-action btn-view">View</button>
-                                <a href="{{ route('departmental-expenses.view-form', $req->id) }}" target="_blank" class="btn-action btn-view" style="text-decoration:none;display:inline-flex;align-items:center;" title="View & print the original Budget Request Form">Form</a>
+                                <a href="{{ route('departmental-expenses.view-form', $req->id) }}" target="_blank" class="btn-action btn-view" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;" title="View & print the original Budget Request Form">Form</a>
                                 <button onclick="editRequest({{ $req->id }})" class="btn-action btn-edit">Edit</button>
                                 <button onclick="deleteRequest({{ $req->id }})" class="btn-action btn-delete">Delete</button>
                             </div>
@@ -360,6 +350,7 @@
                 <p style="font-size: 14px;">Try adjusting your search or filter criteria</p>
             </div>
         </div>
+        <div id="printArea" class="print-only"></div>
     </div>
     @endif
 </div>
@@ -439,6 +430,10 @@
     .clear-column-filters-btn {
         width: 100% !important;
         text-align: center;
+    }
+    #printSelectedBtn {
+        width: 100% !important;
+        justify-content: center !important;
     }
 
 }
@@ -572,6 +567,121 @@
     cursor: pointer;
     white-space: nowrap;
 }
+
+/* Sticky checkbox + Control Number + Requestor Name columns in All Expenses table.
+   Column order is: (1) checkbox, (2) Control Number, (3) Requestor Name */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.requests-table th:nth-child(1),
+.requests-table td:nth-child(1) {
+    width: 40px;
+    min-width: 40px;
+    text-align: center;
+}
+.requests-table th:nth-child(1),
+.requests-table td:nth-child(1),
+.requests-table th:nth-child(2),
+.requests-table td:nth-child(2),
+.requests-table th:nth-child(3),
+.requests-table td:nth-child(3) {
+    position: sticky;
+    z-index: 2;
+}
+.requests-table td:nth-child(1),
+.requests-table td:nth-child(2),
+.requests-table td:nth-child(3) {
+    background: #fff;
+}
+.requests-table th:nth-child(1),
+.requests-table th:nth-child(2),
+.requests-table th:nth-child(3) {
+    z-index: 3;
+}
+.requests-table th:nth-child(1),
+.requests-table td:nth-child(1) {
+    left: 0;
+}
+.requests-table th:nth-child(2),
+.requests-table td:nth-child(2) {
+    left: 40px;
+}
+.requests-table th:nth-child(3),
+.requests-table td:nth-child(3) {
+    left: 190px;
+}
+.requests-table td:nth-child(3),
+.requests-table th:nth-child(3) {
+    box-shadow: 2px 0 4px -2px rgba(0,0,0,0.12);
+}
+
+@media (max-width: 768px) {
+    .requests-table th:nth-child(1),
+    .requests-table td:nth-child(1),
+    .requests-table th:nth-child(2),
+    .requests-table td:nth-child(2),
+    .requests-table th:nth-child(3),
+    .requests-table td:nth-child(3) {
+        position: static;
+        box-shadow: none;
+        left: auto;
+    }
+    .requests-table th:nth-child(2),
+    .requests-table td:nth-child(2) {
+        min-width: 110px !important;
+        max-width: 110px !important;
+        white-space: normal;
+        word-break: break-word;
+        font-size: 12px;
+    }
+    .requests-table th:nth-child(3),
+    .requests-table td:nth-child(3) {
+        min-width: 140px !important;
+    }
+}
+
+/* Print view - hidden on screen, shown only when printing */
+.print-only { display: none; }
+
+@media print {
+    /* #printArea is reparented to be a direct child of <body> by
+       printSelectedRecords() right before printing. Hiding every OTHER
+       direct child of body (display:none, not visibility:hidden) removes
+       it from layout entirely, instead of just hiding it visually while
+       it still reserves its full height — that reserved height was what
+       produced several blank pages when only one row was selected. */
+    body > *:not(.print-only) {
+        display: none !important;
+    }
+    html, body {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+    }
+    .print-only {
+        display: block !important;
+        position: static !important;
+        width: 100%;
+    }
+    .print-header { margin-bottom: 20px; }
+    .print-header h2 { margin: 0 0 4px; font-size: 18px; color: #1e4575; }
+    .print-header p { margin: 0; font-size: 12px; color: #555; }
+    .print-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .print-table th, .print-table td {
+        border: 1px solid #999;
+        padding: 6px 8px;
+        text-align: left;
+    }
+    .print-table th {
+        background: #eef2f7 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .print-table tr { page-break-inside: avoid; }
+    .print-table thead { display: table-header-group; }
+    @page { size: landscape; margin: 12mm; }
+}
 </style>
 
 <div id="budgetModal" class="modal">
@@ -679,8 +789,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Date Requested</label>
-                    <input type="date" id="edit_date_requested" name="date_requested" class="form-control form-control-sm">
+                    <label>Date Requested <span class="required" style="color:#ef4444;">*</span></label>
+                    <input type="date" id="edit_date_requested" name="date_requested" class="form-control form-control-sm" required>
                 </div>
 
                 <div class="form-group">
@@ -691,8 +801,8 @@
                 <div class="form-group">
                     <label>Status <span class="required">*</span></label>
                     <select id="edit_status" name="status" class="form-control form-control-sm" required>
-                        <option value="FOR REQUEST">FOR REQUEST</option>
-                        <option value="NOT LIQUIDATED">NOT LIQUIDATED</option>
+                        <option value="PENDING">PENDING</option>
+                        <option value="NOT YET LIQUIDATED">NOT YET LIQUIDATED</option>
                         <option value="LIQUIDATED">LIQUIDATED</option>
                         <option value="REJECTED">REJECTED</option>
                     </select>
@@ -776,12 +886,12 @@
                         <input type="text" id="liq_status_display" class="form-control" value="LIQUIDATED" readonly style="background-color: #f4f6f8;">
                     </div>
                     <div class="form-group">
-                        <label>Date Released</label>
-                        <input type="date" id="liq_date_released" class="form-control">
+                        <label>Date Released <span class="required" style="color:#ef4444;">*</span></label>
+                        <input type="date" id="liq_date_released" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label>Total Expenses</label>
-                        <input type="text" id="liq_total_expenses" class="form-control" placeholder="0.00" inputmode="decimal">
+                        <label>Total Expenses <span class="required" style="color:#ef4444;">*</span></label>
+                        <input type="text" id="liq_total_expenses" class="form-control" placeholder="0.00" inputmode="decimal" required>
                     </div>
                     <div class="form-group">
                         <label>Amount Returned</label>
@@ -819,67 +929,60 @@
             <span class="close" onclick="closeViewModal()">&times;</span>
         </div>
         <div class="modal-body">
-            <div class="view-details">
-                <!-- Header Section with Control Number -->
-                <div class="view-header-section">
-                    <div class="view-control-label">Control Number</div>
-                    <div class="view-control-number" id="view_control_number"></div>
+            <div class="de-modal-grid">
+                <div class="de-modal-field full-width">
+                    <label>Control Number</label>
+                    <div class="de-field-value" id="view_control_number">-</div>
                 </div>
 
-                <!-- Requestor Information -->
-                <div class="section-title-view">Requestor Information</div>
-                
-                <div class="detail-row full-width">
-                    <span class="detail-label">Requestor Name</span>
-                    <span class="detail-value" id="view_requestor_name"></span>
-                </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Department</span>
-                    <span class="detail-value" id="view_department"></span>
-                </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Category</span>
-                    <span class="detail-value" id="view_category"></span>
-                </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Date Requested</span>
-                    <span class="detail-value" id="view_date_requested"></span>
+                <div class="de-modal-field full-width">
+                    <label>Requestor Name</label>
+                    <div class="de-field-value" id="view_requestor_name">-</div>
                 </div>
 
-                <!-- Financial Information -->
-                <div class="section-title-view">Financial Information</div>
-                
-                <div class="detail-row highlight-row">
-                    <span class="detail-label">Requested Amount</span>
-                    <span class="detail-value amount" id="view_requested_amount"></span>
+                <div class="de-modal-field">
+                    <label>Department</label>
+                    <div class="de-field-value" id="view_department">-</div>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Status</span>
-                    <span class="detail-value" id="view_status"></span>
+
+                <div class="de-modal-field">
+                    <label>Category</label>
+                    <div class="de-field-value" id="view_category">-</div>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Date Released</span>
-                    <span class="detail-value" id="view_date_released"></span>
+
+                <div class="de-modal-field">
+                    <label>Date Requested</label>
+                    <div class="de-field-value" id="view_date_requested">-</div>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Total Expenses</span>
-                    <span class="detail-value" id="view_total_expenses"></span>
+
+                <div class="de-modal-field">
+                    <label>Requested Amount</label>
+                    <div class="de-field-value" id="view_requested_amount">-</div>
                 </div>
-                
-                <div class="detail-row highlight-row">
-                    <span class="detail-label">Amount Returned</span>
-                    <span class="detail-value amount" id="view_amount_returned"></span>
+
+                <div class="de-modal-field">
+                    <label>Status</label>
+                    <div class="de-field-value" id="view_status">-</div>
                 </div>
-                
-                <div class="detail-row">
-                    <span class="detail-label">Date of Amount Returned</span>
-                    <span class="detail-value" id="view_date_of_amount_returned"></span>
+
+                <div class="de-modal-field">
+                    <label>Date Released</label>
+                    <div class="de-field-value" id="view_date_released">-</div>
+                </div>
+
+                <div class="de-modal-field">
+                    <label>Total Expenses</label>
+                    <div class="de-field-value" id="view_total_expenses">-</div>
+                </div>
+
+                <div class="de-modal-field">
+                    <label>Amount Returned</label>
+                    <div class="de-field-value" id="view_amount_returned">-</div>
+                </div>
+
+                <div class="de-modal-field full-width">
+                    <label>Date of Amount Returned</label>
+                    <div class="de-field-value" id="view_date_of_amount_returned">-</div>
                 </div>
             </div>
         </div>
@@ -891,27 +994,23 @@ try {
 const categories = @json($categories);
 
 // Department name mapping function
-function mapDepartmentName(shortName) {
-    const mapping = {
-        'Admin': 'Administrative',
-        'HR': 'Human Resources',
-        'Sales & Marketing': 'Sales & Marketing',
-        'Finance': 'Finance',
-        'Executive': 'Executive'
-    };
-    return mapping[shortName] || shortName;
+// NOTE: previously this translated short codes ("Admin", "HR") to/from
+// the full department names ("Administrative", "Human Resource") used
+// by the Departments table. That translation caused a real bug: every
+// save (including liquidation via the "UPDATE RECORD" popup) wrote the
+// short code back into departmental_expenses.department, which never
+// matched Department::name, so remainingBudget() saw allowable_budget=0
+// for that department and reported wildly negative "remaining" values.
+// All dropdowns already emit the real department name directly, so
+// these are now no-ops kept only so existing call sites don't need to
+// change.
+function mapDepartmentName(name) {
+    return name;
 }
 
 // Reverse mapping for saving to database
-function reverseDepartmentName(fullName) {
-    const reverseMapping = {
-        'Administrative': 'Admin',
-        'Human Resources': 'HR',
-        'Sales & Marketing': 'Sales & Marketing',
-        'Finance': 'Finance',
-        'Executive': 'Executive'
-    };
-    return reverseMapping[fullName] || fullName;
+function reverseDepartmentName(name) {
+    return name;
 }
 
 // Save and restore scroll position of page-content
@@ -1292,8 +1391,8 @@ function syncLiquidationFieldsState(prefix) {
     });
 }
 
-let addStatusPrevValue = document.getElementById('status') ? document.getElementById('status').value : 'FOR REQUEST';
-let editStatusPrevValue = 'FOR REQUEST';
+let addStatusPrevValue = document.getElementById('status') ? document.getElementById('status').value : 'PENDING';
+let editStatusPrevValue = 'PENDING';
 
 function openLiquidationModal(data) {
     document.getElementById('liq_source').value = data.source;
@@ -1376,7 +1475,12 @@ document.getElementById('edit_status').addEventListener('change', function() {
 document.getElementById('liquidationUpdateForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
-    if (!validateAmountField('liq_total_expenses', 'Total Expenses', false)) return;
+    if (!document.getElementById('liq_date_released').value) {
+        showToast('error', 'Date Released Required', 'Please select a Date Released before marking this record as liquidated.');
+        document.getElementById('liq_date_released').focus();
+        return;
+    }
+    if (!validateAmountField('liq_total_expenses', 'Total Expenses', true)) return;
 
     showConfirm('Are you sure you want to update this record?', function() {
         _submitLiquidationUpdate();
@@ -1426,6 +1530,9 @@ function _submitLiquidationUpdate() {
         .catch(error => {
             console.error('Error:', error);
             showToast('error', 'Error', error.message || 'Error updating request');
+            // Re-open the liquidation modal so the user can correct the amount
+            // instead of silently losing the entered data.
+            document.getElementById('liquidationUpdateModal').style.display = 'block';
         });
     } else {
         fetch('/api/departmental-expenses', {
@@ -1451,6 +1558,7 @@ function _submitLiquidationUpdate() {
         .catch(error => {
             console.error('Error:', error);
             showToast('error', 'Error', error.message || 'Error adding request');
+            document.getElementById('liquidationUpdateModal').style.display = 'block';
         });
     }
 }
@@ -1639,21 +1747,21 @@ function _doEditRequest(id) {
     const cells = row.cells;
     
     document.getElementById('edit_id').value = id;
-    document.getElementById('edit_control_number').value = row.getAttribute('data-control') || cells[0].textContent.trim();
-    document.getElementById('edit_requestor_name').value = cells[1].textContent;
+    document.getElementById('edit_control_number').value = row.getAttribute('data-control') || cells[1].textContent.trim();
+    document.getElementById('edit_requestor_name').value = cells[2].textContent;
     
-    // Get original department value from data attribute
+    // Department is now stored consistently as the real Department name,
+    // so it's used directly (no more short-code mapping).
     const originalDepartment = row.getAttribute('data-department');
-    const mappedDepartment = mapDepartmentName(originalDepartment);
-    document.getElementById('edit_department').value = mappedDepartment;
+    document.getElementById('edit_department').value = originalDepartment;
     
-    updateEditCategoryDropdown(mappedDepartment);
+    updateEditCategoryDropdown(originalDepartment);
     
     setTimeout(() => {
-        document.getElementById('edit_category').value = cells[3].textContent;
+        document.getElementById('edit_category').value = cells[4].textContent;
     }, 100);
     
-    const dateRequested = cells[4].textContent.trim();
+    const dateRequested = cells[5].textContent.trim();
     if (dateRequested !== '-') {
         const [month, day, year] = dateRequested.split('/');
         document.getElementById('edit_date_requested').value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
@@ -1661,33 +1769,33 @@ function _doEditRequest(id) {
         document.getElementById('edit_date_requested').value = '';
     }
     
-    document.getElementById('edit_requested_amount').value = cells[5].textContent.replace('₱ ', '').replace(/,/g, '');
-    document.getElementById('edit_status').value = cells[6].querySelector('.status-badge').textContent.trim();
+    document.getElementById('edit_requested_amount').value = cells[6].textContent.replace('₱ ', '').replace(/,/g, '');
+    document.getElementById('edit_status').value = cells[7].querySelector('.status-badge').textContent.trim();
     editStatusPrevValue = document.getElementById('edit_status').value;
     syncLiquidationFieldsState('edit_');
     
-    if (cells[7].textContent !== '-') {
-        const dateReleased = cells[7].textContent.trim();
+    if (cells[8].textContent !== '-') {
+        const dateReleased = cells[8].textContent.trim();
         const [month, day, year] = dateReleased.split('/');
         document.getElementById('edit_date_released').value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     } else {
         document.getElementById('edit_date_released').value = '';
     }
     
-    if (cells[8].textContent !== '-') {
-        document.getElementById('edit_total_expenses').value = cells[8].textContent.replace('₱ ', '').replace(/,/g, '');
+    if (cells[9].textContent !== '-') {
+        document.getElementById('edit_total_expenses').value = cells[9].textContent.replace('₱ ', '').replace(/,/g, '');
     } else {
         document.getElementById('edit_total_expenses').value = '';
     }
     
-    if (cells[9].textContent !== '-') {
-        document.getElementById('edit_amount_returned').value = cells[9].textContent.replace('₱ ', '').replace(/,/g, '');
+    if (cells[10].textContent !== '-') {
+        document.getElementById('edit_amount_returned').value = cells[10].textContent.replace('₱ ', '').replace(/,/g, '');
     } else {
         document.getElementById('edit_amount_returned').value = '';
     }
     
-    if (cells[10].textContent !== '-') {
-        const dateReturned = cells[10].textContent.trim();
+    if (cells[11].textContent !== '-') {
+        const dateReturned = cells[11].textContent.trim();
         const [month, day, year] = dateReturned.split('/');
         document.getElementById('edit_date_of_amount_returned').value = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     } else {
@@ -1706,22 +1814,22 @@ function viewRequest(id) {
     const row = document.querySelector(`tr[data-id="${id}"]`);
     const cells = row.cells;
     
-    document.getElementById('view_control_number').textContent = cells[0].textContent;
-    document.getElementById('view_requestor_name').textContent = cells[1].textContent;
-    document.getElementById('view_department').textContent = cells[2].textContent;
-    document.getElementById('view_category').textContent = cells[3].textContent;
-    document.getElementById('view_date_requested').textContent = cells[4].textContent;
-    document.getElementById('view_requested_amount').textContent = cells[5].textContent;
+    document.getElementById('view_control_number').textContent = cells[1].textContent;
+    document.getElementById('view_requestor_name').textContent = cells[2].textContent;
+    document.getElementById('view_department').textContent = cells[3].textContent;
+    document.getElementById('view_category').textContent = cells[4].textContent;
+    document.getElementById('view_date_requested').textContent = cells[5].textContent;
+    document.getElementById('view_requested_amount').textContent = cells[6].textContent;
     
-    const statusBadge = cells[6].querySelector('.status-badge').cloneNode(true);
+    const statusBadge = cells[7].querySelector('.status-badge').cloneNode(true);
     const statusContainer = document.getElementById('view_status');
     statusContainer.innerHTML = '';
     statusContainer.appendChild(statusBadge);
     
-    document.getElementById('view_date_released').textContent = cells[7].textContent;
-    document.getElementById('view_total_expenses').textContent = cells[8].textContent;
-    document.getElementById('view_amount_returned').textContent = cells[9].textContent;
-    document.getElementById('view_date_of_amount_returned').textContent = cells[10].textContent;
+    document.getElementById('view_date_released').textContent = cells[8].textContent;
+    document.getElementById('view_total_expenses').textContent = cells[9].textContent;
+    document.getElementById('view_amount_returned').textContent = cells[10].textContent;
+    document.getElementById('view_date_of_amount_returned').textContent = cells[11].textContent;
     
     document.getElementById('viewModal').style.display = 'block';
 }
@@ -1839,7 +1947,25 @@ document.getElementById('budgetUpdateForm').addEventListener('submit', function(
 
     if (!validateNameField('edit_requestor_name', 'Requestor Name')) return;
     if (!validateAmountField('edit_requested_amount', 'Requested Amount', true)) return;
-    if (!validateAmountField('edit_total_expenses', 'Total Expenses', false)) return;
+
+    if (!document.getElementById('edit_date_requested').value) {
+        showToast('error', 'Date Requested Required', 'Please select a Date Requested.');
+        document.getElementById('edit_date_requested').focus();
+        return;
+    }
+
+    const isLiquidated = document.getElementById('edit_status').value === 'LIQUIDATED';
+
+    if (isLiquidated) {
+        if (!document.getElementById('edit_date_released').value) {
+            showToast('error', 'Date Released Required', 'Please select a Date Released before saving a liquidated record.');
+            document.getElementById('edit_date_released').focus();
+            return;
+        }
+        if (!validateAmountField('edit_total_expenses', 'Total Expenses', true)) return;
+    } else {
+        if (!validateAmountField('edit_total_expenses', 'Total Expenses', false)) return;
+    }
 
     const id = document.getElementById('edit_id').value;
     const formData = {
@@ -1934,10 +2060,10 @@ const FILTERABLE_FIELDS = [
     { key: 'date_requested',           label: 'Date Requested',           dataAttr: 'data-date-requested',   type: 'daterange' },
     { key: 'date_released',            label: 'Date Released',            dataAttr: 'data-date-released',    type: 'daterange' },
     { key: 'date_of_amount_returned',  label: 'Date of Amount Returned',  dataAttr: 'data-date-returned',    type: 'daterange' },
-    { key: 'requested_amount',         label: 'Requested Amount',         dataAttr: 'data-requested-amount', type: 'text'  },
-    { key: 'status',                   label: 'Status',                   dataAttr: 'data-status',           type: 'select', options: ['FOR REQUEST', 'NOT LIQUIDATED', 'LIQUIDATED', 'REJECTED'] },
-    { key: 'total_expenses',           label: 'Total Expenses',           dataAttr: 'data-total-expenses',   type: 'text'  },
-    { key: 'amount_returned',          label: 'Amount Returned',          dataAttr: 'data-amount-returned',  type: 'text'  },
+    { key: 'requested_amount',         label: 'Requested Amount',         dataAttr: 'data-requested-amount', type: 'numrange'  },
+    { key: 'status',                   label: 'Status',                   dataAttr: 'data-status',           type: 'select', options: ['PENDING', 'NOT LIQUIDATED', 'LIQUIDATED', 'REJECTED'] },
+    { key: 'total_expenses',           label: 'Total Expenses',           dataAttr: 'data-total-expenses',   type: 'numrange'  },
+    { key: 'amount_returned',          label: 'Amount Returned',          dataAttr: 'data-amount-returned',  type: 'numrange'  },
 ];
 
 // Active per-column filters: { fieldKey: currentValue }
@@ -1985,7 +2111,7 @@ function toggleColumnFilter(key) {
         removeColumnFilter(key);
     } else {
         const f = fieldConfig(key);
-        columnFilters[key] = (f && f.type === 'daterange') ? { from: '', to: '' } : '';
+        columnFilters[key] = (f && (f.type === 'daterange' || f.type === 'numrange')) ? { from: '', to: '' } : '';
         renderColumnFilterMenu();
         renderActiveColumnFilters();
         closeColumnFilterMenu();
@@ -2054,6 +2180,11 @@ function renderActiveColumnFilters() {
             inputHtml = `<input type="date" id="colFilterInput_${key}_from" value="${range.from || ''}" onchange="updateDateRangeFilterValue('${key}', 'from', this.value)">
                          <span style="color:#8a9bad;font-size:12px;">to</span>
                          <input type="date" id="colFilterInput_${key}_to" value="${range.to || ''}" onchange="updateDateRangeFilterValue('${key}', 'to', this.value)">`;
+        } else if (f.type === 'numrange') {
+            const range = (columnFilters[key] && typeof columnFilters[key] === 'object') ? columnFilters[key] : { from: '', to: '' };
+            inputHtml = `<input type="number" step="any" id="colFilterInput_${key}_from" placeholder="Min" value="${range.from || ''}" style="width:100px;" onchange="updateDateRangeFilterValue('${key}', 'from', this.value)">
+                         <span style="color:#8a9bad;font-size:12px;">to</span>
+                         <input type="number" step="any" id="colFilterInput_${key}_to" placeholder="Max" value="${range.to || ''}" style="width:100px;" onchange="updateDateRangeFilterValue('${key}', 'to', this.value)">`;
         } else if (f.type === 'date') {
             const val = columnFilters[key] || '';
             inputHtml = `<input type="date" id="colFilterInput_${key}" value="${val}" oninput="updateColumnFilterValue('${key}', this.value)">`;
@@ -2081,6 +2212,17 @@ function matchesColumnFilters(row) {
             if (!rowVal) return false;
             if (range.from && rowVal < range.from) return false;
             if (range.to && rowVal > range.to) return false;
+            continue;
+        }
+
+        if (f.type === 'numrange') {
+            const range = columnFilters[key];
+            if (!range || (range.from === '' && range.to === '')) continue;
+            const rawVal = (row.getAttribute(f.dataAttr) || '').toString().replace(/[^0-9.\-]/g, '');
+            const rowNum = rawVal === '' ? NaN : parseFloat(rawVal);
+            if (isNaN(rowNum)) return false;
+            if (range.from !== '' && rowNum < parseFloat(range.from)) return false;
+            if (range.to !== '' && rowNum > parseFloat(range.to)) return false;
             continue;
         }
 
@@ -2147,13 +2289,81 @@ function checkNoResults() {
 
 // Initialize filters on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Map department names in table
-    document.querySelectorAll('.department-cell').forEach(cell => {
-        cell.textContent = mapDepartmentName(cell.textContent);
-    });
-
+    // Department names are now stored consistently as the real Department
+    // name (e.g. "Administrative"), so no more mapping needed here.
     applyFilters();
 });
+
+// ---- Row selection (checkboxes) + Print Selected ----
+function toggleSelectAll(cb) {
+    document.querySelectorAll('.row-select-checkbox').forEach(c => {
+        const row = c.closest('tr');
+        if (row.style.display !== 'none') c.checked = cb.checked;
+    });
+}
+
+function getSelectedPrintRows() {
+    return Array.from(document.querySelectorAll('.row-select-checkbox:checked'))
+        .map(cb => cb.closest('tr'))
+        .filter(row => row.style.display !== 'none');
+}
+
+function printSelectedRecords() {
+    const rows = getSelectedPrintRows();
+    if (rows.length === 0) {
+        showToast('warning', 'No Selection', 'Please select at least one record to print.');
+        return;
+    }
+
+    const headers = ['Control Number','Requestor Name','Department','Category','Date Requested','Requested Amount','Status','Date Released','Total Expenses','Amount Returned','Date of Amount Returned'];
+
+    let tableHtml = '<table class="print-table"><thead><tr>';
+    headers.forEach(h => tableHtml += `<th>${h}</th>`);
+    tableHtml += '</tr></thead><tbody>';
+
+    rows.forEach(row => {
+        const cells = row.cells;
+        tableHtml += '<tr>';
+        // cells[0] = checkbox column, cells[1..11] = data columns, skip Actions (last)
+        for (let i = 1; i <= 11; i++) {
+            tableHtml += `<td>${cells[i].textContent.trim()}</td>`;
+        }
+        tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const printArea = document.getElementById('printArea');
+    printArea.innerHTML = `
+        <div class="print-header">
+            <h2>Departmental Expenses Report</h2>
+            <p>Generated on ${dateStr} — ${rows.length} record(s)</p>
+        </div>
+        ${tableHtml}
+    `;
+
+    // #printArea normally sits inside .main-content, which (along with
+    // .content-wrapper / .dashboard-container in layouts.dashboard) uses
+    // overflow:hidden. That clips printed content to one viewport-sized
+    // box instead of letting it paginate. layouts.dashboard already works
+    // around this for position:fixed modals by moving them to <body> — we
+    // do the same here for #printArea, then move it back afterward so the
+    // page's DOM/layout is unaffected outside of printing.
+    const printAreaAnchor = document.createComment('printArea-anchor');
+    printArea.parentNode.insertBefore(printAreaAnchor, printArea);
+    document.body.appendChild(printArea);
+
+    function restorePrintArea() {
+        printAreaAnchor.parentNode.insertBefore(printArea, printAreaAnchor);
+        printAreaAnchor.remove();
+        window.removeEventListener('afterprint', restorePrintArea);
+    }
+    window.addEventListener('afterprint', restorePrintArea);
+
+    window.print();
+}
 
 // Set active state for Departments nav item - run separately to avoid conflicts
 setTimeout(function() {

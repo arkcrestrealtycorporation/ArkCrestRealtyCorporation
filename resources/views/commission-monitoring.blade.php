@@ -36,15 +36,15 @@
             </div>
         </div>
 
-        <div class="stat-card card-yellow" onclick="filterByStat('Not Yet Released')" style="cursor:pointer;" title="Click to view Not Yet Released requests">
+        <div class="stat-card card-yellow" onclick="filterByStat('__pending_release__')" style="cursor:pointer;" title="Click to view Requested and Not Yet Released records">
             <div class="stat-icon">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
             <div class="stat-content">
-                <div class="stat-label">Not Yet Released</div>
-                <div class="stat-value" id="statNotReleased">{{ $commissionRequests->where('status', 'Not Yet Released')->count() }}</div>
+                <div class="stat-label">Pending Release</div>
+                <div class="stat-value" id="statNotReleased">{{ $commissionRequests->whereIn('status', ['Requested', 'Not Yet Released', 'Not Released'])->count() }}</div>
             </div>
         </div>
 
@@ -81,6 +81,11 @@
         @endif
         <form id="cmAddForm" class="commission-form" action="{{ route('commission-monitoring.store') }}" method="POST" onsubmit="return previewCommissionSubmit(event)">
             @csrf
+            <input type="hidden" name="source_client_record_id" id="cm_source_client_record_id">
+            <input type="hidden" name="commission_stage_request_id" id="cm_commission_stage_request_id">
+            <input type="hidden" name="commission_stage" id="cm_commission_stage">
+            <input type="hidden" name="commission_stage_total" id="cm_commission_stage_total">
+            <input type="hidden" name="stage_threshold_amount" id="cm_stage_threshold_amount">
             <div class="form-section">
                 <div class="section-title-bar">
                     <span class="section-icon">📋</span>
@@ -90,6 +95,10 @@
                     <div class="form-group">
                         <label>CLIENT'S NAME <span class="required">*</span></label>
                         <input type="text" name="client_name" placeholder="Enter client name" required>
+                    </div>
+                    <div class="form-group" id="cm_stage_group">
+                        <label>DP STAGE</label>
+                        <input type="text" id="cm_commission_stage_display" placeholder="Open from Client Database to assign stage" readonly style="background:#f3f4f6;cursor:not-allowed;color:#1e4575;font-weight:800;">
                     </div>
                     <div class="form-group">
                         <label>RESERVATION DATE <span class="required">*</span></label>
@@ -139,12 +148,15 @@
                     </div>
                     <div class="form-group">
                         <label>COMMISSION TERMS <span class="required">*</span></label>
-                        <select id="cm_add_payment_type" name="payment_type" onchange="computeValueOfPaymentTerms()" required>
-                            <option value="">— Select —</option>
-                            <option value="Full Payment">Full Payment</option>
-                            <option value="2 Months Commission">2 Months Commission</option>
-                            <option value="3 Months Commission">3 Months Commission</option>
-                        </select>
+                        <div class="select-wrapper">
+                            <select id="cm_add_payment_type" name="payment_type" onchange="computeValueOfPaymentTerms()" required>
+                                <option value="">— Select —</option>
+                                <option value="Full Payment">Full Payment</option>
+                                <option value="2 Months Commission">2 Months Commission</option>
+                                <option value="3 Months Commission">3 Months Commission</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>VALUE OF COMMISSION TERMS <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>
@@ -196,6 +208,7 @@
                     <div class="form-group">
                         <label>STATUS <span class="required">*</span></label>
                         <select name="status" required>
+                            <option value="">— Select status —</option>
                             <option value="Not Yet Released">Not Yet Released</option>
                             <option value="Released">Released</option>
                         </select>
@@ -238,6 +251,9 @@
                 @if($isAdmin)
                 <div style="display:flex;gap:8px;">
                     <button type="button" id="cmSelectModeBtn" class="clear-dates-btn" onclick="cmToggleSelectMode()">Select</button>
+                    <button type="button" id="cmPrintSelectedBtn" class="clear-dates-btn" style="background:#1e4575;color:#fff;border-color:#1e4575;display:none;" onclick="cmPrintSelectedRecords()">
+                        Print Selected (<span id="cmPrintSelectedCount">0</span>)
+                    </button>
                     <button type="button" id="cmDeleteSelectedBtn" class="clear-dates-btn" style="background:#fee2e2;color:#dc2626;border-color:#fecaca;display:none;" onclick="cmDeleteSelected()">
                         Delete Selected (<span id="cmSelectedCount">0</span>)
                     </button>
@@ -272,7 +288,7 @@
 
         <div class="table-scroll-hint">⟵ Swipe left/right to see more columns ⟶</div>
         <div class="table-wrapper">
-            <table class="monitoring-table{{ $isAdmin ? '' : ' no-checkbox' }}">
+            <table class="monitoring-table js-sort-table{{ $isAdmin ? '' : ' no-checkbox' }}">
                 <thead>
                     <tr>
                         @if($isAdmin)
@@ -280,6 +296,7 @@
                         @endif
                         <th class="col-sticky col-sticky-index">#</th>
                         <th class="col-sticky col-sticky-name">Client's Name</th>
+                        <th>Control Number</th>
                         <th>Reservation Date</th>
                         <th>Project Name</th>
                         <th>Property Details (Block & Lot No.)</th>
@@ -302,14 +319,23 @@
                         <th>Date Released</th>
                         <th>Commission Terms</th>
                         <th>Value of Commission Terms</th>
+                        <th>DP Stage</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="monitoringTableBody">
                     @forelse($commissionRequests as $request)
-                    <tr id="cm-{{ $request->id }}" data-id="{{ $request->id }}"
+                    @php
+                        $isOverdue = $request->status !== 'Released' && $request->date_requested && $request->date_requested->diffInDays(now()) >= 7;
+                        $isRecent = $request->updated_at && $request->created_at && !$request->updated_at->eq($request->created_at) && $request->updated_at->diffInHours(now()) <= 48;
+                        $isHighValue = ($request->net_tcp ?? 0) >= 500000;
+                        $rowHlClasses = trim(($isOverdue ? 'cm-row-overdue ' : '') . ($isHighValue ? 'cm-row-highvalue ' : ''));
+                    @endphp
+                    <tr id="cm-{{ $request->id }}" class="{{ $rowHlClasses }}" data-id="{{ $request->id }}"
+                        data-control="{{ $request->control_number }}"
                         data-status="{{ $request->status }}"
+                        data-commission-stage="{{ $request->commission_stage ? $request->commission_stage.'/'.($request->commission_stage_total ?: 1) : '' }}"
                         data-date-requested="{{ $request->date_requested ? $request->date_requested->format('Y-m-d') : '' }}"
                         data-date-released="{{ $request->date_released ? $request->date_released->format('Y-m-d') : '' }}"
                         data-client="{{ $request->client_name }}"
@@ -336,6 +362,7 @@
                         @endif
                         <td class="col-sticky col-sticky-index">{{ $loop->iteration }}</td>
                         <td class="col-sticky col-sticky-name">{{ $request->client_name ?? '-' }}</td>
+                        <td style="font-weight:700;color:#1e4575;white-space:nowrap;">{{ $request->control_number ?? '—' }}</td>
                         <td>{{ $request->reservation_date ? $request->reservation_date->format('M d, Y') : '-' }}</td>
                         <td>{{ $request->project_name ?? '-' }}</td>
                         <td>{{ $request->property_details ?? '-' }}</td>
@@ -358,21 +385,31 @@
                         <td>{{ $request->date_released ? $request->date_released->format('M d, Y') : '-' }}</td>
                         <td>{{ $request->payment_type ?? '-' }}</td>
                         <td>{{ $request->value_of_payment_terms ? '₱'.number_format($request->value_of_payment_terms, 2) : '-' }}</td>
+                        <td style="font-weight:700;color:#1e4575;white-space:nowrap;">
+                            {{ $request->commission_stage ? $request->commission_stage.'/'.($request->commission_stage_total ?: 1) : '—' }}
+                        </td>
                         <td>
                             <span class="status-badge 
                                 @if($request->status == 'Released') status-released
                                 @else status-pending
                                 @endif">
-                                {{ $request->status }}
+                                {{ $request->status === 'Not Released' ? 'Not Yet Released' : $request->status }}
                             </span>
+                            @if($isOverdue || $isRecent || $isHighValue)
+                            <div class="cm-highlight-badges">
+                                @if($isOverdue)<span class="cm-hl-badge cm-hl-overdue">⚠ Overdue</span>@endif
+                                @if($isRecent)<span class="cm-hl-badge cm-hl-recent">● Updated</span>@endif
+                                @if($isHighValue)<span class="cm-hl-badge cm-hl-highvalue">★ High Value</span>@endif
+                            </div>
+                            @endif
                         </td>
                         <td>
                             <div class="action-buttons">
                                 <button class="btn-action-text btn-view" title="View" onclick="viewCommission({{ $request->id }})">
                                     VIEW
                                 </button>
-                                <button class="btn-action-text btn-edit" title="Edit" onclick="requireAdmin(() => editCommission({{ $request->id }}))">
-                                    EDIT
+                                <button class="btn-action-text btn-edit" title="{{ $request->status === 'Requested' ? 'Fill up commission details' : 'Edit' }}" onclick="requireAdmin(() => editCommission({{ $request->id }}))">
+                                    {{ $request->status === 'Requested' ? 'FILL UP' : 'EDIT' }}
                                 </button>
                                 @if($isAdmin)
                                 <form action="{{ route('commission-monitoring.destroy', $request->id) }}" method="POST" style="display: inline-flex; align-items: center;" onsubmit="return confirm('Are you sure you want to delete this commission request? This action cannot be undone.')">
@@ -396,7 +433,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="{{ $isAdmin ? 21 : 19 }}" style="text-align: center; padding: 40px; color: #6b7280;">
+                        <td colspan="{{ $isAdmin ? 22 : 20 }}" style="text-align: center; padding: 40px; color: #6b7280;">
                             No commission requests found.
                         </td>
                     </tr>
@@ -411,6 +448,7 @@
                 <div style="font-size:13px;">Try adjusting your search or filter criteria</div>
             </div>
         </div>
+        <div id="cmPrintArea" class="cm-print-only"></div>
     </div>
     @endif
 </div>
@@ -423,7 +461,11 @@
         box-sizing: border-box;
         /* left is set dynamically by JS (cmUpdateStickyOffsets) */
     }
-    .monitoring-table thead .col-sticky { background: #1e4575; z-index: 3; }
+    .monitoring-table thead .col-sticky { background: #1e4575; z-index: 5; }
+
+    /* Sticky header row (vertical scroll) — mirrors the sticky index/checkbox
+    columns above (horizontal scroll), so both axes stay anchored together. */
+    .monitoring-table thead th { position: sticky; top: 0; background: #1e4575; z-index: 4; box-shadow: 0 2px 4px -2px rgba(0,0,0,.25); }
     .col-sticky-check {
         width: 40px; min-width: 40px; max-width: 40px;
         text-align: center; padding: 12px 4px !important;
@@ -504,6 +546,24 @@
     .combobox-arrow {
         position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
         background: none; border: none; cursor: pointer; color: #6b7280; font-size: 12px;
+    }
+
+    .select-wrapper { position: relative; }
+    .select-wrapper select {
+        width: 100%;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        padding-right: 36px !important;
+    }
+    .select-wrapper .select-arrow {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: #6b7280;
+        font-size: 11px;
     }
     .combobox-dropdown {
         position: absolute; top: 100%; left: 0; right: 0;
@@ -1218,7 +1278,18 @@
         background: #dcfce7;
         color: #166534;
     }
-
+    /* ---- Record Highlights ---- */
+    .cm-row-overdue { background: rgba(239,68,68,.05); }
+    .cm-row-highvalue { background: rgba(163,121,41,.06); }
+    .cm-row-overdue td:first-child,
+    .cm-row-highvalue td:first-child { box-shadow: inset 4px 0 0 0 currentColor; }
+    .cm-row-overdue td:first-child { color: #ef4444; }
+    .cm-row-highvalue td:first-child { color: #A37929; }
+    .cm-highlight-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+    .cm-hl-badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 10px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+    .cm-hl-overdue { background: #fee2e2; color: #991b1b; }
+    .cm-hl-recent { background: #dbeafe; color: #1e40af; }
+    .cm-hl-highvalue { background: #fef3c7; color: #92400e; }
     /* Action Buttons */
     .action-buttons {
         display: flex;
@@ -1363,6 +1434,15 @@
         grid-template-columns: 1fr 1fr;
         gap: 16px;
     }
+    .cm-field-error {
+        color: #dc2626;
+        font-size: 11px;
+        font-weight: 600;
+        margin-top: 4px;
+    }
+    .cm-field-invalid {
+        border-color: #dc2626 !important;
+    }
 
     .modal-field {
         display: flex;
@@ -1490,12 +1570,46 @@
             grid-template-columns: 1fr !important;
         }
     }
-</style>
 
+    /* Print Selected — same feature/fix as Departmental Expenses / Client Database */
+    .cm-print-only{display:none}
+    @media print{
+        /* #cmPrintArea is reparented to be a direct child of <body> by
+           cmPrintSelectedRecords() right before printing. Hiding every
+           OTHER direct child of body (display:none, not
+           visibility:hidden) removes it from layout entirely, instead of
+           just hiding it visually while it still reserves its full
+           height — that reserved height was what produced several blank
+           pages when only one row was selected. */
+        body > *:not(.cm-print-only){
+            display:none !important;
+        }
+        html, body{
+            overflow:visible !important;
+            height:auto !important;
+            max-height:none !important;
+        }
+        .cm-print-only{
+            display:block !important;
+            position:static !important;
+            width:100%;
+        }
+        .cm-print-header{margin-bottom:20px}
+        .cm-print-header h2{margin:0 0 4px;font-size:18px;color:#1e4575}
+        .cm-print-header p{margin:0;font-size:12px;color:#555}
+        .cm-print-table{width:100%;border-collapse:collapse;font-size:10px}
+        .cm-print-table th,.cm-print-table td{border:1px solid #999;padding:5px 7px;text-align:left}
+        .cm-print-table th{background:#eef2f7 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .cm-print-table tr{page-break-inside:avoid}
+        .cm-print-table thead{display:table-header-group}
+        @page{size:landscape;margin:10mm}
+    }
+</style>
 <script>
 // ---- Column Filter fields (matches the "All Expenses" filter dropdown pattern) ----
 // Date Requested / Date Released are handled separately as range pickers above.
 const FILTERABLE_FIELDS = [
+    { key: 'control_number',    label: 'Control Number',            dataAttr: 'data-control',                type: 'text'  },
     { key: 'client_name',       label: "Client's Name",             dataAttr: 'data-client',                type: 'text'  },
     { key: 'project_name',      label: 'Project Name',              dataAttr: 'data-project',                type: 'text'  },
     { key: 'property_details',  label: 'Property Details',          dataAttr: 'data-property',               type: 'text'  },
@@ -1503,11 +1617,11 @@ const FILTERABLE_FIELDS = [
     { key: 'reservation_date',  label: 'Reservation Date',          dataAttr: 'data-reservation-date',      type: 'daterange' },
     { key: 'date_requested',    label: 'Date Requested',            dataAttr: 'data-date-requested',        type: 'daterange' },
     @if($isAdmin)
-    { key: 'price_sqm',         label: 'Price/SQM',                 dataAttr: 'data-price-sqm',              type: 'text'  },
-    { key: 'lot_area',          label: 'Lot Area',                  dataAttr: 'data-lot-area',                type: 'text'  },
-    { key: 'discount',          label: 'Discount',                  dataAttr: 'data-discount',                type: 'text'  },
+    { key: 'price_sqm',         label: 'Price/SQM',                 dataAttr: 'data-price-sqm',              type: 'numrange'  },
+    { key: 'lot_area',          label: 'Lot Area',                  dataAttr: 'data-lot-area',                type: 'numrange'  },
+    { key: 'discount',          label: 'Discount',                  dataAttr: 'data-discount',                type: 'numrange'  },
     @endif
-    { key: 'net_tcp',           label: 'Net TCP',                   dataAttr: 'data-net-tcp',                 type: 'text'  },
+    { key: 'net_tcp',           label: 'Net TCP',                   dataAttr: 'data-net-tcp',                 type: 'numrange'  },
     { key: 'terms_of_payment',  label: 'Terms of Payment',          dataAttr: 'data-terms',                   type: 'text'  },
     { key: 'mode_of_payment',   label: 'Mode of Payment',           dataAttr: 'data-mode',                    type: 'text'  },
     { key: 'remarks',           label: 'Remarks',                   dataAttr: 'data-remarks',                 type: 'text'  },
@@ -1515,11 +1629,12 @@ const FILTERABLE_FIELDS = [
     { key: 'date_released',     label: 'Date Released',             dataAttr: 'data-date-released',         type: 'daterange' },
     @if($isAdmin)
     { key: 'commission_percent',label: 'Commission %',              dataAttr: 'data-commission-percent',      type: 'text'  },
-    { key: 'commission',        label: 'Commission',                dataAttr: 'data-commission',              type: 'text'  },
+    { key: 'commission',        label: 'Commission',                dataAttr: 'data-commission',              type: 'numrange'  },
     @endif
     { key: 'commission_terms',  label: 'Commission Terms',          dataAttr: 'data-commission-terms',        type: 'text'  },
-    { key: 'value_commission_terms', label: 'Value of Commission Terms', dataAttr: 'data-value-commission-terms', type: 'text' },
-    { key: 'status',            label: 'Status',                    dataAttr: 'data-status',                  type: 'select', options: ['Not Yet Released', 'Released'] },
+    { key: 'value_commission_terms', label: 'Value of Commission Terms', dataAttr: 'data-value-commission-terms', type: 'numrange' },
+    { key: 'commission_stage',  label: 'DP Stage',          dataAttr: 'data-commission-stage',        type: 'text' },
+    { key: 'status',            label: 'Status',                    dataAttr: 'data-status',                  type: 'select', options: ['Requested', 'Not Yet Released', 'Released'] },
 ];
 
 // Active per-column filters: { fieldKey: currentValue }
@@ -1567,7 +1682,7 @@ function toggleColumnFilter(key) {
         removeColumnFilter(key);
     } else {
         const f = fieldConfig(key);
-        columnFilters[key] = (f && f.type === 'daterange') ? { from: '', to: '' } : '';
+        columnFilters[key] = (f && (f.type === 'daterange' || f.type === 'numrange')) ? { from: '', to: '' } : '';
         renderColumnFilterMenu();
         renderActiveColumnFilters();
         closeColumnFilterMenu();
@@ -1637,6 +1752,11 @@ function renderActiveColumnFilters() {
             inputHtml = `<input type="date" id="colFilterInput_${key}_from" value="${range.from || ''}" onchange="updateDateRangeFilterValue('${key}', 'from', this.value)">
                          <span style="color:#8a9bad;font-size:12px;">to</span>
                          <input type="date" id="colFilterInput_${key}_to" value="${range.to || ''}" onchange="updateDateRangeFilterValue('${key}', 'to', this.value)">`;
+        } else if (f.type === 'numrange') {
+            const range = (columnFilters[key] && typeof columnFilters[key] === 'object') ? columnFilters[key] : { from: '', to: '' };
+            inputHtml = `<input type="number" step="any" id="colFilterInput_${key}_from" placeholder="Min" value="${range.from || ''}" style="width:100px;" onchange="updateDateRangeFilterValue('${key}', 'from', this.value)">
+                         <span style="color:#8a9bad;font-size:12px;">to</span>
+                         <input type="number" step="any" id="colFilterInput_${key}_to" placeholder="Max" value="${range.to || ''}" style="width:100px;" onchange="updateDateRangeFilterValue('${key}', 'to', this.value)">`;
         } else if (f.type === 'date') {
             const val = columnFilters[key] || '';
             inputHtml = `<input type="date" id="colFilterInput_${key}" value="${val}" oninput="updateColumnFilterValue('${key}', this.value)">`;
@@ -1667,9 +1787,25 @@ function matchesColumnFilters(row) {
             continue;
         }
 
+        if (f.type === 'numrange') {
+            const range = columnFilters[key];
+            if (!range || (range.from === '' && range.to === '')) continue;
+            const rawVal = (row.getAttribute(f.dataAttr) || '').toString().replace(/[^0-9.\-]/g, '');
+            const rowNum = rawVal === '' ? NaN : parseFloat(rawVal);
+            if (isNaN(rowNum)) return false;
+            if (range.from !== '' && rowNum < parseFloat(range.from)) return false;
+            if (range.to !== '' && rowNum > parseFloat(range.to)) return false;
+            continue;
+        }
+
         const filterVal = (columnFilters[key] || '').toString().trim().toLowerCase();
         if (!filterVal) continue;
         const rowVal = (row.getAttribute(f.dataAttr) || '').toString().toLowerCase();
+
+        if (key === 'status' && filterVal === '__pending_release__') {
+            if (!['requested', 'not yet released', 'not released'].includes(rowVal)) return false;
+            continue;
+        }
 
         if (f.type === 'date') {
             if (rowVal !== filterVal) return false;
@@ -1728,7 +1864,7 @@ function filterByStat(status) {
     applyFilters();
 
     document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('stat-card-selected'));
-    const cardMap = { '': 'card-blue', 'Not Yet Released': 'card-yellow', 'Released': 'card-green' };
+    const cardMap = { '': 'card-blue', '__pending_release__': 'card-yellow', 'Released': 'card-green' };
     const activeCard = document.querySelector('.stat-card.' + cardMap[status]);
     if (activeCard) activeCard.classList.add('stat-card-selected');
 
@@ -1763,7 +1899,7 @@ function resetFilters() {
         if (row.cells.length === 1) continue;
         total++;
         const s = row.getAttribute('data-status');
-        if (s === 'Not Yet Released') notReleased++;
+        if (['Requested', 'Not Yet Released', 'Not Released'].includes(s)) notReleased++;
         if (s === 'Released') released++;
     }
 
@@ -1804,6 +1940,7 @@ function clearCmAddForm() {
     window.showConfirmModal('Clear all entered fields? This cannot be undone.').then(function(confirmed) {
         if (confirmed) {
             document.getElementById('cmAddForm').reset();
+            document.getElementById('cm_commission_stage_display').value = '';
         }
     });
 }
@@ -1820,6 +1957,7 @@ function previewCommissionSubmit(event) {
     const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
 
     set('cmp_client_name',       val('client_name') || '-');
+    set('cmp_commission_stage',  val('commission_stage') ? val('commission_stage') + '/' + (val('commission_stage_total') || '1') : '—');
     set('cmp_reservation_date',  fmtDate(val('reservation_date')));
     set('cmp_project_name',      val('project_name') || '-');
     set('cmp_property_details',  val('property_details') || '-');
@@ -1856,6 +1994,7 @@ function viewCommission(id) {
             const fmtMoney = (v) => v ? '₱' + parseFloat(v).toLocaleString('en-PH', {minimumFractionDigits:2}) : '-';
             const fmtDate = (v) => v ? new Date(v).toLocaleDateString('en-US', {month:'short', day:'2-digit', year:'numeric'}) : '-';
             document.getElementById('cm_view_client_name').textContent = fmt(data.client_name);
+            document.getElementById('cm_view_commission_stage').textContent = data.commission_stage ? data.commission_stage + '/' + (data.commission_stage_total || 1) : '—';
             document.getElementById('cm_view_reservation_date').textContent = fmtDate(data.reservation_date);
             document.getElementById('cm_view_project_name').textContent = fmt(data.project_name);
             document.getElementById('cm_view_property_details').textContent = fmt(data.property_details);
@@ -1903,8 +2042,11 @@ function editCommission(id) {
             document.getElementById('cm_edit_commission_percent').value = data.commission_percent ?? '';
             document.getElementById('cm_edit_commission').value = data.commission ?? '';
             document.getElementById('cm_edit_date_released').value = d(data.date_released);
-            document.getElementById('cm_edit_status').value = data.status ?? 'Not Yet Released';
+            document.getElementById('cm_edit_status').value = data.status === 'Released' ? 'Released' : 'Not Yet Released';
             document.getElementById('cm_edit_remarks').value = data.remarks ?? '';
+            if (data.status === 'Requested' && !data.date_released) {
+                calcCmDateReleased('cm_edit');
+            }
             document.getElementById('cmEditModal').classList.add('active');
         });
 }
@@ -2135,7 +2277,30 @@ document.addEventListener('click', function(e) {
     if (wrap && !wrap.contains(e.target)) {
         document.getElementById('cmTermsDropdown').style.display = 'none';
     }
+    const editWrap = document.getElementById('cm_edit_terms_of_payment')?.closest('.combobox-wrapper');
+    if (editWrap && !editWrap.contains(e.target)) {
+        document.getElementById('cmEditTermsDropdown').style.display = 'none';
+    }
 });
+
+function toggleCmEditTermsDropdown() {
+    const dd = document.getElementById('cmEditTermsDropdown');
+    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+function selectCmEditTerm(val) {
+    document.getElementById('cm_edit_terms_of_payment').value = val;
+    document.getElementById('cmEditTermsDropdown').style.display = 'none';
+}
+function filterCmEditTerms(val) {
+    const items = document.querySelectorAll('#cmEditTermsDropdown .dropdown-item');
+    let hasVisible = false;
+    items.forEach(item => {
+        const match = item.textContent.toLowerCase().includes(val.toLowerCase());
+        item.style.display = match ? '' : 'none';
+        if (match) hasVisible = true;
+    });
+    document.getElementById('cmEditTermsDropdown').style.display = hasVisible ? 'block' : 'none';
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
@@ -2144,11 +2309,74 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    document.getElementById('cmEditForm').addEventListener('submit', function() {
+    document.getElementById('cmEditForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
         const id = document.getElementById('cm_edit_id').value;
-        this.action = `/commission-monitoring/${id}`;
+
+        // Clear any previous inline errors before retrying
+        document.querySelectorAll('.cm-field-error').forEach(el => el.remove());
+        document.querySelectorAll('.cm-field-invalid').forEach(el => el.classList.remove('cm-field-invalid'));
+
         showToast('Saving changes...', 'info');
+
+        fetch(`/commission-monitoring/${id}`, {
+            method: 'POST', // Laravel reads @method('PUT') from the hidden field
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+            },
+            body: new FormData(form),
+        })
+        .then(async (r) => {
+            const data = await r.json().catch(() => null);
+            if (r.ok && data && data.success) {
+                showToast('Record updated successfully.', 'success');
+                closeCmModal('cmEditModal');
+                setTimeout(() => window.location.reload(), 600);
+                return;
+            }
+
+            // Validation error (422) — show inline messages near each affected field
+            if (r.status === 422 && data && data.errors) {
+                Object.keys(data.errors).forEach(field => {
+                    const input = form.querySelector(`[name="${field}"]`);
+                    if (input) {
+                        input.classList.add('cm-field-invalid');
+                        const msg = document.createElement('div');
+                        msg.className = 'cm-field-error';
+                        msg.textContent = data.errors[field][0];
+                        input.closest('.modal-field')?.appendChild(msg);
+                    }
+                });
+                showToast(data.message || 'Please check the highlighted fields.', 'error', 'Validation Error');
+                return;
+            }
+
+            // Any other failure — friendly toast, never raw JSON
+            showToast((data && data.message) || 'Something went wrong. Please try again.', 'error');
+        })
+        .catch(() => {
+            showToast('Network error. Please check your connection and try again.', 'error');
+        });
     });
+
+    // Finance notification: open the exact requested commission record and
+    // place the cursor directly in the form used to complete commission details.
+    const _requestParams = new URLSearchParams(window.location.search);
+    const _openRequestId = _requestParams.get('open_request');
+    if (_openRequestId) {
+        setTimeout(function () {
+            const row = document.getElementById('cm-' + _openRequestId);
+            if (row) {
+                row.style.background = 'rgba(163,121,41,.14)';
+                row.style.outline = '2px solid #A37929';
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            editCommission(parseInt(_openRequestId, 10));
+        }, 500);
+        window.history.replaceState({}, '', window.location.pathname);
+    }
 
     // Auto-open edit/delete after admin approval redirect
     const _hlParams = new URLSearchParams(window.location.search);
@@ -2271,9 +2499,102 @@ function cmUpdateSelectedCount() {
     if (countEl) countEl.textContent = checked.length;
     if (btn) btn.style.display = checked.length > 0 ? 'inline-flex' : 'none';
 
+    const printBtn = document.getElementById('cmPrintSelectedBtn');
+    const printCountEl = document.getElementById('cmPrintSelectedCount');
+    if (printCountEl) printCountEl.textContent = checked.length;
+    if (printBtn) printBtn.style.display = checked.length > 0 ? 'inline-flex' : 'none';
+
     const selectAll = document.getElementById('cmSelectAll');
     const allBoxes = document.querySelectorAll('.cm-row-check');
     if (selectAll) selectAll.checked = allBoxes.length > 0 && checked.length === allBoxes.length;
+}
+
+// ── Print Selected ──
+// Reads headers/cells straight from the DOM rather than hardcoded indices,
+// since several columns (Price/SQM, Lot Area, Discount, Commission %,
+// Commission, and the checkbox column) only render for admins — hardcoded
+// positions would silently misalign depending on who's viewing the page.
+function cmGetSelectedPrintRows() {
+    return Array.from(document.querySelectorAll('.cm-row-check:checked'))
+        .map(function(cb) { return cb.closest('tr'); })
+        .filter(function(row) { return row.style.display !== 'none'; });
+}
+
+function cmGetPrintHeaders() {
+    const ths = Array.from(document.querySelectorAll('.monitoring-table thead th'));
+    return ths
+        .filter(function(th) { return !th.classList.contains('col-sticky-check') && !th.classList.contains('col-sticky-index'); })
+        .slice(0, -1) // drop Actions (always last)
+        .map(function(th) { return th.textContent.trim(); });
+}
+
+function cmGetPrintRowCells(row) {
+    const tds = Array.from(row.querySelectorAll('td'));
+    const filtered = tds.filter(function(td) {
+        return !td.classList.contains('col-sticky-check') && !td.classList.contains('col-sticky-index');
+    });
+    filtered.pop(); // drop Actions (always last)
+    return filtered.map(function(td) {
+        // Status cell has a .status-badge plus optional highlight badges
+        // (Overdue/Updated/High Value) — only the badge text belongs in print.
+        const badge = td.querySelector('.status-badge');
+        if (badge) return badge.textContent.trim();
+        return td.textContent.trim();
+    });
+}
+
+function cmPrintSelectedRecords() {
+    const rows = cmGetSelectedPrintRows();
+    if (rows.length === 0) {
+        if (typeof showToast === 'function') {
+            showToast('Please select at least one record to print.', 'warning', 'No Selection');
+        } else {
+            alert('Please select at least one record to print.');
+        }
+        return;
+    }
+
+    const headers = cmGetPrintHeaders();
+
+    let tableHtml = '<table class="cm-print-table"><thead><tr>';
+    headers.forEach(function(h) { tableHtml += '<th>' + h + '</th>'; });
+    tableHtml += '</tr></thead><tbody>';
+
+    rows.forEach(function(row) {
+        const cells = cmGetPrintRowCells(row);
+        tableHtml += '<tr>';
+        cells.forEach(function(c) { tableHtml += '<td>' + c + '</td>'; });
+        tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const printArea = document.getElementById('cmPrintArea');
+    printArea.innerHTML = `
+        <div class="cm-print-header">
+            <h2>Commission Monitoring Report</h2>
+            <p>Generated on ${dateStr} — ${rows.length} record(s)</p>
+        </div>
+        ${tableHtml}
+    `;
+
+    // Reparent out of the clipped ancestor chain for the duration of the
+    // print — same fix as Departmental Expenses / Client Database; the
+    // @media print overflow overrides above handle the rest.
+    const printAreaAnchor = document.createComment('cmPrintArea-anchor');
+    printArea.parentNode.insertBefore(printAreaAnchor, printArea);
+    document.body.appendChild(printArea);
+
+    function restoreCmPrintArea() {
+        printAreaAnchor.parentNode.insertBefore(printArea, printAreaAnchor);
+        printAreaAnchor.remove();
+        window.removeEventListener('afterprint', restoreCmPrintArea);
+    }
+    window.addEventListener('afterprint', restoreCmPrintArea);
+
+    window.print();
 }
 
 function cmDeleteSelected() {
@@ -2361,6 +2682,7 @@ function submitCmPermRequest() {
         <div class="modal-body">
             <div class="modal-grid">
                 <div class="modal-field"><label>Client's Name</label><div class="field-value" id="cm_view_client_name">-</div></div>
+                <div class="modal-field"><label>DP Stage</label><div class="field-value" id="cm_view_commission_stage">—</div></div>
                 <div class="modal-field"><label>Reservation Date</label><div class="field-value" id="cm_view_reservation_date">-</div></div>
                 <div class="modal-field"><label>Project Name</label><div class="field-value" id="cm_view_project_name">-</div></div>
                 <div class="modal-field"><label>Property Details (Block & Lot No.)</label><div class="field-value" id="cm_view_property_details">-</div></div>
@@ -2449,12 +2771,15 @@ function submitCmPermRequest() {
                     </div>
                     <div class="modal-field">
                         <label>Commission Terms</label>
-                        <select id="cm_edit_payment_type" name="payment_type" onchange="computeEditValueOfPaymentTerms()">
-                            <option value="">— Select —</option>
-                            <option value="Full Payment">Full Payment</option>
-                            <option value="2 Months Commission">2 Months Commission</option>
-                            <option value="3 Months Commission">3 Months Commission</option>
-                        </select>
+                        <div class="select-wrapper">
+                            <select id="cm_edit_payment_type" name="payment_type" onchange="computeEditValueOfPaymentTerms()" required>
+                                <option value="">— Select —</option>
+                                <option value="Full Payment">Full Payment</option>
+                                <option value="2 Months Commission">2 Months Commission</option>
+                                <option value="3 Months Commission">3 Months Commission</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
                     </div>
                     <div class="modal-field">
                         <label>Value of Commission Terms <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>
@@ -2463,7 +2788,21 @@ function submitCmPermRequest() {
                     </div>
                     <div class="modal-field">
                         <label>Terms of Payment <span style="color:#ef4444">*</span></label>
-                        <input type="text" id="cm_edit_terms_of_payment" name="terms_of_payment" required>
+                        <div class="combobox-wrapper">
+                            <input type="text" id="cm_edit_terms_of_payment" name="terms_of_payment" class="combobox-input" required autocomplete="off" placeholder="Type or select payment terms" onclick="toggleCmEditTermsDropdown()" oninput="filterCmEditTerms(this.value)">
+                            <button type="button" class="combobox-arrow" onclick="toggleCmEditTermsDropdown()">▼</button>
+                            <div id="cmEditTermsDropdown" class="combobox-dropdown" style="display:none;">
+                                <div class="dropdown-item" onclick="selectCmEditTerm('30% DP - 70% BAL 5 YRS')">30% DP - 70% BAL 5 YRS</div>
+                                <div class="dropdown-item" onclick="selectCmEditTerm('50% DP - 50% BAL 5 YRS')">50% DP - 50% BAL 5 YRS</div>
+                                <div class="dropdown-item" onclick="selectCmEditTerm('30% DP (6 MOS) - 70% BAL 54 MOS')">30% DP (6 MOS) - 70% BAL 54 MOS</div>
+                                <div class="dropdown-item" onclick="selectCmEditTerm('30% DP (3 MOS) - 70% BAL 57 MOS')">30% DP (3 MOS) - 70% BAL 57 MOS</div>
+                                <div class="dropdown-item" onclick="selectCmEditTerm('30% DP (9 MOS) - 70% BAL 36 MOS')">30% DP (9 MOS) - 70% BAL 36 MOS</div>
+                                <div class="dropdown-item" onclick="selectCmEditTerm('30% DP (2 MOS) - 70% BAL 57 MOS')">30% DP (2 MOS) - 70% BAL 57 MOS</div>
+                                <div class="dropdown-item" onclick="selectCmEditTerm('30% DP (2 MOS) - 70% BAL 5 YRS')">30% DP (2 MOS) - 70% BAL 5 YRS</div>
+                                <div class="dropdown-item" onclick="selectCmEditTerm('STRAIGHT PAYMENT')">STRAIGHT PAYMENT</div>
+                                <div class="dropdown-item" onclick="selectCmEditTerm('30% DP - 70% BAL 3 YRS')">30% DP - 70% BAL 3 YRS</div>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-field">
                         <label>Mode of Payment</label>
@@ -2527,6 +2866,7 @@ function submitCmPermRequest() {
             </div>
             <div class="modal-grid">
                 <div class="modal-field"><label>Client's Name</label><div class="field-value" id="cmp_client_name">-</div></div>
+                <div class="modal-field"><label>DP Stage</label><div class="field-value" id="cmp_commission_stage">-</div></div>
                 <div class="modal-field"><label>Reservation Date</label><div class="field-value" id="cmp_reservation_date">-</div></div>
                 <div class="modal-field"><label>Project Name</label><div class="field-value" id="cmp_project_name">-</div></div>
                 <div class="modal-field"><label>Property Details</label><div class="field-value" id="cmp_property_details">-</div></div>
@@ -2562,66 +2902,135 @@ function submitCmPermRequest() {
 @endsection
 
 <script>
-// ── Prefill form from trip_done / client_done notification ──
+// ── Prefill form from Client Database or notification ──
 (function() {
     const params = new URLSearchParams(window.location.search);
-    const client    = params.get('prefill_client');
-    const project   = params.get('prefill_project');
-    const agent     = params.get('prefill_agent');
-    const date      = params.get('prefill_date');
-    const netTcp    = params.get('prefill_net_tcp');
-    const resDate   = params.get('prefill_reservation');
-    const terms     = params.get('prefill_terms');
-    const units     = params.get('prefill_units');
-    const commPct   = params.get('prefill_commission_pct');
-    const developer = params.get('prefill_developer');
-    const blockLot  = params.get('prefill_block_lot');
-    const priceSqm  = params.get('prefill_price_sqm');
-    const lotArea   = params.get('prefill_lot_area');
-    const discount  = params.get('prefill_discount');
-    const mop       = params.get('prefill_mode_of_payment');
+    const stageRequestId = params.get('stage_request');
+    const sourceId = params.get('add_request_for');
 
-    if (!client && !project) return;
-
-    document.addEventListener('DOMContentLoaded', function() {
+    function applyPrefill(data, stage) {
         const set = (name, val) => {
-            const el = document.querySelector('[name="' + name + '"]');
-            if (el && val) el.value = val;
+            const el = document.querySelector('#cmAddForm [name="' + name + '"]');
+            if (el && val !== undefined && val !== null && val !== '') {
+                el.value = val;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            }
         };
-        set('client_name',        client);
-        set('project_name',       project);
-        set('agent_name',         agent);
-        set('date_requested',     date);
-        set('net_tcp',            netTcp);
-        set('reservation_date',   resDate);
-        set('terms_of_payment',   terms);
-        set('number_of_units',    units);
-        set('commission_percent', commPct);
-        set('property_details',   blockLot);
-        set('price_sqm',          priceSqm);
-        set('lot_area',           lotArea);
-        set('discount',           discount);
-        set('mode_of_payment',    mop);
 
-        // Scroll to and highlight the form
+        var resolvedStage = data.commission_stage || stage || data.next_commission_stage;
+        var resolvedStageTotal = data.commission_stage_total || data.downpayment_stage_total || 1;
+
+        set('commission_stage_request_id', data.commission_stage_request_id || stageRequestId);
+        set('source_client_record_id', data.source_client_record_id || data.id || sourceId);
+        set('commission_stage', resolvedStage);
+        set('commission_stage_total', resolvedStageTotal);
+        set('stage_threshold_amount', data.stage_threshold_amount || data.next_threshold_amount);
+
+        var stageGroup = document.getElementById('cm_stage_group');
+        var stageDisplay = document.getElementById('cm_commission_stage_display');
+        if (resolvedStage && stageDisplay) {
+            stageDisplay.value = resolvedStage + '/' + resolvedStageTotal;
+            if (stageGroup) stageGroup.style.display = 'flex';
+        }
+        set('client_name', data.client_name);
+        set('project_name', data.project_name);
+        set('agent_name', data.agent_name);
+        set('date_requested', new Date().toISOString().slice(0, 10));
+        set('net_tcp', data.net_tcp);
+        set('reservation_date', data.reservation_date);
+        set('terms_of_payment', data.terms_of_payment);
+        set('number_of_units', data.number_of_units || 1);
+        set('commission_percent', data.commission_percent);
+        set('property_details', data.block_lot_number || data.property_details);
+        set('price_sqm', data.price_sqm);
+        set('lot_area', data.lot_area);
+        set('discount', data.discount);
+        set('mode_of_payment', data.mode_of_payment);
+
+        if (typeof computeAddTCP === 'function') computeAddTCP();
+        if (typeof computeAddNetTCP === 'function') computeAddNetTCP();
+        if (typeof computeAddCommission === 'function') computeAddCommission();
+
         const form = document.getElementById('cmAddForm');
         if (form) {
             form.scrollIntoView({ behavior: 'smooth', block: 'start' });
             form.style.transition = 'box-shadow .4s';
-            form.style.boxShadow  = '0 0 0 3px #2563eb, 0 8px 32px rgba(37,99,235,.2)';
+            form.style.boxShadow = '0 0 0 3px #2563eb, 0 8px 32px rgba(37,99,235,.2)';
             setTimeout(() => { form.style.boxShadow = ''; }, 2500);
         }
 
-        // Show a small toast
         const toast = document.createElement('div');
-        toast.textContent = '✔ Form pre-filled from client database';
-        toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e4575;color:white;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);animation:fadeIn .3s ease';
+        toast.textContent = '✔ DP stage ' + resolvedStage + '/' + resolvedStageTotal + ' pre-filled from Client Database';
+        toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1e4575;color:white;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2)';
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3500);
+        window.history.replaceState({}, '', window.location.pathname);
+    }
 
-        // Clean URL
-        const clean = window.location.pathname;
-        window.history.replaceState({}, '', clean);
+    function showPrefillError(message) {
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;'
+            + 'display:flex;align-items:center;justify-content:center;';
+        overlay.innerHTML =
+            '<div style="background:white;border-radius:16px;max-width:420px;width:90%;padding:28px;'
+            + 'box-shadow:0 24px 64px rgba(0,0,0,.3);text-align:center;">'
+            + '<div style="width:48px;height:48px;border-radius:50%;background:#fef2f2;display:flex;'
+            + 'align-items:center;justify-content:center;margin:0 auto 16px;">'
+            + '<svg width="24" height="24" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24">'
+            + '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>'
+            + '</svg></div>'
+            + '<p style="font-size:14px;color:#1f2937;margin:0 0 20px;line-height:1.5;">' + message + '</p>'
+            + '<button id="_prefillErrOk" style="padding:10px 28px;background:#1e4575;color:white;'
+            + 'border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;">OK</button>'
+            + '</div>';
+        document.body.appendChild(overlay);
+        document.getElementById('_prefillErrOk').addEventListener('click', function() { overlay.remove(); });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (stageRequestId) {
+            fetch('/api/commission-stage-requests/' + encodeURIComponent(stageRequestId) + '/prefill')
+                .then(async r => {
+                    var data = await r.json().catch(() => ({}));
+                    if (!r.ok) throw new Error(data.message || 'Unable to load the requested commission stage.');
+                    return data;
+                })
+                .then(data => applyPrefill(data, data.commission_stage))
+                .catch(err => showPrefillError(err.message));
+            return;
+        }
+
+        if (sourceId) {
+            fetch('/api/client-database/' + encodeURIComponent(sourceId) + '/prefill')
+                .then(async r => {
+                    var data = await r.json().catch(() => ({}));
+                    if (!r.ok) throw new Error(data.message || 'Unable to load client record.');
+                    return data;
+                })
+                .then(data => applyPrefill(data, data.commission_stage || data.next_commission_stage))
+                .catch(err => showPrefillError(err.message));
+            return;
+        }
+
+        const data = {
+            client_name: params.get('prefill_client'),
+            project_name: params.get('prefill_project'),
+            agent_name: params.get('prefill_agent'),
+            date_requested: params.get('prefill_date'),
+            net_tcp: params.get('prefill_net_tcp'),
+            reservation_date: params.get('prefill_reservation'),
+            terms_of_payment: params.get('prefill_terms'),
+            number_of_units: params.get('prefill_units'),
+            commission_percent: params.get('prefill_commission_pct'),
+            block_lot_number: params.get('prefill_block_lot'),
+            price_sqm: params.get('prefill_price_sqm'),
+            lot_area: params.get('prefill_lot_area'),
+            discount: params.get('prefill_discount'),
+            mode_of_payment: params.get('prefill_mode_of_payment')
+        };
+        if (data.client_name || data.project_name) applyPrefill(data, 1);
     });
 })();
 </script>

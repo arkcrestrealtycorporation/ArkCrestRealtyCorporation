@@ -19,8 +19,8 @@
 .lc-search input{padding:8px 12px 8px 34px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;color:#111827;background:white;width:320px;transition:all .2s}
 .lc-search input:focus{outline:none;border-color:#1e4575;box-shadow:0 0 0 3px rgba(30,69,117,.08)}
 .lc-table{width:100%;border-collapse:collapse;min-width:700px}
-.lc-table thead tr{background:linear-gradient(135deg,#0f2a4a,#1e4575)}
-.lc-table thead th{padding:13px 18px;text-align:left;font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;border-right:1px solid rgba(255,255,255,.08)}
+.lc-table thead tr{background:#1e4575}
+.lc-table thead th{padding:13px 18px;text-align:left;font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;border-right:1px solid rgba(255,255,255,.08);position:sticky;top:0;background:#1e4575;z-index:4;box-shadow:0 2px 4px -2px rgba(0,0,0,.25)}
 .lc-table thead th:last-child{border-right:none}
 .lc-table tbody tr{border-bottom:1px solid #f1f5f9;transition:background .15s}
 .lc-table tbody tr:nth-child(even){background:#fafbfc}
@@ -120,7 +120,7 @@
             </div>
             <div class="lc-search">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <input type="text" id="lcSearch" placeholder="Search by name, email, phone..." oninput="lcApplyFilters()">
+                <input type="text" id="lcSearch" placeholder="Search by control #, name, email, phone..." oninput="lcApplyFilters()">
             </div>
         </div>
         <div id="lcActiveColumnFiltersRow" class="active-column-filters-row" style="display:none;"></div>
@@ -133,10 +133,11 @@
     </div>
     @else
     <div class="lc-table-scroll" style="overflow-x:auto">
-        <table class="lc-table" id="rcTable">
+        <table class="lc-table js-sort-table" id="rcTable">
             <thead>
                 <tr>
                     <th>#</th>
+                    <th>Control Number</th>
                     <th>Client Name</th>
                     <th>Email</th>
                     <th>Phone</th>
@@ -155,10 +156,12 @@
             @endphp
             <tr
                 data-client="{{ strtolower($c->client_name ?? '') }}"
+                data-control="{{ strtolower($c->control_number ?? '') }}"
                 data-email="{{ strtolower($emails->implode(', ')) }}"
                 data-phone="{{ strtolower($phones->implode(', ')) }}"
                 data-address="{{ strtolower($address ?? '') }}">
                 <td style="color:#cbd5e1;font-size:11px;font-weight:600;">{{ $i + 1 }}</td>
+                <td><span style="font-family:monospace;background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:12px;color:#1e4575;font-weight:600;">{{ $c->control_number }}</span></td>
                 <td><div class="lc-name">{{ $c->client_name }}</div></td>
                 <td>
                     @forelse($emails as $email)
@@ -238,6 +241,7 @@
 
 <script>
 var LC_FILTERABLE_FIELDS = [
+    { key: 'control', label: 'Control Number', dataAttr: 'data-control', type: 'text' },
     { key: 'client',  label: 'Client Name', dataAttr: 'data-client',  type: 'text' },
     { key: 'email',   label: 'Email',       dataAttr: 'data-email',   type: 'text' },
     { key: 'phone',   label: 'Phone',       dataAttr: 'data-phone',   type: 'text' },
