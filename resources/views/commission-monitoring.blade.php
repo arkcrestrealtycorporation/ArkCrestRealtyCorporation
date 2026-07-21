@@ -136,12 +136,10 @@
                         <input type="text" id="cm_add_net_tcp_display" placeholder="0.00" readonly style="background:#f3f4f6;cursor:not-allowed;color:#374151;">
                         <input type="hidden" id="cm_add_net_tcp" name="net_tcp">
                     </div>
-                    @if($isAdmin)
                     <div class="form-group">
-                        <label>% OF COMMISSION <span class="required">*</span></label>
-                        <input type="number" id="cm_add_commission_percent" name="commission_percent" placeholder="e.g. 5" step="0.0001" min="0" max="100" oninput="computeAddCommission()" required>
+                    <label>% OF COMMISSION <span class="required">*</span></label>
+                    <input type="number" id="cm_add_commission_percent" name="commission_percent" placeholder="e.g. 5" step="0.0001" min="0" max="100" oninput="computeAddCommission()" required>
                     </div>
-                    @endif
                     <div class="form-group">
                         <label>VALUE OF COMMISSION <span style="font-size:11px;color:#9ca3af;font-weight:400">(auto)</span></label>
                         <input type="text" id="cm_add_commission_display" placeholder="0.00" oninput="computeAddCommissionFromValue()" style="color:#374151;">
