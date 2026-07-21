@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\ActivityLog;
 use App\Models\TeamMonthlyQuota;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class SettingsController extends Controller
 {
@@ -25,7 +26,6 @@ class SettingsController extends Controller
     'settings.visibility',
     'settings.activity',
     'settings.deleted',
-    'settings.permissions',
     'settings.teams',
     'settings.period-lock',
     'settings.backup',
@@ -256,12 +256,12 @@ private function getDeletedExpenses()
         $request->validate([
             'team_name'     => 'required|string|max:255',
             'sales_manager' => 'nullable|string|max:255',
-            'leader_name'   => 'nullable|string|max:255',
+            'leader_name'   => 'required|string|max:255',
         ]);
         \App\Models\SalesTeam::create([
             'team_name'     => $request->team_name,
             'sales_manager' => $request->sales_manager,
-            'leader_name'   => $request->leader_name ?? $request->sales_manager,
+            'leader_name'   => $request->leader_name,
         ]);
         return redirect()->route('settings')->with('success', 'Team added.')->with('open_section', 'teams');
     }
@@ -381,7 +381,7 @@ private function getDeletedExpenses()
     {
         if (!auth()->user()->isAdmin()) abort(403);
         $request->validate([
-            'leader_name'   => 'nullable|string|max:255',
+            'leader_name'   => 'required|string|max:255',
             'sales_manager' => 'nullable|string|max:255',
             'team_name'     => 'nullable|string|max:255',
         ]);
@@ -546,24 +546,81 @@ private function getDeletedExpenses()
     public function updateProfile(Request $request)
     {
         $user = auth()->user();
-        $request->validate([
-            'name'     => 'required|string|max:255',
-            'avatar'   => 'nullable|image|max:2048',
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'preferred_address' => ['nullable', 'string', 'max:255'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif', 'max:8192'], // 8MB,
         ]);
 
-        $data = ['name' => $request->name];
+        $disk = config('filesystems.avatar_disk', 'public');
+        $data = [
+            'name' => $validated['name'],
+            'preferred_address' => $validated['preferred_address'] ?? null,
+        ];
+
+        $oldAvatar = $user->avatar;
+        $newAvatar = null;
 
         if ($request->hasFile('avatar')) {
-            if ($user->avatar) {
-                \Storage::disk('public')->delete($user->avatar);
+            try {
+                $newAvatar = $request->file('avatar')->store('avatars', $disk);
+            } catch (\Throwable $exception) {
+                report($exception);
+
+                return back()
+                    ->withInput()
+                    ->with('error', 'Profile photo upload failed. Please try again.')
+                    ->with('open_section', 'profile');
             }
-            $file = $request->file('avatar');
-            $filename = $file->store('avatars', 'public');
-            $data['avatar'] = $filename;
+
+            if (!$newAvatar) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Profile photo upload failed. Please try again.')
+                    ->with('open_section', 'profile');
+            }
+
+            $data['avatar'] = $newAvatar;
         }
 
-        $user->update($data);
-        return redirect()->route('settings')->with('success', 'Profile updated successfully.')->with('open_section', 'profile');
+        try {
+            $user->update($data);
+        } catch (\Throwable $exception) {
+            if ($newAvatar) {
+                try {
+                    Storage::disk($disk)->delete($newAvatar);
+                } catch (\Throwable $cleanupException) {
+                    report($cleanupException);
+                }
+            }
+
+            throw $exception;
+        }
+
+        // Delete the previous uploaded avatar only after the replacement
+        // was successfully stored and the user record was updated.
+        if (
+            $newAvatar &&
+            $oldAvatar &&
+            str_starts_with($oldAvatar, 'avatars/') &&
+            $oldAvatar !== $newAvatar
+        ) {
+            foreach (array_unique([$disk, 'public']) as $oldAvatarDisk) {
+                try {
+                    if (Storage::disk($oldAvatarDisk)->exists($oldAvatar)) {
+                        Storage::disk($oldAvatarDisk)->delete($oldAvatar);
+                    }
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
+            }
+        }
+
+        return redirect()
+            ->route('settings')
+            ->with('success', 'Profile updated successfully.')
+            ->with('open_section', 'profile');
     }
 
     public function updatePassword(Request $request)
@@ -954,7 +1011,7 @@ private function getDeletedExpenses()
             'client-database.property','site-visit-database','sales-calendar','forms',
             'human-resource','human-resource.employee-data','human-resource.contact-list',
             'settings.users','settings.teams',
-            'settings.period-lock','settings.visibility','settings.activity','settings.deleted','settings.permissions',
+            'settings.period-lock','settings.visibility','settings.activity','settings.deleted',
             'settings.backup','settings.export',
         ];
 

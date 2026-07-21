@@ -382,15 +382,28 @@
 
         <div class="avatar-wrap">
 
-          @if(auth()->user()->avatar)
+          <div id="avatarClickTarget" onclick="toggleAvatarMenu(event)" style="cursor:pointer;position:relative;flex-shrink:0;">
 
-            <img src="{{ str_starts_with(auth()->user()->avatar, 'avatars/') ? \Storage::disk('public')->url(auth()->user()->avatar) : asset(auth()->user()->avatar) }}" class="avatar-img" alt="Avatar">
+            @if(auth()->user()->avatar_url)
+              <img src="{{ auth()->user()->avatar_url }}" class="avatar-img" alt="Avatar" id="currentAvatarImg">
+            @else
+              <div class="avatar-initials" id="currentAvatarInitials">{{ strtoupper(substr(auth()->user()->name,0,1)) }}</div>
+            @endif
 
-          @else
+            <div id="avatarMenu" style="display:none;position:absolute;top:calc(100% + 6px);left:0;background:white;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);border:1px solid #e2e8f0;min-width:200px;z-index:50;overflow:hidden;">
+              <button type="button" onclick="event.stopPropagation();openAvatarViewModal();"
+                style="display:flex;align-items:center;gap:10px;width:100%;padding:11px 16px;background:none;border:none;border-bottom:1px solid #f1f5f9;text-align:left;font-size:13px;font-weight:600;color:#374151;cursor:pointer;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                View profile picture
+              </button>
+              <button type="button" onclick="event.stopPropagation();openAvatarChooseModal();"
+                style="display:flex;align-items:center;gap:10px;width:100%;padding:11px 16px;background:none;border:none;text-align:left;font-size:13px;font-weight:600;color:#374151;cursor:pointer;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg>
+                Choose profile picture
+              </button>
+            </div>
 
-            <div class="avatar-initials">{{ strtoupper(substr(auth()->user()->name,0,1)) }}</div>
-
-          @endif
+          </div>
 
           <div class="avatar-info">
 
@@ -404,8 +417,48 @@
 
         </div>
 
-        <form method="POST" action="{{ route('settings.profile') }}" enctype="multipart/form-data">
+        {{-- View Profile Picture Modal --}}
+        <div id="avatarViewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeAvatarViewModal()">
+          <div style="max-width:480px;width:100%;">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+              <button type="button" onclick="closeAvatarViewModal()" style="background:rgba(255,255,255,.15);border:none;color:white;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;">&times;</button>
+            </div>
+            <img id="avatarViewImg" src="" alt="Profile picture" style="width:100%;border-radius:12px;display:block;box-shadow:0 10px 40px rgba(0,0,0,.4);">
+          </div>
+        </div>
 
+        {{-- Choose Profile Picture Modal --}}
+        <div id="avatarChooseModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeAvatarChooseModal()">
+          <div style="background:white;border-radius:14px;padding:22px 26px;width:380px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+            <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid #f1f5f9;">Choose Profile Picture</div>
+
+            <form method="POST" action="{{ route('settings.profile') }}" enctype="multipart/form-data" id="avatarChooseForm">
+              @csrf
+              <input type="hidden" name="name" value="{{ auth()->user()->name }}">
+              <input type="hidden" name="preferred_address" value="{{ auth()->user()->preferred_address }}">
+
+              <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+                <div id="avatarPreviewWrap" style="width:120px;height:120px;border-radius:50%;overflow:hidden;background:#f0f4ff;display:flex;align-items:center;justify-content:center;border:3px solid #e2e8f0;flex-shrink:0;">
+                  <img id="avatarPreviewImg" src="{{ auth()->user()->avatar_url ?: '' }}" style="width:100%;height:100%;object-fit:cover;{{ auth()->user()->avatar_url ? '' : 'display:none;' }}">
+                  <div id="avatarPreviewInitials" style="font-size:36px;font-weight:700;color:#1e4575;{{ auth()->user()->avatar_url ? 'display:none;' : '' }}">{{ strtoupper(substr(auth()->user()->name,0,1)) }}</div>
+                </div>
+                <label class="st-btn st-btn-sm" style="background:#eff6ff;color:#1e4575;border:1px solid #bfdbfe;cursor:pointer;">
+                  Select Photo
+                  <input type="file" name="avatar" id="avatarFileInput" accept=".jpg,.jpeg,.png,.gif" style="display:none;" onchange="previewAvatarFile(this)">
+                </label>
+                <span style="font-size:11px;color:#94a3b8;">JPG, PNG or GIF. Max 8MB.</span>
+                <div id="avatarChooseError" style="display:none;color:#dc2626;font-size:12px;margin-top:12px;text-align:center;"></div>
+              </div>
+
+              <div style="display:flex;gap:10px;margin-top:20px;">
+                <button type="submit" class="st-btn st-btn-primary" style="flex:1;" id="avatarSaveBtn" disabled>Save</button>
+                <button type="button" onclick="closeAvatarChooseModal()" style="flex:1;padding:9px 20px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:#f1f5f9;color:#374151;border:none;">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <form method="POST" action="{{ route('settings.profile') }}">
           @csrf
 
           <div class="st-form-grid">
@@ -436,15 +489,7 @@
 
             </div>
 
-            <div class="st-form-group">
-
-              <label class="st-label">Profile Photo</label>
-
-              <input class="st-input" type="file" name="avatar" accept="image/*" style="padding:6px 12px;">
-
-              <span style="font-size:11px;color:#94a3b8;">JPG, PNG or GIF. Max 2MB.</span>
-
-            </div>
+            
 
           </div>
 
@@ -888,7 +933,6 @@
               'settings.visibility'              => 'Page Visibility',
               'settings.activity'                => 'Activity Log',
               'settings.deleted'                 => 'Deleted Records',
-              'settings.permissions'             => 'Permission Requests',
               'settings.teams'                   => 'Team Management',
               'settings.period-lock'             => 'Period Lock',
               'settings.backup'                  => 'Backup & Restore',
@@ -954,8 +998,8 @@
               <button type="button" data-name="{{ strtolower($u->name) }}" data-department="{{ $resolveUserDept($u->position) }}" onclick="selectVisUser({{ $u->id }}, this, '{{ addslashes($u->name) }}')"
                 style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 18px;border-radius:12px;cursor:pointer;border:2px solid {{ $selectedUserId == $u->id ? '#1e4575' : '#e5e7eb' }};background:{{ $selectedUserId == $u->id ? '#1e4575' : '#fff' }};color:{{ $selectedUserId == $u->id ? '#fff' : '#374151' }};width:110px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
                 <div style="position:relative;">
-                @if($u->avatar)
-                  <img src="{{ str_starts_with($u->avatar, 'avatars/') ? \Storage::disk('public')->url($u->avatar) : asset($u->avatar) }}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid {{ $selectedUserId == $u->id ? 'rgba(255,255,255,0.4)' : '#e5e7eb' }};">
+                @if($u->avatar_url)
+                  <img src="{{ $u->avatar_url }}" alt="{{ $u->name }}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid {{ $selectedUserId == $u->id ? 'rgba(255,255,255,0.4)' : '#e5e7eb' }};">
                 @else
                   <div style="width:40px;height:40px;border-radius:50%;background:{{ $selectedUserId == $u->id ? 'rgba(255,255,255,0.25)' : '#e8edf5' }};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:{{ $selectedUserId == $u->id ? '#fff' : '#1e4575' }};">
                     {{ strtoupper(substr($u->name,0,1)) }}
@@ -1224,125 +1268,6 @@
 
     
 
-    @if($isAdmin || $canSeeS('settings.permissions'))
-
-    {{-- PERMISSION REQUESTS PANEL --}}
-
-    <div class="{{ $panelClass('permission-requests') }}" id="panel-permission-requests">
-
-      <div class="st-page-header"><div class="st-page-title">Permission Requests</div><div class="st-page-sub">Review and approve or reject staff edit &amp; delete requests</div></div>
-
-      @php
-
-        $pendingPermReqs  = \App\Models\PermissionRequest::with('user')->where('status','pending')->orderBy('created_at','desc')->get();
-
-        $reviewedPermReqs = \App\Models\PermissionRequest::with('user')->whereIn('status',['approved','rejected'])->orderBy('updated_at','desc')->limit(50)->get();
-
-      @endphp
-
-      @if($pendingPermReqs->isNotEmpty())
-
-      <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">Pending — {{ $pendingPermReqs->count() }} Request(s)</div>
-
-      @foreach($pendingPermReqs as $pr)
-
-      <div class="perm-item pending-perm">
-
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-
-          <div>
-
-            <span style="font-weight:700;font-size:13px;">{{ $pr->user->name ?? '—' }}</span>
-
-            <span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700;margin:0 6px;">{{ strtoupper($pr->action) }}</span>
-
-            <span style="font-size:12px;color:#64748b;">{{ $pr->module }}</span>
-
-            @if($pr->record_label)<span style="font-size:12px;color:#94a3b8;"> — {{ $pr->record_label }}</span>@endif
-
-          </div>
-
-          <div style="font-size:11px;color:#94a3b8;">{{ $pr->created_at->format('M d, Y g:i A') }}</div>
-
-        </div>
-
-        @if($pr->reason)<div style="margin-top:8px;padding:8px 12px;background:white;border-radius:6px;border-left:3px solid #f59e0b;"><div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;margin-bottom:3px;">Reason</div><div style="font-size:13px;color:#374151;">{{ $pr->reason }}</div></div>@endif
-
-        <div class="perm-actions">
-
-          <input type="text" id="note_{{ $pr->id }}" placeholder="Optional note for staff..." style="flex:1;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;font-family:inherit;">
-
-          @if($pr->record_url)<a href="{{ $pr->record_url }}" target="_blank" class="st-btn st-btn-sm" style="background:#f1f5f9;color:#374151;border:1.5px solid #e2e8f0;text-decoration:none;">View Record</a>@endif
-
-          <form method="POST" action="{{ route('permission-requests.review', $pr->id) }}" onsubmit="event.preventDefault();submitPermReview({{ $pr->id }},'approved',this)">@csrf
-
-            <input type="hidden" name="status" value="approved">
-
-            <input type="hidden" name="admin_note" id="note_approve_{{ $pr->id }}">
-
-            <button type="submit" class="st-btn st-btn-primary st-btn-sm" onclick="document.getElementById('note_approve_{{ $pr->id }}').value=document.getElementById('note_{{ $pr->id }}').value">&#10003; Approve</button>
-
-          </form>
-
-          <form method="POST" action="{{ route('permission-requests.review', $pr->id) }}" onsubmit="event.preventDefault();submitPermReview({{ $pr->id }},'rejected',this)">@csrf
-
-            <input type="hidden" name="status" value="rejected">
-
-            <input type="hidden" name="admin_note" id="note_reject_{{ $pr->id }}">
-
-            <button type="submit" class="st-btn st-btn-danger st-btn-sm" onclick="document.getElementById('note_reject_{{ $pr->id }}').value=document.getElementById('note_{{ $pr->id }}').value">&#10005; Reject</button>
-
-          </form>
-
-        </div>
-
-      </div>
-
-      @endforeach
-
-      @endif
-
-      @if($reviewedPermReqs->isNotEmpty())
-
-      <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin:16px 0 8px;">Reviewed — {{ $reviewedPermReqs->count() }} Request(s)</div>
-
-      @foreach($reviewedPermReqs as $pr)
-
-      <div class="perm-item {{ $pr->status === 'approved' ? 'approved-perm' : 'rejected-perm' }}">
-
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-
-          <div>
-
-            <span style="font-weight:600;font-size:13px;">{{ $pr->user->name ?? '—' }}</span>
-
-            <span style="font-size:11px;color:#64748b;margin:0 6px;">{{ strtoupper($pr->action) }}</span>
-
-            <span style="font-size:12px;color:#94a3b8;">{{ $pr->module }}@if($pr->record_label) — {{ $pr->record_label }}@endif</span>
-
-          </div>
-
-          <span style="font-size:11px;font-weight:700;color:{{ $pr->status==='approved'?'#16a34a':'#dc2626' }};text-transform:uppercase;">{{ $pr->status }}</span>
-
-        </div>
-
-        @if($pr->admin_note)<div style="font-size:12px;color:#64748b;margin-top:4px;">Note: {{ $pr->admin_note }}</div>@endif
-
-      </div>
-
-      @endforeach
-
-      @endif
-
-      @if($pendingPermReqs->isEmpty() && $reviewedPermReqs->isEmpty())
-
-      <div class="st-card"><div class="st-card-body"><div class="st-empty">No permission requests.</div></div></div>
-
-      @endif
-
-    </div>
-
-    @endif
 
     @if($isAdmin || $canSeeS('settings.teams'))
 
@@ -1356,19 +1281,25 @@
       <div class="st-card" style="margin-bottom:20px;">
         <div class="st-card-hdr"><div class="st-card-hdr-text"><h3>Add New Team</h3></div></div>
         <div class="st-card-body">
-          <form method="POST" action="{{ route('settings.teams.store') }}">@csrf
+          <form method="POST" action="{{ route('settings.teams.store') }}" onsubmit="return validateAddTeamForm(this)">@csrf
             <div class="st-form-grid">
-              <div class="st-form-group"><label class="st-label">Team Name</label><input class="st-input" type="text" name="team_name" required></div>
+              <div class="st-form-group"><label class="st-label">Team Name</label><input class="st-input" type="text" name="team_name" required oninput="this.setCustomValidity('')"></div>
               <div class="st-form-group"><label class="st-label">Sales Manager <span style="font-weight:400;color:#94a3b8;font-size:11px">(optional)</span></label><input class="st-input" type="text" name="sales_manager"></div>
-              <div class="st-form-group"><label class="st-label">Team Leader</label><input class="st-input" type="text" name="leader_name"></div>
+              <div class="st-form-group"><label class="st-label">Team Leader</label><input class="st-input" type="text" name="leader_name" required oninput="this.setCustomValidity('')"></div>
             </div>
             <div style="margin-top:14px;"><button type="submit" class="st-btn st-btn-primary">Add Team</button></div>
           </form>
         </div>
       </div>
 
+      {{-- Search Teams / Agents --}}
+      <div style="margin-bottom:16px;display:flex;gap:12px;flex-wrap:wrap;">
+        <input type="text" id="teamSearchInput" class="st-input" placeholder="Search for Team Name" oninput="filterTeams()" style="max-width:320px;">
+        <input type="text" id="agentSearchInput" class="st-input" placeholder="Search for agents" oninput="filterTeams()" style="max-width:320px;">
+      </div>
+
       @foreach($salesTeams as $team)
-      <div style="background:white;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden;border:1px solid #e2e8f0;">
+      <div class="team-card" data-team-name="{{ strtolower($team->team_name) }}" style="background:white;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden;border:1px solid #e2e8f0;">
 
         {{-- Team Header --}}
         <div style="background:linear-gradient(135deg,#0f2444,#1e4575);padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
@@ -1409,7 +1340,7 @@
               </tr></thead>
               <tbody>
                 @foreach($team->agents as $agent)
-                <tr style="border-bottom:1px solid #f1f5f9;" id="agent-row-{{ $agent->id }}">
+                <tr style="border-bottom:1px solid #f1f5f9;" id="agent-row-{{ $agent->id }}" data-agent-name="{{ strtolower($agent->name) }}">
                   <td style="padding:10px 12px;font-weight:600;color:#0f172a;">
                     <div style="display:flex;align-items:center;gap:8px;">
                       <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1e4575,#2563eb);display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;flex-shrink:0;">{{ strtoupper(substr($agent->name,0,1)) }}</div>
@@ -1460,7 +1391,7 @@
             {{-- Add Agent --}}
             <form method="POST" action="{{ route('settings.agents.store') }}" style="display:flex;gap:8px;margin-top:10px;">@csrf
               <input type="hidden" name="team_id" value="{{ $team->id }}">
-              <input class="st-input" type="text" name="name" placeholder="Add agent name" style="flex:1;">
+              <input class="st-input" type="text" name="name" placeholder="Add agent name" style="flex:1;" required oninput="this.setCustomValidity('')">
               <button type="submit" class="st-btn st-btn-primary st-btn-sm">+ Add</button>
             </form>
           </div>
@@ -1477,10 +1408,10 @@
               </form>
             </div>
             @endforeach
-            <form method="POST" action="{{ route('settings.teams.quota', $team->id) }}" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">@csrf
-              <input class="st-input" type="date" name="date_from" style="flex:1;min-width:120px;">
-              <input class="st-input" type="date" name="date_to" style="flex:1;min-width:120px;">
-              <input class="st-input" type="number" name="quota_amount" placeholder="Amount" style="flex:1;min-width:100px;">
+            <form method="POST" action="{{ route('settings.teams.quota', $team->id) }}" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;" onsubmit="return validateQuotaDates(this)">@csrf
+              <input class="st-input" type="date" name="date_from" required style="flex:1;min-width:120px;" oninput="this.setCustomValidity('')">
+              <input class="st-input" type="date" name="date_to" required style="flex:1;min-width:120px;" oninput="this.setCustomValidity('')">
+              <input class="st-input" type="number" name="quota_amount" placeholder="Amount" style="flex:1;min-width:100px;" min="0" step="0.01" required oninput="this.setCustomValidity('')">
               <button type="submit" class="st-btn st-btn-primary st-btn-sm">Set</button>
             </form>
           </div>
@@ -1493,10 +1424,10 @@
       <div id="editTeamModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this)closeEditTeam();">
         <div style="background:white;border-radius:14px;padding:24px 28px;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2);">
           <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #f1f5f9;">Edit Team</div>
-          <form id="editTeamForm" method="POST">@csrf @method('PUT')
+          <form id="editTeamForm" method="POST" onsubmit="return validateAddTeamForm(this)">@csrf @method('PUT')
             <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:18px;">
-              <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Team Name</label><input class="st-input" type="text" id="edit_team_name" name="team_name" required></div>
-              <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Team Leader</label><input class="st-input" type="text" id="edit_leader_name" name="leader_name"></div>
+              <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Team Name</label><input class="st-input" type="text" id="edit_team_name" name="team_name" required oninput="this.setCustomValidity('')"></div>
+              <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Team Leader</label><input class="st-input" type="text" id="edit_leader_name" name="leader_name" required oninput="this.setCustomValidity('')"></div>
               <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">Sales Manager <span style="font-weight:400;color:#94a3b8;">(optional)</span></label><input class="st-input" type="text" id="edit_sales_manager" name="sales_manager"></div>
             </div>
             <div style="display:flex;gap:10px;">
@@ -1986,6 +1917,51 @@ function closeAddContactModal() { document.getElementById('contactAddModal').sty
 
 // Team Management JS
 var _editTeamId = null, _editAgentId = null;
+function filterTeams() {
+    var teamQ = document.getElementById('teamSearchInput').value.trim().toLowerCase();
+    var agentQ = document.getElementById('agentSearchInput').value.trim().toLowerCase();
+
+    document.querySelectorAll('.team-card').forEach(function(card) {
+        var teamName = card.getAttribute('data-team-name') || '';
+        var teamMatches = teamName.includes(teamQ);
+
+        var agentRows = card.querySelectorAll('[data-agent-name]');
+        var anyAgentMatches = agentQ === '';
+
+        agentRows.forEach(function(row) {
+            var agentName = row.getAttribute('data-agent-name') || '';
+            var rowMatches = agentQ === '' || agentName.includes(agentQ);
+            row.style.display = rowMatches ? '' : 'none';
+            if (rowMatches && agentQ !== '') anyAgentMatches = true;
+        });
+
+        card.style.display = (teamMatches && anyAgentMatches) ? '' : 'none';
+    });
+}
+function validateAddTeamForm(form) {
+    var required = ['team_name', 'leader_name'];
+    for (var i = 0; i < required.length; i++) {
+        var field = form.querySelector('[name="' + required[i] + '"]');
+        field.setCustomValidity('');
+        if (!field.value.trim()) {
+            field.setCustomValidity('Please fill out this field.');
+            field.reportValidity();
+            return false;
+        }
+    }
+    return true;
+}
+function validateQuotaDates(form) {
+    var dateFrom = form.querySelector('[name="date_from"]');
+    var dateTo = form.querySelector('[name="date_to"]');
+    dateTo.setCustomValidity('');
+    if (dateFrom.value && dateTo.value && dateTo.value < dateFrom.value) {
+        dateTo.setCustomValidity('End date must be on or after the start date.');
+        dateTo.reportValidity();
+        return false;
+    }
+    return true;
+}
 function openEditTeam(id, name, leader, manager) {
     _editTeamId = id;
     document.getElementById('editTeamForm').action = '/settings/teams/' + id;
@@ -2075,19 +2051,6 @@ function openContactModal(id, name, company, phone, email, facebook, btn) {
 }
 function closeContactModal() {
     document.getElementById('contactEditModal').style.display = 'none';
-}
-
-function submitPermReview(id, status, form) {
-    const note = document.getElementById('note_' + id)?.value || '';
-    const csrf = form.querySelector('[name=_token]')?.value || document.querySelector('meta[name=csrf-token]')?.content || '';
-    fetch('/api/permission-requests/' + id + '/review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-        body: JSON.stringify({ status: status, admin_note: note })
-    })
-    .then(r => r.json())
-    .then(() => { window.location.reload(); })
-    .catch(() => { window.location.reload(); });
 }
 
 // ── ARC Contact List drag-and-drop ──────────────────────────────────────────
@@ -2353,6 +2316,78 @@ async function bulkAction(kind) {
         if (window.showToast) { window.showToast('Something went wrong. Please try again.', 'error'); }
         else { alert('Something went wrong. Please try again.'); }
     }
+}
+function toggleAvatarMenu(e) {
+    e.stopPropagation();
+    var menu = document.getElementById('avatarMenu');
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+document.addEventListener('click', function(e) {
+    var menu = document.getElementById('avatarMenu');
+    if (menu && menu.style.display === 'block' && !e.target.closest('#avatarClickTarget')) {
+        menu.style.display = 'none';
+    }
+});
+
+function openAvatarViewModal() {
+    document.getElementById('avatarMenu').style.display = 'none';
+    var img = document.getElementById('currentAvatarImg');
+    if (!img) {
+        if (window.showToast) window.showToast('No profile picture uploaded yet.', 'error');
+        else alert('No profile picture uploaded yet.');
+        return;
+    }
+    document.getElementById('avatarViewImg').src = img.src;
+    document.getElementById('avatarViewModal').style.display = 'flex';
+}
+function closeAvatarViewModal() { document.getElementById('avatarViewModal').style.display = 'none'; }
+
+function openAvatarChooseModal() {
+    document.getElementById('avatarMenu').style.display = 'none';
+    document.getElementById('avatarChooseModal').style.display = 'flex';
+}
+function closeAvatarChooseModal() {
+    document.getElementById('avatarChooseModal').style.display = 'none';
+    document.getElementById('avatarFileInput').value = '';
+    document.getElementById('avatarSaveBtn').disabled = true;
+}
+function previewAvatarFile(input) {
+    var file = input.files && input.files[0];
+    if (!file) return;
+
+    var errorEl = document.getElementById('avatarChooseError');
+    var saveBtn = document.getElementById('avatarSaveBtn');
+
+    if (errorEl) {
+        errorEl.style.display = 'none';
+        errorEl.textContent = '';
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+    var msg = 'That photo is ' + (file.size / (1024*1024)).toFixed(1) + 'MB — please choose one under 8MB.';
+        if (errorEl) {
+            errorEl.textContent = msg;
+            errorEl.style.display = 'block';
+        } else {
+            alert(msg);
+        }
+        input.value = '';
+        if (saveBtn) saveBtn.disabled = true;
+        return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var img = document.getElementById('avatarPreviewImg');
+        var initials = document.getElementById('avatarPreviewInitials');
+        if (img) {
+            img.src = e.target.result;
+            img.style.display = 'block';
+        }
+        if (initials) initials.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+    if (saveBtn) saveBtn.disabled = false;
 }
 </script>
 @endsection

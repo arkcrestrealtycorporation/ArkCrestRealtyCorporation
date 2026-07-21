@@ -111,6 +111,40 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
   .column-filter-chip input,.column-filter-chip select{flex:1 1 auto;min-width:0;width:100%}
   .clear-column-filters-btn{width:100%;text-align:center}
 }
+
+/* Print Selected — same feature/fix as Departmental Expenses */
+.cd-print-only{display:none}
+@media print{
+    /* #cdPrintArea is reparented to be a direct child of <body> by
+       cdPrintSelectedRecords() right before printing. Hiding every OTHER
+       direct child of body (display:none, not visibility:hidden) removes
+       it from layout entirely, instead of just hiding it visually while
+       it still reserves its full height — that reserved height was what
+       produced several blank pages when only one row was selected. */
+    body > *:not(.cd-print-only){
+        display:none !important;
+    }
+    html, body{
+        overflow:visible !important;
+        height:auto !important;
+        max-height:none !important;
+    }
+    .cd-print-only{
+        display:block !important;
+        position:static !important;
+        width:100%;
+    }
+    .cd-print-header{margin-bottom:20px}
+    .cd-print-header h2{margin:0 0 4px;font-size:18px;color:#1e4575}
+    .cd-print-header p{margin:0;font-size:12px;color:#555}
+    .cd-print-table{width:100%;border-collapse:collapse;font-size:11px}
+    .cd-print-table th,.cd-print-table td{border:1px solid #999;padding:6px 8px;text-align:left}
+    .cd-print-table th{background:#eef2f7 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .cd-print-table tr{page-break-inside:avoid}
+    .cd-print-table thead{display:table-header-group}
+    @page{size:landscape;margin:12mm}
+}
+
 </style>
 
 <div class="cd-wrap">
@@ -123,7 +157,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
     <div class="cd-header">
         <div style="position:relative;z-index:2;">
             <div class="cd-header-eyebrow">Sales & Marketing</div>
-            <h1>Client Database</h1>
+            <h1>Clients</h1>
             <p>Manage client records and commission requests</p>
         </div>
         <div style="position:absolute;top:0;right:0;width:300px;height:100%;pointer-events:none;">
@@ -307,6 +341,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                     <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#6b7280" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <input type="text" id="cdSearch" placeholder="Search request..." style="width:340px;max-width:100%;padding:9px 12px 9px 36px;border:2px solid #d0d5dd;border-radius:8px;font-size:13px;box-sizing:border-box;outline:none;" oninput="cdFilter()">
                 </div>
+                <button id="cdPrintSelectedBtn" class="cd-bulk-btn" style="background:#1e4575;" onclick="cdPrintSelectedRecords()">Print Selected</button>
                 <button id="cdBulkDeleteBtn" class="cd-bulk-btn" disabled onclick="cdDeleteSelected()">Delete Selected (0)</button>
                 <span id="cdCount" style="font-size:12px;color:#94a3b8;white-space:nowrap;"></span>
                 <button onclick="cdClearAll()" style="padding:9px 14px;background:#f1f5f9;border:2px solid #d0d5dd;border-radius:8px;font-size:13px;color:#64748b;cursor:pointer;">Clear</button>
@@ -321,7 +356,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                             <input type="checkbox" id="cdSelectAll" onchange="cdToggleSelectAll(this)" title="Select all">
                         </th>
                         <th class="cd-sticky-col cd-sticky-index" style="padding:14px 8px;color:white;text-transform:uppercase;font-size:11px;">#</th>
-                        @foreach(['Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Units','Downpayment Date','Agent','Client Status','DP Stage','Downpayment Status','Actions'] as $h)
+                        @foreach(['Control Number','Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Units','Downpayment Date','Agent','Client Status','DP Stage','Downpayment Status','Actions'] as $h)
                         <th style="padding:14px 12px;text-align:left;font-weight:600;color:white;text-transform:uppercase;font-size:11px;white-space:nowrap">{{ $h }}</th>
                         @endforeach
                     </tr>
@@ -330,7 +365,8 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                     @forelse($commissionRequests ?? [] as $req)
                     @php $discVal = $req->tcp && $req->discount ? $req->tcp * ($req->discount / 100) : null; @endphp
                     <tr data-id="{{ $req->id }}"
-                        data-search="{{ strtolower($req->client_name ?? '') }} {{ strtolower($req->agent_name ?? '') }} {{ strtolower($req->project_name ?? '') }} {{ strtolower($req->developer_name ?? '') }} {{ strtolower($req->block_lot_number ?? '') }}"
+                        data-search="{{ strtolower($req->control_number ?? '') }} {{ strtolower($req->client_name ?? '') }} {{ strtolower($req->agent_name ?? '') }} {{ strtolower($req->project_name ?? '') }} {{ strtolower($req->developer_name ?? '') }} {{ strtolower($req->block_lot_number ?? '') }}"
+                        data-control="{{ strtolower($req->control_number ?? '') }}"
                         data-developer="{{ strtolower($req->developer_name ?? '') }}"
                         data-project="{{ strtolower($req->project_name ?? '') }}"
                         data-block-lot="{{ strtolower($req->block_lot_number ?? '') }}"
@@ -354,6 +390,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                             <input type="checkbox" class="cd-row-checkbox" value="{{ $req->id }}" onchange="cdUpdateBulkBar()">
                         </td>
                         <td class="cd-sticky-col cd-sticky-index" style="padding:14px 8px;color:#374151;font-weight:600">{{ $loop->iteration }}</td>
+                        <td style="padding:14px 12px;white-space:nowrap"><span style="font-family:monospace;background:#f1f5f9;padding:2px 8px;border-radius:6px;font-size:12px;color:#1e4575;font-weight:600;">{{ $req->control_number ?? '-' }}</span></td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->developer_name ?? '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->project_name ?? '-' }}</td>
                         <td style="padding:14px 12px;color:#374151;white-space:nowrap">{{ $req->block_lot_number ?? '-' }}</td>
@@ -455,7 +492,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="21" style="text-align:center;padding:40px;color:#6b7280">No client records yet.</td></tr>
+                    <tr><td colspan="22" style="text-align:center;padding:40px;color:#6b7280">No client records yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -463,6 +500,7 @@ tbody tr:hover .cd-sticky-col{background:#f8fafc}
         <div id="cdScrollTrack" class="cd-scroll-track">
             <div id="cdScrollThumb" class="cd-scroll-thumb"></div>
         </div>
+        <div id="cdPrintArea" class="cd-print-only"></div>
     </div>
 </div>
 
@@ -1269,16 +1307,17 @@ function cdInitScrollbar() {
 
 /* ---- Filter dropdown + chips ---- */
 var CD_FILTERABLE_FIELDS = [
+    { key: 'control',            label: 'Control Number',     dataAttr: 'data-control',           type: 'text'   },
     { key: 'developer',          label: 'Developer',          dataAttr: 'data-developer',        type: 'text'   },
     { key: 'project',            label: 'Project',            dataAttr: 'data-project',           type: 'text'   },
     { key: 'block-lot',          label: 'Block & Lot',        dataAttr: 'data-block-lot',         type: 'text'   },
     { key: 'client',             label: 'Client',             dataAttr: 'data-client',            type: 'text'   },
-    { key: 'lot-area',           label: 'Lot Area',           dataAttr: 'data-lot-area',          type: 'text'   },
-    { key: 'price-sqm',          label: 'Price/SQM',          dataAttr: 'data-price-sqm',         type: 'text'   },
-    { key: 'tcp',                label: 'TCP',                dataAttr: 'data-tcp',               type: 'text'   },
+    { key: 'lot-area',           label: 'Lot Area',           dataAttr: 'data-lot-area',          type: 'numrange'   },
+    { key: 'price-sqm',          label: 'Price/SQM',          dataAttr: 'data-price-sqm',         type: 'numrange'   },
+    { key: 'tcp',                label: 'TCP',                dataAttr: 'data-tcp',               type: 'numrange'   },
     { key: 'discount',           label: 'Discount',           dataAttr: 'data-discount',          type: 'text'   },
-    { key: 'discount-value',     label: 'Discount Value',     dataAttr: 'data-discount-value',    type: 'text'   },
-    { key: 'net-tcp',            label: 'Net TCP',            dataAttr: 'data-net-tcp',           type: 'text'   },
+    { key: 'discount-value',     label: 'Discount Value',     dataAttr: 'data-discount-value',    type: 'numrange'   },
+    { key: 'net-tcp',            label: 'Net TCP',            dataAttr: 'data-net-tcp',           type: 'numrange'   },
     { key: 'terms',              label: 'Terms',              dataAttr: 'data-terms',             type: 'select', options: ['30% DP - 70% BAL 5 YRS','50% DP - 50% BAL 5 YRS','30% DP (6 MOS) - 70% BAL 54 MOS','30% DP (3 MOS) - 70% BAL 57 MOS','30% DP (9 MOS) - 70% BAL 36 MOS','30% DP (2 MOS) - 70% BAL 57 MOS','30% DP (2 MOS) - 70% BAL 5 YRS','STRAIGHT PAYMENT','30% DP - 70% BAL 3 YRS'] },
     { key: 'reservation-date',   label: 'Reservation Date',   dataAttr: 'data-reservation-date',  type: 'daterange' },
     { key: 'units',              label: 'Units',              dataAttr: 'data-units',             type: 'text'   },
@@ -1319,7 +1358,8 @@ function cdToggleColumnFilter(key) {
     if (cdColumnFilters.hasOwnProperty(key)) {
         delete cdColumnFilters[key];
     } else {
-        cdColumnFilters[key] = '';
+        var f = cdFieldConfig(key);
+        cdColumnFilters[key] = (f && (f.type === 'daterange' || f.type === 'numrange')) ? { from: '', to: '' } : '';
     }
     renderCdColumnFilterMenu();
     renderCdActiveColumnFilters();
@@ -1387,6 +1427,40 @@ function renderCdActiveColumnFilters() {
             input.appendChild(fromInput);
             input.appendChild(toLabel);
             input.appendChild(toInput);
+        } else if (f.type === 'numrange') {
+            if (!cdColumnFilters[key] || typeof cdColumnFilters[key] !== 'object') {
+                cdColumnFilters[key] = { from: '', to: '' };
+            }
+            var numRange = cdColumnFilters[key];
+
+            input = document.createElement('span');
+            input.style.display = 'flex';
+            input.style.alignItems = 'center';
+            input.style.gap = '6px';
+
+            var numFromInput = document.createElement('input');
+            numFromInput.type = 'number';
+            numFromInput.step = 'any';
+            numFromInput.placeholder = 'Min';
+            numFromInput.style.width = '100px';
+            numFromInput.value = numRange.from || '';
+            numFromInput.oninput = numFromInput.onchange = function () { numRange.from = this.value; cdFilter(); };
+
+            var numToLabel = document.createElement('span');
+            numToLabel.textContent = 'to';
+            numToLabel.style.cssText = 'color:#8a9bad;font-size:12px;';
+
+            var numToInput = document.createElement('input');
+            numToInput.type = 'number';
+            numToInput.step = 'any';
+            numToInput.placeholder = 'Max';
+            numToInput.style.width = '100px';
+            numToInput.value = numRange.to || '';
+            numToInput.oninput = numToInput.onchange = function () { numRange.to = this.value; cdFilter(); };
+
+            input.appendChild(numFromInput);
+            input.appendChild(numToLabel);
+            input.appendChild(numToInput);
         } else if (f.type === 'select') {
             input = document.createElement('select');
             var optAll = document.createElement('option');
@@ -1443,6 +1517,17 @@ function cdMatchesColumnFilters(row) {
             if (!rowDate) return false;
             if (range.from && rowDate < range.from) return false;
             if (range.to && rowDate > range.to) return false;
+            continue;
+        }
+
+        if (f.type === 'numrange') {
+            var numRangeVal = cdColumnFilters[key];
+            if (!numRangeVal || (numRangeVal.from === '' && numRangeVal.to === '')) continue;
+            var rawVal = (row.getAttribute(f.dataAttr) || '').toString().replace(/[^0-9.\-]/g, '');
+            var rowNum = rawVal === '' ? NaN : parseFloat(rawVal);
+            if (isNaN(rowNum)) return false;
+            if (numRangeVal.from !== '' && rowNum < parseFloat(numRangeVal.from)) return false;
+            if (numRangeVal.to !== '' && rowNum > parseFloat(numRangeVal.to)) return false;
             continue;
         }
 
@@ -1590,6 +1675,89 @@ function cdConfirmBulkDelete() {
         alert('Some records may not have been deleted. Reloading the page...');
         window.location.reload();
     });
+}
+
+// ── Print Selected ──
+function cdGetSelectedPrintRows() {
+    return Array.from(document.querySelectorAll('.cd-row-checkbox:checked'))
+        .map(function(cb) { return cb.closest('tr'); })
+        .filter(function(row) { return row.style.display !== 'none'; });
+}
+
+// Most cells are plain text, but Client Status (a <select>) and DP Stage
+// (two stacked <div>s) aren't — textContent on those would include every
+// option or run the two divs together, so they're pulled out explicitly.
+function cdGetPrintCellText(row, index) {
+    const cells = row.cells;
+    if (index === 18) { // Client Status
+        const sel = cells[18].querySelector('select');
+        if (sel) return sel.value || '— No Status —';
+        return cells[18].textContent.trim();
+    }
+    if (index === 19) { // DP Stage
+        const valueEl = cells[19].querySelector('div[id^="dpStageValue_"]');
+        const statusEl = cells[19].querySelector('div[id^="dpStageStatus_"]');
+        const val = valueEl ? valueEl.textContent.trim() : '';
+        const status = (statusEl && statusEl.style.display !== 'none') ? statusEl.textContent.trim() : '';
+        return status ? (val + ' (' + status + ')') : val;
+    }
+    return cells[index].textContent.trim();
+}
+
+function cdPrintSelectedRecords() {
+    const rows = cdGetSelectedPrintRows();
+    if (rows.length === 0) {
+        if (typeof showToast === 'function') {
+            showToast('Please select at least one record to print.', 'warning', 'No Selection');
+        } else {
+            alert('Please select at least one record to print.');
+        }
+        return;
+    }
+
+    const headers = ['Control Number','Developer','Project','Block & Lot','Client','Lot Area','Price/SQM','TCP','Discount (%)','Discount Value','Net TCP','Terms','Reservation Date','Units','Downpayment Date','Agent','Client Status','DP Stage','Downpayment Status'];
+
+    let tableHtml = '<table class="cd-print-table"><thead><tr>';
+    headers.forEach(function(h) { tableHtml += '<th>' + h + '</th>'; });
+    tableHtml += '</tr></thead><tbody>';
+
+    rows.forEach(function(row) {
+        tableHtml += '<tr>';
+        // cells 0=checkbox, 1=#, 2..20=data columns above, 21=Actions (skipped)
+        for (let i = 2; i <= 20; i++) {
+            tableHtml += '<td>' + cdGetPrintCellText(row, i) + '</td>';
+        }
+        tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const printArea = document.getElementById('cdPrintArea');
+    printArea.innerHTML = `
+        <div class="cd-print-header">
+            <h2>Client Database Report</h2>
+            <p>Generated on ${dateStr} — ${rows.length} record(s)</p>
+        </div>
+        ${tableHtml}
+    `;
+
+    // Reparent out of the clipped ancestor chain for the duration of the
+    // print, same fix as Departmental Expenses — the @media print overflow
+    // overrides above handle the rest.
+    const printAreaAnchor = document.createComment('cdPrintArea-anchor');
+    printArea.parentNode.insertBefore(printAreaAnchor, printArea);
+    document.body.appendChild(printArea);
+
+    function restoreCdPrintArea() {
+        printAreaAnchor.parentNode.insertBefore(printArea, printAreaAnchor);
+        printAreaAnchor.remove();
+        window.removeEventListener('afterprint', restoreCdPrintArea);
+    }
+    window.addEventListener('afterprint', restoreCdPrintArea);
+
+    window.print();
 }
 
 
@@ -2480,20 +2648,33 @@ function getInstallmentApiError(data, fallback) {
     return fallback || 'Unable to save the installment.';
 }
 
-function readInstallmentAmount(instId) {
+function readInstallmentAmount(instId, silent) {
     var amountEl = document.getElementById('inst_amount_' + instId);
     var rawAmount = amountEl ? amountEl.value.trim() : '';
     var amount = Number(rawAmount);
 
+    function showAmountError(message) {
+        if (!amountEl || silent) return;
+        amountEl.setCustomValidity(message);
+        amountEl.reportValidity();
+        amountEl.focus();
+        amountEl.addEventListener('input', function clearV() {
+            amountEl.setCustomValidity('');
+            amountEl.removeEventListener('input', clearV);
+        }, { once: true });
+    }
+
     if (!rawAmount || !Number.isFinite(amount) || amount <= 0) {
-        throw new Error('Enter a valid finite payment amount greater than zero.');
+        showAmountError('Enter a valid finite payment amount greater than zero.');
+        return null;
     }
 
     if (_dpRemainingBalance > 0 && amount > _dpRemainingBalance + 0.01) {
-        throw new Error(
+        showAmountError(
             'The payment cannot exceed the remaining DP balance of '
             + fmtPeso(_dpRemainingBalance) + '.'
         );
+        return null;
     }
 
     return {
@@ -2504,15 +2685,8 @@ function readInstallmentAmount(instId) {
 }
 
 async function saveInstallmentAmount(instId, silent) {
-    var payment;
-
-    try {
-        payment = readInstallmentAmount(instId);
-    } catch (error) {
-        if (!silent) alert(error.message);
-        return false;
-    }
-
+    var payment = readInstallmentAmount(instId, silent);
+    if (!payment) return false;
     try {
         var response = await fetch(`/api/installments/${instId}/amount`, {
             method: 'PATCH',
@@ -2539,7 +2713,13 @@ async function saveInstallmentAmount(instId, silent) {
         payment.element.reportValidity();
         payment.element.setCustomValidity('');
 
-        if (!silent) alert(error.message);
+        if (!silent) {
+            if (typeof showToast === 'function') {
+                showToast(error.message, 'error', 'Payment Error');
+            } else {
+                alert(error.message);
+            }
+        }
         return false;
     }
 }
@@ -2552,24 +2732,51 @@ function markPaid(instId) {
     markPaidWithDate(instId, btn);
 }
 
+function showFieldTooltip(el, message) {
+    var existing = document.getElementById('_fieldTooltip');
+    if (existing) existing.remove();
+
+    var rect = el.getBoundingClientRect();
+    var tip = document.createElement('div');
+    tip.id = '_fieldTooltip';
+    tip.style.cssText = 'position:fixed;top:' + (rect.bottom + 8) + 'px;left:' + rect.left + 'px;'
+        + 'z-index:99999;background:white;border:1px solid #d1d5db;border-radius:6px;'
+        + 'box-shadow:0 4px 12px rgba(0,0,0,.15);padding:8px 12px;display:flex;align-items:center;'
+        + 'gap:8px;font-size:13px;color:#1f2937;max-width:280px;';
+    tip.innerHTML =
+        '<span style="flex-shrink:0;width:18px;height:18px;background:#dc2626;color:white;'
+        + 'border-radius:3px;display:flex;align-items:center;justify-content:center;font-weight:700;'
+        + 'font-size:12px;">!</span><span>' + message + '</span>'
+        + '<div style="position:absolute;top:-6px;left:16px;width:12px;height:12px;background:white;'
+        + 'border-left:1px solid #d1d5db;border-top:1px solid #d1d5db;transform:rotate(45deg);"></div>';
+
+    document.body.appendChild(tip);
+    el.focus();
+
+    function remove() {
+        tip.remove();
+        el.removeEventListener('input', remove);
+        document.removeEventListener('click', onOutsideClick);
+    }
+    function onOutsideClick(e) {
+        if (!tip.contains(e.target) && e.target !== el) remove();
+    }
+    el.addEventListener('input', remove, { once: true });
+    setTimeout(function() { document.addEventListener('click', onOutsideClick); }, 0);
+    setTimeout(remove, 4000);
+}
+
 async function markPaidWithDate(instId, btn) {
     var dateEl = document.getElementById('inst_date_' + instId);
     var date = dateEl ? dateEl.value : '';
 
     if (!date) {
-        alert('Date of payment is required.');
-        if (dateEl) dateEl.focus();
+        if (dateEl) showFieldTooltip(dateEl, 'Date of payment is required.');
         return;
     }
 
-    var payment;
-
-    try {
-        payment = readInstallmentAmount(instId);
-    } catch (error) {
-        alert(error.message);
-        return;
-    }
+    var payment = readInstallmentAmount(instId);
+    if (!payment) return;
 
     if (!confirm('Mark this term as paid for ' + fmtPeso(payment.value) + '?')) {
         return;
@@ -2618,7 +2825,11 @@ async function markPaidWithDate(instId, btn) {
         refreshDPStageSummary(res);
         handleCommissionTrigger(res);
     } catch (error) {
-        alert(error.message);
+        if (typeof showToast === 'function') {
+            showToast(error.message, 'error', 'Payment Error');
+        } else {
+            alert(error.message);
+        }
 
         if (btn) {
             btn.disabled = false;
@@ -2642,7 +2853,13 @@ function unmarkPaid(instId) {
         updateDPStatusBadge(_dpRecordId, res.status || '');
         updateClientStatusSelect(_dpRecordId, res.client_status || 'Pending');
         refreshDPStageSummary(res);
-    }).catch(error => alert(error.message));
+    }).catch(error => {
+        if (typeof showToast === 'function') {
+            showToast(error.message, 'error', 'Undo Failed');
+        } else {
+            alert(error.message);
+        }
+    });
 }
 </script>
 
