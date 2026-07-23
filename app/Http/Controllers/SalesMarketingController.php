@@ -213,7 +213,7 @@ class SalesMarketingController extends Controller
         // range whose reservation is not cancelled and has not yet paid
         // (or fully paid) its downpayment.
         $pendingReservation = CommissionRequestSales::whereBetween('reservation_date', [$dateFrom, $dateTo])
-            ->where(function($q) { $q->whereNull('downpayment_status')->orWhereNotIn('downpayment_status', ['Paid','Spot Paid']); })
+            ->where(function($q) { $q->whereNull('downpayment_status')->orWhereNotIn('downpayment_status', ['Paid','Spot Paid', 'Partial']); })
             ->where(function($q) { $q->whereNull('client_status')->orWhere('client_status','!=','Cancelled'); })
             ->distinct('client_name')
             ->count('client_name');

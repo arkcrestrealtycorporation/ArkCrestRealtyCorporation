@@ -157,7 +157,7 @@
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
             </div>
             <div class="metric-content">
-                <div class="metric-label">Units</div>
+                <div class="metric-label">Sold Units</div>
                 <div class="metric-value">{{ number_format($units, 0) }}</div>
                 <div style="font-size:11px;color:#64748b;margin-top:4px;line-height:1.7;">
                     Gross Sales: <strong>₱{{ number_format($grossSalesFromClient, 0) }}</strong><br>
@@ -186,7 +186,7 @@
                 </svg>
             </div>
             <div class="metric-content">
-                <div class="metric-label">Total Units</div>
+                <div class="metric-label">Total Sold Units</div>
                 <div class="metric-value">{{ number_format($totalRecords, 0) }}</div>
                 <div class="metric-subtitle">Year {{ \Carbon\Carbon::parse($dateFrom)->format('Y') }} &middot;</div>
             </div>
