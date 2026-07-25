@@ -67,13 +67,23 @@
                 <div class="form-row-inline">
                     <div class="form-group">
                         <label>Employee <span class="required">*</span></label>
-                        <select id="ca_employee_id" name="employee_id" class="form-control" required>
-                            <option value="" disabled selected>Select employee...</option>
-                            @foreach($employees as $emp)
-                                <option value="{{ $emp->id }}">{{ $emp->name }}@if($emp->position) — {{ $emp->position }}@endif</option>
-                            @endforeach
-                        </select>
-                        <span class="ca-error" id="err_employee_id"></span>
+                        <div style="position:relative;">
+                            <input type="text" id="ca_employee_search" class="form-control" placeholder="Type or select employee..." autocomplete="off" required
+                                style="padding-right:36px;box-sizing:border-box;width:100%;"
+                                onclick="caToggleEmployeeDropdown()" oninput="caFilterEmployeeDropdown(this.value)">
+                            <input type="hidden" id="ca_employee_id" name="employee_id">
+                            <button type="button" onclick="caToggleEmployeeDropdown()" style="position:absolute;right:2px;top:2px;bottom:2px;width:32px;background:transparent;border:none;color:#8A9BAD;cursor:pointer;font-size:11px;">▼</button>
+                            <div id="caEmployeeDropdown" style="display:none;position:absolute;top:calc(100% + 2px);left:0;right:0;background:#fff;border:1.5px solid #d0d5dd;border-radius:8px;max-height:220px;overflow-y:auto;z-index:1000;box-shadow:0 4px 12px rgba(0,0,0,.15);">
+                                @foreach($employees as $emp)
+                                @php $empLabel = $emp->name . ($emp->position ? ' — ' . $emp->position : ''); @endphp
+                                <div class="ca-employee-option" onclick="caSelectEmployee({{ $emp->id }}, '{{ addslashes($empLabel) }}')"
+                                    style="padding:10px 14px;cursor:pointer;font-size:13px;color:#374151;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background=''">
+                                    {{ $empLabel }}
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        <span class="ca-error" id="err_employee_search"></span>
                     </div>
 
                     <div class="form-group">
@@ -161,30 +171,38 @@
         </form>
     </div>
 
-    <!-- Records -->
+    <!-- Cash Advance Records -->
     <div class="ca-card ca-records-card">
         <div class="ca-records-header">
-            <h3 class="ca-card-title">Records</h3>
-            <span class="ca-records-count" id="caRecordsCount">{{ $totalRecords }} total</span>
-        </div>
-
-        <div class="ca-filter-row" id="caFilterRow">
-            <label class="ca-filter-label">Filter by Amount</label>
-            <div class="ca-filter-inputs">
-                <span class="ca-filter-currency">₱</span>
-                <input type="number" step="any" id="caAmountFrom" placeholder="Min" class="ca-filter-input">
-                <span class="ca-filter-to">to</span>
-                <span class="ca-filter-currency">₱</span>
-                <input type="number" step="any" id="caAmountTo" placeholder="Max" class="ca-filter-input">
-                <button type="button" class="ca-filter-clear" id="caFilterClearBtn" onclick="caClearAmountFilter()" style="display:none;">Clear</button>
+            <h3 class="ca-card-title">Cash Advance Records</h3>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <button type="button" class="ca-bulk-delete-btn" id="caBulkDeleteBtn" disabled onclick="caDeleteSelected()">Delete Selected (0)</button>
+                <span class="ca-records-count" id="caRecordsCount">{{ $totalRecords }} total</span>
             </div>
         </div>
+
+        <div class="ca-filter-toolbar">
+            <div class="column-filter-dropdown" id="caColumnFilterDropdown">
+                <button type="button" class="column-filter-btn" onclick="toggleCaColumnFilterMenu(event)">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    <span>Filter</span>
+                    <span id="caFilterCountBadge" class="filter-count-badge" style="display:none;">0</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div id="caColumnFilterMenu" class="column-filter-menu" style="display:none;"></div>
+            </div>
+            <button type="button" class="clear-column-filters-btn" onclick="caClearAllColumnFilters()">Clear Filters</button>
+        </div>
+        <div id="caActiveColumnFiltersRow" class="active-column-filters-row" style="display:none;"></div>
 
         <div class="ca-table-wrap">
             <table class="ca-table" id="caTable">
                 <thead>
                     <tr>
-                        <th>Cash Advance No.</th>
+                        <th class="ca-sticky-col ca-sticky-checkbox">
+                            <input type="checkbox" id="caSelectAll" onchange="caToggleSelectAll(this)" title="Select all">
+                        </th>
+                        <th class="ca-sticky-col ca-sticky-id">Cash Advance No.</th>
                         <th>Employee</th>
                         <th>Department</th>
                         <th>Amount</th>
@@ -200,8 +218,24 @@
                 </thead>
                 <tbody>
                     @forelse($records as $r)
-                    <tr id="ca-row-{{ $r->id }}" data-amount="{{ $r->amount }}">
-                        <td class="ca-id">{{ $r->control_number }}</td>
+                    @php
+                        $termsLabel = $r->repayment_type === 'OTHERS'
+                            ? 'One-time — ' . (optional($r->repayment_date)->format('Y-m-d') ?? '—')
+                            : ($r->installment_terms ?? '—') . ' term' . (($r->installment_terms ?? 0) == 1 ? '' : 's');
+                        $termsEditable = in_array($r->status, ['APPROVED', 'COMPLETED']);
+                    @endphp
+                    <tr id="ca-row-{{ $r->id }}" data-amount="{{ $r->amount }}"
+                        data-control="{{ strtolower($r->control_number ?? '') }}"
+                        data-employee="{{ strtolower($r->employee_name ?? '') }}"
+                        data-department="{{ strtolower($r->department ?? '') }}"
+                        data-date-requested="{{ optional($r->date_requested)->format('Y-m-d') ?? optional($r->created_at)->format('Y-m-d') }}"
+                        data-date-needed="{{ optional($r->date_needed)->format('Y-m-d') ?? '' }}"
+                        data-repayment-type="{{ strtolower($r->repayment_type ?? '') }}"
+                        data-status="{{ strtolower($r->display_status ?? '') }}">
+                        <td class="ca-sticky-col ca-sticky-checkbox">
+                            <input type="checkbox" class="ca-row-checkbox" value="{{ $r->id }}" onchange="caUpdateBulkBar()">
+                        </td>
+                        <td class="ca-id ca-sticky-col ca-sticky-id">{{ $r->control_number }}</td>
                         <td>
                             <div class="ca-employee-name">{{ $r->employee_name }}</div>
                             <div class="ca-employee-reason">{{ $r->purpose ?? $r->reason }}</div>
@@ -212,10 +246,11 @@
                         <td>{{ optional($r->date_needed)->format('Y-m-d') ?? '—' }}</td>
                         <td>{{ $r->repayment_type === 'OTHERS' ? 'Others' : 'Installment' }}</td>
                         <td>
-                            @if($r->repayment_type === 'OTHERS')
-                                One-time — {{ optional($r->repayment_date)->format('Y-m-d') ?? '—' }}
+                            @if($termsEditable)
+                                <button type="button" class="ca-btn-terms ca-btn-terms-{{ strtolower($r->display_status) }}"
+                                    title="Manage repayment" onclick="caOpenEdit({{ $r->id }}, '{{ $r->control_number }}')">{{ $termsLabel }}</button>
                             @else
-                                {{ $r->installment_terms ?? '—' }} term{{ ($r->installment_terms ?? 0) == 1 ? '' : 's' }}
+                                <span>{{ $termsLabel }}</span>
                             @endif
                         </td>
                         <td id="ca-stage-{{ $r->id }}">{{ $r->payment_stage_label }}</td>
@@ -230,9 +265,6 @@
                                 <button type="button" class="ca-btn-reject" onclick="caReject({{ $r->id }}, '{{ $r->control_number }}')">Reject</button>
                                 @endif
                                 <button type="button" class="ca-btn-view" title="View / Print" onclick="caOpenView({{ $r->id }})">View</button>
-                                @if(in_array($r->status, ['APPROVED', 'COMPLETED']))
-                                <button type="button" class="ca-btn-edit" title="Manage repayment" onclick="caOpenEdit({{ $r->id }}, '{{ $r->control_number }}')">Edit</button>
-                                @endif
                                 <button type="button" class="ca-btn-delete" title="Delete record" onclick="caDelete({{ $r->id }}, '{{ $r->control_number }}')">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                 </button>
@@ -241,11 +273,107 @@
                     </tr>
                     @empty
                     <tr id="caEmptyRow">
-                        <td colspan="12" class="ca-empty">No cash advance records yet.</td>
+                        <td colspan="13" class="ca-empty">No cash advance records yet.</td>
                     </tr>
                     @endforelse
                     <tr id="caNoMatchRow" style="display:none;">
-                        <td colspan="12" class="ca-empty">No records match this amount range.</td>
+                        <td colspan="13" class="ca-empty">No records match the current filters.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @php
+        // Each repayment term/installment gets its own row below, so this is a
+        // flat count across every cash advance's individual repayment records —
+        // not the number of cash advance requests itself.
+        $totalRepaymentRecords = $records->sum(function ($r) { return $r->repayments->count(); });
+    @endphp
+
+    <!-- Repayment Records -->
+    <div class="ca-card ca-repayment-card">
+        <div class="ca-records-header">
+            <h3 class="ca-card-title">Repayment Records</h3>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <button type="button" class="ca-bulk-delete-btn" id="caRepayBulkDeleteBtn" disabled onclick="caRepayDeleteSelected()">Delete Selected (0)</button>
+                <span class="ca-records-count" id="caRepaymentRecordsCount">{{ $totalRepaymentRecords }} record{{ $totalRepaymentRecords == 1 ? '' : 's' }}</span>
+            </div>
+        </div>
+
+        <div class="ca-filter-toolbar">
+            <div class="column-filter-dropdown" id="caRepayColumnFilterDropdown">
+                <button type="button" class="column-filter-btn" onclick="toggleCaRepayColumnFilterMenu(event)">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+                    <span>Filter</span>
+                    <span id="caRepayFilterCountBadge" class="filter-count-badge" style="display:none;">0</span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:2px;"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div id="caRepayColumnFilterMenu" class="column-filter-menu" style="display:none;"></div>
+            </div>
+            <button type="button" class="clear-column-filters-btn" onclick="caRepayClearAllColumnFilters()">Clear Filters</button>
+        </div>
+        <div id="caRepayActiveColumnFiltersRow" class="active-column-filters-row" style="display:none;"></div>
+
+        <div class="ca-table-wrap">
+            <table class="ca-table" id="caRepaymentsTable">
+                <thead>
+                    <tr>
+                        <th class="ca-sticky-col ca-sticky-checkbox">
+                            <input type="checkbox" id="caRepaySelectAll" onchange="caRepayToggleSelectAll(this)" title="Select all">
+                        </th>
+                        <th class="ca-sticky-col ca-sticky-id">Cash Advance No.</th>
+                        <th>Employee</th>
+                        <th>Repayment Term</th>
+                        <th>Amount</th>
+                        <th>Payment Stage</th>
+                        <th>Status</th>
+                        <th>Date Paid</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($records as $r)
+                        @foreach($r->repayments as $rep)
+                        @php
+                            $repAmount = $r->repayment_type === 'OTHERS' ? $r->amount : ($r->amount_per_term ?? 0);
+                            $repTermLabel = $r->repayment_type === 'OTHERS' ? 'one-time payment' : ('term ' . $rep->term_number);
+                            $repStatusLabel = $rep->status === 'PAID' ? 'paid' : 'partial';
+                        @endphp
+                        <tr data-id="{{ $rep->id }}"
+                            data-amount="{{ $repAmount }}"
+                            data-control="{{ strtolower($r->control_number ?? '') }}"
+                            data-employee="{{ strtolower($r->employee_name ?? '') }}"
+                            data-term="{{ $repTermLabel }}"
+                            data-status="{{ $repStatusLabel }}"
+                            data-date-paid="{{ optional($rep->date_paid)->format('Y-m-d') ?? '' }}">
+                            <td class="ca-sticky-col ca-sticky-checkbox">
+                                <input type="checkbox" class="ca-repay-row-checkbox" value="{{ $rep->id }}" onchange="caRepayUpdateBulkBar()">
+                            </td>
+                            <td class="ca-id ca-sticky-col ca-sticky-id">{{ $r->control_number }}</td>
+                            <td>{{ $r->employee_name }}</td>
+                            <td>
+                                @if($r->repayment_type === 'OTHERS')
+                                    One-time Payment
+                                @else
+                                    Term {{ $rep->term_number }}
+                                @endif
+                            </td>
+                            <td>₱{{ number_format($repAmount, 2) }}</td>
+                            <td>{{ $rep->term_number }}/{{ $r->total_terms }}</td>
+                            <td>
+                                <span class="ca-badge ca-badge-{{ $rep->status === 'PAID' ? 'completed' : 'active' }}">{{ $rep->status === 'PAID' ? 'Paid' : 'Partial' }}</span>
+                            </td>
+                            <td>{{ optional($rep->date_paid)->format('Y-m-d') ?? '—' }}</td>
+                        </tr>
+                        @endforeach
+                    @endforeach
+                    @if($totalRepaymentRecords === 0)
+                    <tr id="caRepaymentsEmptyRow">
+                        <td colspan="8" class="ca-empty">No repayment records yet.</td>
+                    </tr>
+                    @endif
+                    <tr id="caRepayNoMatchRow" style="display:none;">
+                        <td colspan="8" class="ca-empty">No repayment records match the current filters.</td>
                     </tr>
                 </tbody>
             </table>
@@ -292,8 +420,54 @@
     </div>
 </div>
 
+<!-- Bulk Delete Confirm Modal: Cash Advance Records -->
+<div id="caBulkDeleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this) caCancelBulkDelete()">
+    <div style="background:white;border-radius:16px;max-width:420px;width:90%;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);">
+        <div style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:18px 22px;display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;background:rgba(255,255,255,.15);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg fill="none" stroke="white" viewBox="0 0 24 24" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            <div style="flex:1;">
+                <div style="color:rgba(255,255,255,.75);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Confirm Deletion</div>
+                <div style="color:white;font-size:15px;font-weight:700;margin-top:1px;">Delete Selected Cash Advance Records</div>
+            </div>
+        </div>
+        <div style="padding:20px 22px;">
+            <p style="font-size:14px;color:#374151;margin:0 0 4px;">Delete <strong id="caBulkDeleteCount">0</strong> selected record(s)?</p>
+            <p style="font-size:12px;color:#94a3b8;margin:0 0 18px;">This action cannot be undone.</p>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button onclick="caCancelBulkDelete()" style="padding:9px 18px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;">No, Cancel</button>
+                <button onclick="caConfirmBulkDelete()" style="padding:9px 20px;background:#dc2626;color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Delete Confirm Modal: Repayment Records -->
+<div id="caRepayBulkDeleteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this) caRepayCancelBulkDelete()">
+    <div style="background:white;border-radius:16px;max-width:420px;width:90%;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.2);">
+        <div style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:18px 22px;display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;background:rgba(255,255,255,.15);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg fill="none" stroke="white" viewBox="0 0 24 24" style="width:18px;height:18px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            <div style="flex:1;">
+                <div style="color:rgba(255,255,255,.75);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">Confirm Deletion</div>
+                <div style="color:white;font-size:15px;font-weight:700;margin-top:1px;">Delete Selected Repayment Records</div>
+            </div>
+        </div>
+        <div style="padding:20px 22px;">
+            <p style="font-size:14px;color:#374151;margin:0 0 4px;">Delete <strong id="caRepayBulkDeleteCount">0</strong> selected record(s)?</p>
+            <p style="font-size:12px;color:#94a3b8;margin:0 0 18px;">This action cannot be undone.</p>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button onclick="caRepayCancelBulkDelete()" style="padding:9px 18px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;font-weight:600;color:#374151;cursor:pointer;">No, Cancel</button>
+                <button onclick="caRepayConfirmBulkDelete()" style="padding:9px 20px;background:#dc2626;color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
-.ca-container { max-width: 1300px; }
+
 
 .ca-banner {
     background: linear-gradient(135deg, #1e4575 0%, #2563eb 60%, #1e4575 100%);
@@ -362,32 +536,43 @@
 .ca-error { display: block; font-size: 11.5px; color: #dc2626; margin-top: 4px; min-height: 14px; }
 .form-control.ca-invalid { border-color: #dc2626 !important; background: #fef2f2; }
 
-.ca-records-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+.ca-records-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
 .ca-records-count { font-size: 12px; color: #8A9BAD; font-weight: 600; }
 
-.ca-filter-row {
-    display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
-    padding: 10px 14px; margin-bottom: 14px; background: #f8fafc;
-    border: 1px solid #eef1f5; border-radius: 10px;
+/* Bulk delete button used by both tables' header bars */
+.ca-bulk-delete-btn {
+    padding: 8px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700;
+    cursor: pointer; background: #ef4444; color: #fff; transition: opacity .2s;
 }
-.ca-filter-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #1e4575; white-space: nowrap; }
-.ca-filter-inputs { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.ca-filter-currency { font-size: 12.5px; color: #8A9BAD; font-weight: 600; }
-.ca-filter-to { font-size: 12px; color: #8a9bad; }
-.ca-filter-input {
-    width: 100px; padding: 7px 10px; border: 1.5px solid #d0d5dd; border-radius: 7px;
-    font-size: 13px; font-family: inherit; color: #1e2a3a; background: #fff; transition: border-color .15s;
-}
-.ca-filter-input:focus { outline: none; border-color: #1e4575; }
-.ca-filter-clear {
-    padding: 6px 12px; border: 1.5px solid #d0d5dd; border-radius: 7px; background: #fff;
-    font-size: 11.5px; font-weight: 700; color: #6b7280; cursor: pointer; transition: all .15s;
-}
-.ca-filter-clear:hover { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
-@media (max-width: 480px) {
-    .ca-filter-row { flex-direction: column; align-items: stretch; }
-    .ca-filter-inputs { justify-content: space-between; }
-    .ca-filter-input { flex: 1; min-width: 0; }
+.ca-bulk-delete-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ---- Column filter dropdown + chips (matches Client Database pattern) ---- */
+.ca-filter-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+.column-filter-dropdown { position: relative; }
+.column-filter-btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 12.5px; font-weight: 700; color: #1e4575; background: #fff; border: 1.5px solid #1e4575; border-radius: 8px; padding: 8px 13px; cursor: pointer; height: 36px; box-sizing: border-box; transition: all .2s ease; }
+.column-filter-btn:hover { background: #eef2f7; }
+.column-filter-btn svg { width: 14px; height: 14px; }
+.filter-count-badge { background: #A37929; color: white; font-size: 10.5px; font-weight: 700; border-radius: 999px; min-width: 17px; height: 17px; display: inline-flex; align-items: center; justify-content: center; padding: 0 5px; }
+.column-filter-menu { position: absolute; top: calc(100% + 6px); left: 0; min-width: 210px; max-height: 300px; overflow-y: auto; background: white; border: 1.5px solid #d0d5dd; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 500; padding: 6px; }
+.column-filter-menu-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 12.5px; font-weight: 500; color: #344054; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.column-filter-menu-item:hover { background: #eef2f7; }
+.column-filter-menu-item .cfm-check { width: 14px; color: #A37929; font-weight: 700; visibility: hidden; }
+.column-filter-menu-item.is-active .cfm-check { visibility: visible; }
+.column-filter-menu-item.is-active { color: #1e4575; font-weight: 700; }
+.active-column-filters-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+.column-filter-chip { display: flex; align-items: center; gap: 6px; background: #f5f7fa; border: 1.5px solid #d0d5dd; border-radius: 8px; padding: 6px 8px 6px 12px; }
+.column-filter-chip label { font-size: 10.5px; font-weight: 700; color: #1e4575; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+.column-filter-chip input, .column-filter-chip select { font-size: 12.5px; padding: 6px 8px; border: 1.5px solid #d0d5dd; border-radius: 6px; color: #344054; min-width: 120px; }
+.column-filter-chip .cfm-remove { background: none; border: none; color: #8a9bad; cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; }
+.column-filter-chip .cfm-remove:hover { color: #dc2626; }
+.clear-column-filters-btn { font-size: 11.5px; font-weight: 600; color: #1e4575; background: #eef2f7; border: 1px solid #d0d5dd; border-radius: 6px; padding: 7px 13px; cursor: pointer; white-space: nowrap; }
+@media (max-width: 768px) {
+    .column-filter-menu { left: 0; right: 0; min-width: 0; width: 100%; box-sizing: border-box; }
+    .active-column-filters-row { flex-direction: column; align-items: stretch; }
+    .column-filter-chip { width: 100%; flex-wrap: wrap; box-sizing: border-box; }
+    .column-filter-chip label { flex: 1 1 100%; }
+    .column-filter-chip input, .column-filter-chip select { flex: 1 1 auto; min-width: 0; width: 100%; }
+    .clear-column-filters-btn { width: 100%; text-align: center; }
 }
 
 /* The layout's global auto-scrollbar script tags this wrapper with .tbl-scroll,
@@ -426,6 +611,26 @@
 .ca-table tbody td { padding: 14px 10px; border-bottom: 1px solid #f1f3f6; font-size: 13px; color: #374151; vertical-align: top; }
 .ca-table tbody tr:last-child td { border-bottom: none; }
 .ca-id { font-weight: 600; color: #1e2a3a; white-space: nowrap; }
+
+/* Sticky "Cash Advance No." column — used by both the Cash Advance Records
+   table and the Repayment Records table below it, so the control number
+   stays visible while the rest of the row scrolls horizontally. A sticky
+   checkbox column sits to its left for row selection. */
+.ca-sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: 2px 0 4px -2px rgba(0,0,0,.15);
+}
+.ca-table thead th.ca-sticky-col {
+    z-index: 3;
+    background: #fff;
+}
+.ca-sticky-checkbox { left: 0; width: 40px; min-width: 40px; max-width: 40px; text-align: center; box-shadow: none; }
+.ca-sticky-id { left: 40px; }
+.ca-table thead th.ca-sticky-checkbox { z-index: 3; background: #fff; }
+
 .ca-employee-name { font-weight: 600; color: #1e2a3a; }
 .ca-employee-reason { font-size: 11.5px; color: #8A9BAD; margin-top: 2px; max-width: 220px; }
 .ca-empty { text-align: center; color: #8A9BAD; padding: 30px 0 !important; }
@@ -438,8 +643,23 @@
 .ca-badge-completed { background: #dcfce7; color: #166534; }
 .ca-badge-overdue { background: #fee2e2; color: #991b1b; }
 
+/* Terms button — styled like the Downpayment status pill in Client Database:
+   a rounded pill, colored by status, clickable to open repayment tracking. */
+.ca-btn-terms {
+    display: inline-block; padding: 5px 12px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; border: none; cursor: pointer;
+    transition: opacity .15s; white-space: nowrap;
+}
+.ca-btn-terms:hover { opacity: .85; }
+.ca-btn-terms-pending   { background: #eef2ff; color: #4338ca; }
+.ca-btn-terms-approved  { background: #dcfce7; color: #166534; }
+.ca-btn-terms-rejected  { background: #fee2e2; color: #991b1b; }
+.ca-btn-terms-active    { background: #dbeafe; color: #1d4ed8; }
+.ca-btn-terms-completed { background: #dcfce7; color: #166534; }
+.ca-btn-terms-overdue   { background: #fee2e2; color: #991b1b; }
+
 .ca-actions { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
-.ca-btn-approve, .ca-btn-reject, .ca-btn-view, .ca-btn-edit {
+.ca-btn-approve, .ca-btn-reject, .ca-btn-view {
     padding: 6px 12px; border: 1.5px solid; border-radius: 7px; font-size: 11px; font-weight: 700;
     text-transform: uppercase; letter-spacing: .3px; cursor: pointer; background: #fff; white-space: nowrap;
     transition: all .15s;
@@ -450,8 +670,6 @@
 .ca-btn-reject:hover { background: #fef2f2; }
 .ca-btn-view { color: #1e4575; border-color: #bfdbfe; }
 .ca-btn-view:hover { background: #eff6ff; }
-.ca-btn-edit { color: #A37929; border-color: #fde3a7; }
-.ca-btn-edit:hover { background: #fffbeb; }
 .ca-btn-delete {
     display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
     border: none; background: transparent; color: #9ca3af; cursor: pointer; border-radius: 7px; transition: all .15s;
@@ -544,7 +762,7 @@ var _caPendingData = null; // holds the validated request data between "Create C
         let valid = true;
 
         if (!data.employee_id) {
-            setError('ca_employee_id', 'Please select an employee.');
+            setError('ca_employee_search', 'Please select an employee.');
             valid = false;
         }
 
@@ -616,9 +834,7 @@ var _caPendingData = null; // holds the validated request data between "Create C
     }
 
     function buildPreviewHtml(data) {
-        const employeeSelect = document.getElementById('ca_employee_id');
-        const chosenOption = employeeSelect.options[employeeSelect.selectedIndex];
-        const employeeLabel = chosenOption ? chosenOption.text : '';
+        const employeeLabel = document.getElementById('ca_employee_search').value || '';
         const amount = parseFloat(data.amount) || 0;
 
         let repaymentRows;
@@ -924,10 +1140,7 @@ function caOpenView(id) {
         })
         .catch(() => showToast('Network error. Please try again.', 'error', 'Error'));
 }
-function caCloseView() {
-    document.getElementById('caViewModal').style.display = 'none';
-    _caEditCashAdvanceId = null;
-}
+
 
 function caCloseView() {
     document.getElementById('caViewModal').style.display = 'none';
@@ -1034,21 +1247,13 @@ function caMarkTermPaid(termId) {
         if (status === 200 && json.success) {
             showToast(json.message, 'success', 'Saved');
 
-            const stageCell = document.getElementById('ca-stage-' + _caEditCashAdvanceId);
-            if (stageCell) stageCell.textContent = json.payment_stage_label;
-
-            const statusCell = document.getElementById('ca-status-' + _caEditCashAdvanceId);
-            if (statusCell) {
-                statusCell.innerHTML = '<span class="ca-badge ca-badge-' + json.display_status.toLowerCase() + '">' + json.display_status + '</span>';
-            }
-
-            if (_caEditCashAdvanceId) {
-                fetch('/cash-advance/' + _caEditCashAdvanceId + '/repayments', { headers: { 'Accept': 'application/json' } })
-                    .then(r => r.json())
-                    .then(refreshed => {
-                        if (refreshed.success) caRenderEditContent(_caEditCashAdvanceId, refreshed.data);
-                    });
-            }
+            // The Repayment Records table further down the page is rendered
+            // server-side only (unlike the Cash Advance Records row and this
+            // modal, which we already patch live above) — without a reload it
+            // keeps showing the pre-payment status and a blank Date Paid even
+            // though the payment was recorded successfully. Reload so it picks
+            // up the real saved values.
+            setTimeout(() => location.reload(), 900);
         } else {
             showToast(json.message || 'Could not record this payment.', 'error', 'Error');
         }
@@ -1067,20 +1272,10 @@ function caUnmarkTermPaid(termId) {
         .then(({ status, json }) => {
             if (status === 200 && json.success) {
                 showToast(json.message || 'Term reverted to pending.', 'success', 'Undone');
-
-                const stageCell = document.getElementById('ca-stage-' + _caEditCashAdvanceId);
-                if (stageCell) stageCell.textContent = json.payment_stage_label;
-
-                const statusCell = document.getElementById('ca-status-' + _caEditCashAdvanceId);
-                if (statusCell) {
-                    statusCell.innerHTML = '<span class="ca-badge ca-badge-' + json.display_status.toLowerCase() + '">' + json.display_status + '</span>';
-                }
-
-                fetch('/cash-advance/' + _caEditCashAdvanceId + '/repayments', { headers: { 'Accept': 'application/json' } })
-                    .then(r => r.json())
-                    .then(refreshed => {
-                        if (refreshed.success) caRenderEditContent(_caEditCashAdvanceId, refreshed.data);
-                    });
+                // Same reason as caMarkTermPaid — reload so the server-rendered
+                // Repayment Records table reflects the real (now-unpaid) state
+                // instead of staying stale.
+                setTimeout(() => location.reload(), 900);
             } else {
                 showToast(json.message || 'Could not undo this payment.', 'error', 'Error');
             }
@@ -1089,53 +1284,652 @@ function caUnmarkTermPaid(termId) {
     }, 'Undo Payment');
 }
 
-// ---- Filter by Amount (range) ----
-(function() {
-    const fromInput = document.getElementById('caAmountFrom');
-    const toInput = document.getElementById('caAmountTo');
-    const clearBtn = document.getElementById('caFilterClearBtn');
-    if (!fromInput || !toInput) return;
+// ==== Column filter dropdown + chips: Cash Advance Records table ====
+// Field types: 'text' (substring match), 'select' (exact match against a
+// fixed option list), 'numrange' (min/max, for Amount), 'daterange' (from/to,
+// for the two date columns). Mirrors the pattern used on Client Database.
+var CA_FILTERABLE_FIELDS = [
+    { key: 'control',         label: 'Cash Advance No.', dataAttr: 'data-control',         type: 'text' },
+    { key: 'employee',        label: 'Employee',         dataAttr: 'data-employee',         type: 'text' },
+    { key: 'department',      label: 'Department',       dataAttr: 'data-department',       type: 'select', options: [@foreach($departments as $dept)'{{ addslashes($dept) }}', @endforeach] },
+    { key: 'amount',          label: 'Amount',           dataAttr: 'data-amount',            type: 'numrange' },
+    { key: 'date-requested',  label: 'Date Requested',   dataAttr: 'data-date-requested',    type: 'daterange' },
+    { key: 'date-needed',     label: 'Date Needed',      dataAttr: 'data-date-needed',       type: 'daterange' },
+    { key: 'repayment-type',  label: 'Repayment Type',   dataAttr: 'data-repayment-type',    type: 'select', options: ['Installment', 'Others'] },
+    { key: 'status',          label: 'Status',           dataAttr: 'data-status',            type: 'select', options: ['Pending', 'Approved', 'Rejected', 'Active', 'Completed', 'Overdue'] },
+];
 
-    function caApplyAmountFilter() {
-        const fromVal = fromInput.value;
-        const toVal = toInput.value;
-        const from = fromVal === '' ? null : parseFloat(fromVal);
-        const to = toVal === '' ? null : parseFloat(toVal);
+var caColumnFilters = {};
 
-        clearBtn.style.display = (fromVal !== '' || toVal !== '') ? 'inline-block' : 'none';
+function caFieldConfig(key) {
+    return CA_FILTERABLE_FIELDS.find(function (f) { return f.key === key; });
+}
 
-        const rows = document.querySelectorAll('#caTable tbody tr[data-amount]');
-        let visibleCount = 0;
+function toggleCaColumnFilterMenu(e) {
+    e.stopPropagation();
+    var menu = document.getElementById('caColumnFilterMenu');
+    if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
+    renderCaColumnFilterMenu();
+    menu.style.display = 'block';
+}
 
-        rows.forEach(row => {
-            const amount = parseFloat(row.getAttribute('data-amount'));
-            let show = true;
-            if (from !== null && amount < from) show = false;
-            if (to !== null && amount > to) show = false;
-            row.style.display = show ? '' : 'none';
-            if (show) visibleCount++;
-        });
+function renderCaColumnFilterMenu() {
+    var menu = document.getElementById('caColumnFilterMenu');
+    menu.innerHTML = '';
+    CA_FILTERABLE_FIELDS.forEach(function (f) {
+        var item = document.createElement('div');
+        item.className = 'column-filter-menu-item' + (caColumnFilters.hasOwnProperty(f.key) ? ' is-active' : '');
+        item.innerHTML = '<span class="cfm-check">✓</span><span>' + f.label + '</span>';
+        item.onclick = function (ev) { ev.stopPropagation(); caToggleColumnFilter(f.key); };
+        menu.appendChild(item);
+    });
+}
 
-        const noMatchRow = document.getElementById('caNoMatchRow');
-        const hasFilter = (fromVal !== '' || toVal !== '');
-        if (noMatchRow) {
-            noMatchRow.style.display = (hasFilter && rows.length > 0 && visibleCount === 0) ? '' : 'none';
+function caToggleColumnFilter(key) {
+    if (caColumnFilters.hasOwnProperty(key)) {
+        delete caColumnFilters[key];
+    } else {
+        var f = caFieldConfig(key);
+        caColumnFilters[key] = (f && (f.type === 'daterange' || f.type === 'numrange')) ? { from: '', to: '' } : '';
+    }
+    renderCaColumnFilterMenu();
+    renderCaActiveColumnFilters();
+    updateCaFilterBadge();
+    caFilter();
+    document.getElementById('caColumnFilterMenu').style.display = 'none';
+}
+
+function caRemoveColumnFilter(key) {
+    delete caColumnFilters[key];
+    renderCaActiveColumnFilters();
+    updateCaFilterBadge();
+    caFilter();
+}
+
+function updateCaFilterBadge() {
+    var badge = document.getElementById('caFilterCountBadge');
+    var count = Object.keys(caColumnFilters).length;
+    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    badge.textContent = count;
+}
+
+function caClearAllColumnFilters() {
+    caColumnFilters = {};
+    renderCaColumnFilterMenu();
+    renderCaActiveColumnFilters();
+    updateCaFilterBadge();
+    caFilter();
+}
+
+function renderCaActiveColumnFilters() {
+    var row = document.getElementById('caActiveColumnFiltersRow');
+    var keys = Object.keys(caColumnFilters);
+    row.innerHTML = '';
+    if (keys.length === 0) { row.style.display = 'none'; return; }
+    row.style.display = 'flex';
+
+    keys.forEach(function (key) {
+        var f = caFieldConfig(key);
+        if (!f) return;
+        var chip = document.createElement('div');
+        chip.className = 'column-filter-chip';
+        var label = document.createElement('label');
+        label.textContent = f.label;
+        chip.appendChild(label);
+
+        var input;
+        if (f.type === 'daterange') {
+            if (!caColumnFilters[key] || typeof caColumnFilters[key] !== 'object') caColumnFilters[key] = { from: '', to: '' };
+            var range = caColumnFilters[key];
+            input = document.createElement('span');
+            input.style.cssText = 'display:flex;align-items:center;gap:6px;';
+            var fromInput = document.createElement('input');
+            fromInput.type = 'date';
+            fromInput.value = range.from || '';
+            fromInput.onchange = function () { range.from = this.value; caFilter(); };
+            var toLabel = document.createElement('span');
+            toLabel.textContent = 'to';
+            toLabel.style.cssText = 'color:#8a9bad;font-size:12px;';
+            var toInput = document.createElement('input');
+            toInput.type = 'date';
+            toInput.value = range.to || '';
+            toInput.onchange = function () { range.to = this.value; caFilter(); };
+            input.appendChild(fromInput);
+            input.appendChild(toLabel);
+            input.appendChild(toInput);
+        } else if (f.type === 'numrange') {
+            if (!caColumnFilters[key] || typeof caColumnFilters[key] !== 'object') caColumnFilters[key] = { from: '', to: '' };
+            var numRange = caColumnFilters[key];
+            input = document.createElement('span');
+            input.style.cssText = 'display:flex;align-items:center;gap:6px;';
+            var numFrom = document.createElement('input');
+            numFrom.type = 'number'; numFrom.step = 'any'; numFrom.placeholder = 'Min'; numFrom.style.width = '90px';
+            numFrom.value = numRange.from || '';
+            numFrom.oninput = numFrom.onchange = function () { numRange.from = this.value; caFilter(); };
+            var numToLabel = document.createElement('span');
+            numToLabel.textContent = 'to';
+            numToLabel.style.cssText = 'color:#8a9bad;font-size:12px;';
+            var numTo = document.createElement('input');
+            numTo.type = 'number'; numTo.step = 'any'; numTo.placeholder = 'Max'; numTo.style.width = '90px';
+            numTo.value = numRange.to || '';
+            numTo.oninput = numTo.onchange = function () { numRange.to = this.value; caFilter(); };
+            input.appendChild(numFrom);
+            input.appendChild(numToLabel);
+            input.appendChild(numTo);
+        } else if (f.type === 'select') {
+            input = document.createElement('select');
+            var optAll = document.createElement('option');
+            optAll.value = ''; optAll.textContent = 'All';
+            input.appendChild(optAll);
+            f.options.forEach(function (o) {
+                var opt = document.createElement('option');
+                opt.value = o; opt.textContent = o;
+                if (caColumnFilters[key] === o) opt.selected = true;
+                input.appendChild(opt);
+            });
+            input.onchange = function () { caColumnFilters[key] = this.value; caFilter(); };
+        } else {
+            input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'Search ' + f.label.toLowerCase() + '...';
+            input.value = caColumnFilters[key];
+            input.oninput = function () { caColumnFilters[key] = this.value; caFilter(); };
+        }
+        chip.appendChild(input);
+
+        var removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'cfm-remove';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.onclick = function () { caRemoveColumnFilter(key); };
+        chip.appendChild(removeBtn);
+
+        row.appendChild(chip);
+    });
+}
+
+function caMatchesColumnFilters(row) {
+    for (var key in caColumnFilters) {
+        var f = caFieldConfig(key);
+        if (!f) continue;
+
+        if (f.type === 'daterange') {
+            var range = caColumnFilters[key];
+            if (!range || (!range.from && !range.to)) continue;
+            var rowDate = (row.getAttribute(f.dataAttr) || '').toString();
+            if (!rowDate) return false;
+            if (range.from && rowDate < range.from) return false;
+            if (range.to && rowDate > range.to) return false;
+            continue;
         }
 
-        const countEl = document.getElementById('caRecordsCount');
-        if (countEl) {
-            countEl.textContent = hasFilter ? (visibleCount + ' of ' + rows.length + ' shown') : ({{ $totalRecords }} + ' total');
+        if (f.type === 'numrange') {
+            var numRangeVal = caColumnFilters[key];
+            if (!numRangeVal || (numRangeVal.from === '' && numRangeVal.to === '')) continue;
+            var rawVal = (row.getAttribute(f.dataAttr) || '').toString().replace(/[^0-9.\-]/g, '');
+            var rowNum = rawVal === '' ? NaN : parseFloat(rawVal);
+            if (isNaN(rowNum)) return false;
+            if (numRangeVal.from !== '' && rowNum < parseFloat(numRangeVal.from)) return false;
+            if (numRangeVal.to !== '' && rowNum > parseFloat(numRangeVal.to)) return false;
+            continue;
+        }
+
+        var filterVal = (caColumnFilters[key] || '').toString().trim().toLowerCase();
+        if (!filterVal) continue;
+        var rowVal = (row.getAttribute(f.dataAttr) || '').toString().toLowerCase();
+
+        if (f.type === 'select') {
+            if (rowVal !== filterVal) return false;
+        } else {
+            if (!rowVal.includes(filterVal)) return false;
         }
     }
+    return true;
+}
 
-    fromInput.addEventListener('input', caApplyAmountFilter);
-    toInput.addEventListener('input', caApplyAmountFilter);
+function caFilter() {
+    var rows = document.querySelectorAll('#caTable tbody tr[data-amount]');
+    var visibleCount = 0;
 
-    window.caClearAmountFilter = function() {
-        fromInput.value = '';
-        toInput.value = '';
-        caApplyAmountFilter();
-    };
-})();
+    rows.forEach(function (row) {
+        var show = caMatchesColumnFilters(row);
+        row.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
+
+    var hasFilter = Object.keys(caColumnFilters).length > 0;
+    var noMatchRow = document.getElementById('caNoMatchRow');
+    if (noMatchRow) {
+        noMatchRow.style.display = (hasFilter && rows.length > 0 && visibleCount === 0) ? '' : 'none';
+    }
+
+    var countEl = document.getElementById('caRecordsCount');
+    if (countEl) {
+        countEl.textContent = hasFilter ? (visibleCount + ' of ' + rows.length + ' shown') : ({{ $totalRecords }} + ' total');
+    }
+
+    // Re-sync the select-all / bulk bar since filtering can hide selected rows.
+    caUpdateBulkBar();
+}
+
+document.addEventListener('click', function (e) {
+    var dropdown = document.getElementById('caColumnFilterDropdown');
+    if (dropdown && !dropdown.contains(e.target)) {
+        document.getElementById('caColumnFilterMenu').style.display = 'none';
+    }
+});
+
+// ==== Column filter dropdown + chips: Repayment Records table ====
+var CA_REPAY_FILTERABLE_FIELDS = [
+    { key: 'control',    label: 'Cash Advance No.', dataAttr: 'data-control',    type: 'text' },
+    { key: 'employee',   label: 'Employee',         dataAttr: 'data-employee',   type: 'text' },
+    { key: 'term',       label: 'Repayment Term',   dataAttr: 'data-term',       type: 'text' },
+    { key: 'amount',     label: 'Amount',           dataAttr: 'data-amount',     type: 'numrange' },
+    { key: 'status',     label: 'Status',           dataAttr: 'data-status',     type: 'select', options: ['Paid', 'Partial'] },
+    { key: 'date-paid',  label: 'Date Paid',        dataAttr: 'data-date-paid',  type: 'daterange' },
+];
+
+var caRepayColumnFilters = {};
+
+function caRepayFieldConfig(key) {
+    return CA_REPAY_FILTERABLE_FIELDS.find(function (f) { return f.key === key; });
+}
+
+function toggleCaRepayColumnFilterMenu(e) {
+    e.stopPropagation();
+    var menu = document.getElementById('caRepayColumnFilterMenu');
+    if (menu.style.display === 'block') { menu.style.display = 'none'; return; }
+    renderCaRepayColumnFilterMenu();
+    menu.style.display = 'block';
+}
+
+function renderCaRepayColumnFilterMenu() {
+    var menu = document.getElementById('caRepayColumnFilterMenu');
+    menu.innerHTML = '';
+    CA_REPAY_FILTERABLE_FIELDS.forEach(function (f) {
+        var item = document.createElement('div');
+        item.className = 'column-filter-menu-item' + (caRepayColumnFilters.hasOwnProperty(f.key) ? ' is-active' : '');
+        item.innerHTML = '<span class="cfm-check">✓</span><span>' + f.label + '</span>';
+        item.onclick = function (ev) { ev.stopPropagation(); caRepayToggleColumnFilter(f.key); };
+        menu.appendChild(item);
+    });
+}
+
+function caRepayToggleColumnFilter(key) {
+    if (caRepayColumnFilters.hasOwnProperty(key)) {
+        delete caRepayColumnFilters[key];
+    } else {
+        var f = caRepayFieldConfig(key);
+        caRepayColumnFilters[key] = (f && (f.type === 'daterange' || f.type === 'numrange')) ? { from: '', to: '' } : '';
+    }
+    renderCaRepayColumnFilterMenu();
+    renderCaRepayActiveColumnFilters();
+    updateCaRepayFilterBadge();
+    caRepayFilter();
+    document.getElementById('caRepayColumnFilterMenu').style.display = 'none';
+}
+
+function caRepayRemoveColumnFilter(key) {
+    delete caRepayColumnFilters[key];
+    renderCaRepayActiveColumnFilters();
+    updateCaRepayFilterBadge();
+    caRepayFilter();
+}
+
+function updateCaRepayFilterBadge() {
+    var badge = document.getElementById('caRepayFilterCountBadge');
+    var count = Object.keys(caRepayColumnFilters).length;
+    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    badge.textContent = count;
+}
+
+function caRepayClearAllColumnFilters() {
+    caRepayColumnFilters = {};
+    renderCaRepayColumnFilterMenu();
+    renderCaRepayActiveColumnFilters();
+    updateCaRepayFilterBadge();
+    caRepayFilter();
+}
+
+function renderCaRepayActiveColumnFilters() {
+    var row = document.getElementById('caRepayActiveColumnFiltersRow');
+    var keys = Object.keys(caRepayColumnFilters);
+    row.innerHTML = '';
+    if (keys.length === 0) { row.style.display = 'none'; return; }
+    row.style.display = 'flex';
+
+    keys.forEach(function (key) {
+        var f = caRepayFieldConfig(key);
+        if (!f) return;
+        var chip = document.createElement('div');
+        chip.className = 'column-filter-chip';
+        var label = document.createElement('label');
+        label.textContent = f.label;
+        chip.appendChild(label);
+
+        var input;
+        if (f.type === 'daterange') {
+            if (!caRepayColumnFilters[key] || typeof caRepayColumnFilters[key] !== 'object') caRepayColumnFilters[key] = { from: '', to: '' };
+            var range = caRepayColumnFilters[key];
+            input = document.createElement('span');
+            input.style.cssText = 'display:flex;align-items:center;gap:6px;';
+            var fromInput = document.createElement('input');
+            fromInput.type = 'date';
+            fromInput.value = range.from || '';
+            fromInput.onchange = function () { range.from = this.value; caRepayFilter(); };
+            var toLabel = document.createElement('span');
+            toLabel.textContent = 'to';
+            toLabel.style.cssText = 'color:#8a9bad;font-size:12px;';
+            var toInput = document.createElement('input');
+            toInput.type = 'date';
+            toInput.value = range.to || '';
+            toInput.onchange = function () { range.to = this.value; caRepayFilter(); };
+            input.appendChild(fromInput);
+            input.appendChild(toLabel);
+            input.appendChild(toInput);
+        } else if (f.type === 'numrange') {
+            if (!caRepayColumnFilters[key] || typeof caRepayColumnFilters[key] !== 'object') caRepayColumnFilters[key] = { from: '', to: '' };
+            var numRange = caRepayColumnFilters[key];
+            input = document.createElement('span');
+            input.style.cssText = 'display:flex;align-items:center;gap:6px;';
+            var numFrom = document.createElement('input');
+            numFrom.type = 'number'; numFrom.step = 'any'; numFrom.placeholder = 'Min'; numFrom.style.width = '90px';
+            numFrom.value = numRange.from || '';
+            numFrom.oninput = numFrom.onchange = function () { numRange.from = this.value; caRepayFilter(); };
+            var numToLabel = document.createElement('span');
+            numToLabel.textContent = 'to';
+            numToLabel.style.cssText = 'color:#8a9bad;font-size:12px;';
+            var numTo = document.createElement('input');
+            numTo.type = 'number'; numTo.step = 'any'; numTo.placeholder = 'Max'; numTo.style.width = '90px';
+            numTo.value = numRange.to || '';
+            numTo.oninput = numTo.onchange = function () { numRange.to = this.value; caRepayFilter(); };
+            input.appendChild(numFrom);
+            input.appendChild(numToLabel);
+            input.appendChild(numTo);
+        } else if (f.type === 'select') {
+            input = document.createElement('select');
+            var optAll = document.createElement('option');
+            optAll.value = ''; optAll.textContent = 'All';
+            input.appendChild(optAll);
+            f.options.forEach(function (o) {
+                var opt = document.createElement('option');
+                opt.value = o; opt.textContent = o;
+                if (caRepayColumnFilters[key] === o) opt.selected = true;
+                input.appendChild(opt);
+            });
+            input.onchange = function () { caRepayColumnFilters[key] = this.value; caRepayFilter(); };
+        } else {
+            input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'Search ' + f.label.toLowerCase() + '...';
+            input.value = caRepayColumnFilters[key];
+            input.oninput = function () { caRepayColumnFilters[key] = this.value; caRepayFilter(); };
+        }
+        chip.appendChild(input);
+
+        var removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'cfm-remove';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.onclick = function () { caRepayRemoveColumnFilter(key); };
+        chip.appendChild(removeBtn);
+
+        row.appendChild(chip);
+    });
+}
+
+function caRepayMatchesColumnFilters(row) {
+    for (var key in caRepayColumnFilters) {
+        var f = caRepayFieldConfig(key);
+        if (!f) continue;
+
+        if (f.type === 'daterange') {
+            var range = caRepayColumnFilters[key];
+            if (!range || (!range.from && !range.to)) continue;
+            var rowDate = (row.getAttribute(f.dataAttr) || '').toString();
+            if (!rowDate) return false;
+            if (range.from && rowDate < range.from) return false;
+            if (range.to && rowDate > range.to) return false;
+            continue;
+        }
+
+        if (f.type === 'numrange') {
+            var numRangeVal = caRepayColumnFilters[key];
+            if (!numRangeVal || (numRangeVal.from === '' && numRangeVal.to === '')) continue;
+            var rawVal = (row.getAttribute(f.dataAttr) || '').toString().replace(/[^0-9.\-]/g, '');
+            var rowNum = rawVal === '' ? NaN : parseFloat(rawVal);
+            if (isNaN(rowNum)) return false;
+            if (numRangeVal.from !== '' && rowNum < parseFloat(numRangeVal.from)) return false;
+            if (numRangeVal.to !== '' && rowNum > parseFloat(numRangeVal.to)) return false;
+            continue;
+        }
+
+        var filterVal = (caRepayColumnFilters[key] || '').toString().trim().toLowerCase();
+        if (!filterVal) continue;
+        var rowVal = (row.getAttribute(f.dataAttr) || '').toString().toLowerCase();
+
+        if (f.type === 'select') {
+            if (rowVal !== filterVal) return false;
+        } else {
+            if (!rowVal.includes(filterVal)) return false;
+        }
+    }
+    return true;
+}
+
+function caRepayFilter() {
+    var rows = document.querySelectorAll('#caRepaymentsTable tbody tr[data-id]');
+    var visibleCount = 0;
+
+    rows.forEach(function (row) {
+        var show = caRepayMatchesColumnFilters(row);
+        row.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
+
+    var hasFilter = Object.keys(caRepayColumnFilters).length > 0;
+    var noMatchRow = document.getElementById('caRepayNoMatchRow');
+    if (noMatchRow) {
+        noMatchRow.style.display = (hasFilter && rows.length > 0 && visibleCount === 0) ? '' : 'none';
+    }
+
+    var countEl = document.getElementById('caRepaymentRecordsCount');
+    if (countEl) {
+        countEl.textContent = hasFilter
+            ? (visibleCount + ' of ' + rows.length + ' shown')
+            : ({{ $totalRepaymentRecords }} + ' record' + ({{ $totalRepaymentRecords }} == 1 ? '' : 's'));
+    }
+
+    // Re-sync the select-all / bulk bar since filtering can hide selected rows.
+    caRepayUpdateBulkBar();
+}
+
+document.addEventListener('click', function (e) {
+    var dropdown = document.getElementById('caRepayColumnFilterDropdown');
+    if (dropdown && !dropdown.contains(e.target)) {
+        document.getElementById('caRepayColumnFilterMenu').style.display = 'none';
+    }
+});
+
+// ---- Employee typable/searchable dropdown ----
+function caToggleEmployeeDropdown() {
+    var d = document.getElementById('caEmployeeDropdown');
+    if (!d) return;
+    d.style.display = d.style.display === 'none' ? 'block' : 'none';
+}
+
+function caFilterEmployeeDropdown(value) {
+    var d = document.getElementById('caEmployeeDropdown');
+    if (!d) return;
+    var filter = (value || '').toLowerCase();
+    var has = false;
+    Array.from(d.children).forEach(function(opt) {
+        var match = opt.textContent.toLowerCase().includes(filter);
+        opt.style.display = match ? '' : 'none';
+        if (match) has = true;
+    });
+    d.style.display = has ? 'block' : 'none';
+
+    // Typing invalidates whatever was previously picked until the user
+    // selects an option again, so validation doesn't silently keep a
+    // stale employee_id that no longer matches the visible text.
+    var idField = document.getElementById('ca_employee_id');
+    if (idField) idField.value = '';
+}
+
+function caSelectEmployee(id, label) {
+    var searchField = document.getElementById('ca_employee_search');
+    var idField = document.getElementById('ca_employee_id');
+    if (searchField) {
+        searchField.value = label;
+        searchField.classList.remove('ca-invalid');
+    }
+    if (idField) idField.value = id;
+    var dropdown = document.getElementById('caEmployeeDropdown');
+    if (dropdown) dropdown.style.display = 'none';
+    var err = document.getElementById('err_employee_search');
+    if (err) err.textContent = '';
+}
+
+document.addEventListener('click', function(e) {
+    var searchField = document.getElementById('ca_employee_search');
+    var dropdown = document.getElementById('caEmployeeDropdown');
+    if (!searchField || !dropdown) return;
+    if (!searchField.parentElement.contains(e.target)) {
+        dropdown.style.display = 'none';
+    }
+});
+
+// ---- Select / Bulk Delete: Cash Advance Records ----
+function caToggleSelectAll(source) {
+    document.querySelectorAll('#caTable tbody .ca-row-checkbox').forEach(function(cb) {
+        var row = cb.closest('tr');
+        if (row && row.style.display === 'none') return; // respect amount filter
+        cb.checked = source.checked;
+    });
+    caUpdateBulkBar();
+}
+
+function caUpdateBulkBar() {
+    var checked = document.querySelectorAll('#caTable tbody .ca-row-checkbox:checked');
+    var btn = document.getElementById('caBulkDeleteBtn');
+    if (btn) {
+        btn.textContent = 'Delete Selected (' + checked.length + ')';
+        btn.disabled = checked.length === 0;
+    }
+    var selectAll = document.getElementById('caSelectAll');
+    if (selectAll) {
+        var visible = Array.from(document.querySelectorAll('#caTable tbody tr[data-amount]'))
+            .filter(function(r) { return r.style.display !== 'none'; })
+            .map(function(r) { return r.querySelector('.ca-row-checkbox'); })
+            .filter(Boolean);
+        selectAll.checked = visible.length > 0 && visible.every(function(cb) { return cb.checked; });
+        selectAll.indeterminate = !selectAll.checked && visible.some(function(cb) { return cb.checked; });
+    }
+}
+
+function caGetSelectedIds() {
+    return Array.from(document.querySelectorAll('#caTable tbody .ca-row-checkbox:checked')).map(function(cb) { return cb.value; });
+}
+
+function caDeleteSelected() {
+    var ids = caGetSelectedIds();
+    if (!ids.length) return;
+    document.getElementById('caBulkDeleteCount').textContent = ids.length;
+    document.getElementById('caBulkDeleteModal').style.display = 'flex';
+}
+
+function caCancelBulkDelete() {
+    document.getElementById('caBulkDeleteModal').style.display = 'none';
+}
+
+function caConfirmBulkDelete() {
+    var ids = caGetSelectedIds();
+    document.getElementById('caBulkDeleteModal').style.display = 'none';
+    if (!ids.length) return;
+
+    var btn = document.getElementById('caBulkDeleteBtn');
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+
+    Promise.all(ids.map(function(id) {
+        return fetch('/cash-advance/' + id, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+        });
+    })).then(function() {
+        showToast('Selected records deleted.', 'success', 'Deleted');
+        setTimeout(function() { location.reload(); }, 900);
+    }).catch(function() {
+        showToast('Some records may not have been deleted.', 'error', 'Error');
+        setTimeout(function() { location.reload(); }, 900);
+    });
+}
+
+// ---- Select / Bulk Delete: Repayment Records ----
+function caRepayToggleSelectAll(source) {
+    document.querySelectorAll('#caRepaymentsTable tbody .ca-repay-row-checkbox').forEach(function(cb) {
+        var row = cb.closest('tr');
+        if (row && row.style.display === 'none') return; // respect active filters
+        cb.checked = source.checked;
+    });
+    caRepayUpdateBulkBar();
+}
+
+function caRepayUpdateBulkBar() {
+    var checked = document.querySelectorAll('#caRepaymentsTable tbody .ca-repay-row-checkbox:checked');
+    var btn = document.getElementById('caRepayBulkDeleteBtn');
+    if (btn) {
+        btn.textContent = 'Delete Selected (' + checked.length + ')';
+        btn.disabled = checked.length === 0;
+    }
+    var selectAll = document.getElementById('caRepaySelectAll');
+    if (selectAll) {
+        var visible = Array.from(document.querySelectorAll('#caRepaymentsTable tbody tr[data-id]'))
+            .filter(function(r) { return r.style.display !== 'none'; })
+            .map(function(r) { return r.querySelector('.ca-repay-row-checkbox'); })
+            .filter(Boolean);
+        selectAll.checked = visible.length > 0 && visible.every(function(cb) { return cb.checked; });
+        selectAll.indeterminate = !selectAll.checked && visible.some(function(cb) { return cb.checked; });
+    }
+}
+
+function caRepayGetSelectedIds() {
+    return Array.from(document.querySelectorAll('#caRepaymentsTable tbody .ca-repay-row-checkbox:checked')).map(function(cb) { return cb.value; });
+}
+
+function caRepayDeleteSelected() {
+    var ids = caRepayGetSelectedIds();
+    if (!ids.length) return;
+    document.getElementById('caRepayBulkDeleteCount').textContent = ids.length;
+    document.getElementById('caRepayBulkDeleteModal').style.display = 'flex';
+}
+
+function caRepayCancelBulkDelete() {
+    document.getElementById('caRepayBulkDeleteModal').style.display = 'none';
+}
+
+function caRepayConfirmBulkDelete() {
+    var ids = caRepayGetSelectedIds();
+    document.getElementById('caRepayBulkDeleteModal').style.display = 'none';
+    if (!ids.length) return;
+
+    var btn = document.getElementById('caRepayBulkDeleteBtn');
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+
+    Promise.all(ids.map(function(id) {
+        return fetch('/cash-advance-repayments/' + id, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+        });
+    })).then(function() {
+        showToast('Selected repayment records deleted.', 'success', 'Deleted');
+        setTimeout(function() { location.reload(); }, 900);
+    }).catch(function() {
+        showToast('Some records may not have been deleted.', 'error', 'Error');
+        setTimeout(function() { location.reload(); }, 900);
+    });
+}
 </script>
 @endsection
