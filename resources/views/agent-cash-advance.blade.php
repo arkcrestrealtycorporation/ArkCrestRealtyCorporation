@@ -182,6 +182,10 @@
         </div>
 
         <div class="aca-filter-toolbar">
+            <div class="aca-search-wrap">
+                <svg class="aca-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="acaGlobalSearch" class="aca-search-input" placeholder="Search all columns..." oninput="acaFilter()">
+            </div>
             <div class="column-filter-dropdown" id="acaColumnFilterDropdown">
                 <button type="button" class="column-filter-btn" onclick="toggleCaColumnFilterMenu(event)">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -202,17 +206,17 @@
                         <th class="aca-sticky-col aca-sticky-checkbox">
                             <input type="checkbox" id="acaSelectAll" onchange="acaToggleSelectAll(this)" title="Select all">
                         </th>
-                        <th class="aca-sticky-col aca-sticky-id">Agent Cash Advance No.</th>
-                        <th>Agent</th>
-                        <th>Team</th>
-                        <th>Amount</th>
-                        <th>Date Requested</th>
-                        <th>Date Needed</th>
-                        <th>Repayment Type</th>
-                        <th>Terms</th>
-                        <th>Payment Stage</th>
-                        <th>Status</th>
-                        <th>Created At</th>
+                        <th class="aca-sticky-col aca-sticky-id aca-sortable" onclick="acaSortTable(1)">Agent Cash Advance No. <span class="sort-indicator" data-col="1"></span></th>
+                        <th class="aca-sortable" onclick="acaSortTable(2)">Agent <span class="sort-indicator" data-col="2"></span></th>
+                        <th class="aca-sortable" onclick="acaSortTable(3)">Team <span class="sort-indicator" data-col="3"></span></th>
+                        <th class="aca-sortable" onclick="acaSortTable(4)">Amount <span class="sort-indicator" data-col="4"></span></th>
+                        <th class="aca-sortable" onclick="acaSortTable(5)">Date Requested <span class="sort-indicator" data-col="5"></span></th>
+                        <th class="aca-sortable" onclick="acaSortTable(6)">Date Needed <span class="sort-indicator" data-col="6"></span></th>
+                        <th class="aca-sortable" onclick="acaSortTable(7)">Repayment Type <span class="sort-indicator" data-col="7"></span></th>
+                        <th class="aca-sortable" onclick="acaSortTable(8)">Terms <span class="sort-indicator" data-col="8"></span></th>
+                        <th class="aca-sortable" onclick="acaSortTable(9)">Payment Stage <span class="sort-indicator" data-col="9"></span></th>
+                        <th class="aca-sortable" onclick="acaSortTable(10)">Status <span class="sort-indicator" data-col="10"></span></th>
+                        <th class="aca-sortable" onclick="acaSortTable(11)">Created At <span class="sort-indicator" data-col="11"></span></th>
                         <th style="text-align:center;">Actions</th>
                     </tr>
                 </thead>
@@ -238,7 +242,7 @@
                         <td class="aca-id aca-sticky-col aca-sticky-id">{{ $r->control_number }}</td>
                         <td>
                             <div class="aca-agent-name">{{ $r->agent_name }}</div>
-                            <div class="aca-agent-reason">{{ $r->purpose ?? $r->reason }}</div>
+                            
                         </td>
                         <td>{{ $r->team ?? '—' }}</td>
                         <td>₱{{ number_format($r->amount, 2) }}</td>
@@ -302,6 +306,10 @@
         </div>
 
         <div class="aca-filter-toolbar">
+            <div class="aca-search-wrap">
+                <svg class="aca-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="acaRepayGlobalSearch" class="aca-search-input" placeholder="Search all columns..." oninput="acaRepayFilter()">
+            </div>
             <div class="column-filter-dropdown" id="acaRepayColumnFilterDropdown">
                 <button type="button" class="column-filter-btn" onclick="toggleCaRepayColumnFilterMenu(event)">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
@@ -322,13 +330,13 @@
                         <th class="aca-sticky-col aca-sticky-checkbox">
                             <input type="checkbox" id="acaRepaySelectAll" onchange="acaRepayToggleSelectAll(this)" title="Select all">
                         </th>
-                        <th class="aca-sticky-col aca-sticky-id">Agent Cash Advance No.</th>
-                        <th>Agent</th>
-                        <th>Repayment Term</th>
-                        <th>Amount</th>
-                        <th>Payment Stage</th>
-                        <th>Status</th>
-                        <th>Date Paid</th>
+                        <th class="aca-sticky-col aca-sticky-id aca-sortable" onclick="acaRepaySortTable(1)">Agent Cash Advance No. <span class="sort-indicator" data-col="1"></span></th>
+                        <th class="aca-sortable" onclick="acaRepaySortTable(2)">Agent <span class="sort-indicator" data-col="2"></span></th>
+                        <th class="aca-sortable" onclick="acaRepaySortTable(3)">Repayment Term <span class="sort-indicator" data-col="3"></span></th>
+                        <th class="aca-sortable" onclick="acaRepaySortTable(4)">Amount <span class="sort-indicator" data-col="4"></span></th>
+                        <th class="aca-sortable" onclick="acaRepaySortTable(5)">Payment Stage <span class="sort-indicator" data-col="5"></span></th>
+                        <th class="aca-sortable" onclick="acaRepaySortTable(6)">Status <span class="sort-indicator" data-col="6"></span></th>
+                        <th class="aca-sortable" onclick="acaRepaySortTable(7)">Date Paid <span class="sort-indicator" data-col="7"></span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -548,6 +556,13 @@
 
 /* ---- Column filter dropdown + chips (matches Client Database pattern) ---- */
 .aca-filter-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+.aca-search-wrap { position: relative; flex: 1 1 220px; min-width: 180px; max-width: 320px; }
+.aca-search-input { width: 100%; box-sizing: border-box; padding: 8px 12px 8px 34px; border: 1.5px solid #d0d5dd; border-radius: 8px; font-size: 12.5px; color: #344054; height: 36px; outline: none; transition: border-color .15s; }
+.aca-search-input:focus { border-color: #1e4575; }
+.aca-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #94a3b8; pointer-events: none; }
+.aca-table thead th.aca-sortable { cursor: pointer; user-select: none; }
+.aca-table thead th.aca-sortable:hover { color: #1e4575; }
+.sort-indicator { display: inline-block; width: 10px; font-size: 10px; color: #A37929; }
 .column-filter-dropdown { position: relative; }
 .column-filter-btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 12.5px; font-weight: 700; color: #1e4575; background: #fff; border: 1.5px solid #1e4575; border-radius: 8px; padding: 8px 13px; cursor: pointer; height: 36px; box-sizing: border-box; transition: all .2s ease; }
 .column-filter-btn:hover { background: #eef2f7; }
@@ -685,6 +700,11 @@
 .aca-term-row.is-paid { border-color: #bbf7d0; background: #f0fdf4; }
 .aca-term-label { font-size: 13px; font-weight: 700; color: #1e4575; padding: 10px 14px; white-space: nowrap; border-right: 1.5px solid #e2e8f0; }
 .aca-term-amount { flex: 1 1 auto; padding: 10px 12px; font-size: 13px; color: #374151; }
+.aca-term-amount-input {
+    width: 110px; padding: 8px 10px; border: none; border-left: 1.5px solid #e2e8f0;
+    outline: none; font-size: 12px; background: transparent; color: #374151; flex: 1 1 auto;
+}
+.aca-term-amount-input:focus { background: #fff; }
 .aca-term-date-input { padding: 8px 10px; border: none; border-left: 1.5px solid #e2e8f0; outline: none; font-size: 12px; background: transparent; color: #374151; }
 .aca-btn-mark-paid {
     padding: 10px 16px; border: none; font-size: 12px; font-weight: 700;
@@ -761,8 +781,8 @@ var _acaPendingData = null; // holds the validated request data between "Create 
     function validateForm(data) {
         let valid = true;
 
-        if (!data.agent_id) {
-            setError('aca_agent_search', 'Please select an agent.');
+        if (!data.agent_id && !(data.agent_name && data.agent_name.trim())) {
+            setError('aca_agent_search', 'Please enter or select an agent.');
             valid = false;
         }
 
@@ -880,6 +900,7 @@ var _acaPendingData = null; // holds the validated request data between "Create 
 
         const data = {
             agent_id: document.getElementById('aca_agent_id').value,
+            agent_name: document.getElementById('aca_agent_search').value,
             team: document.getElementById('aca_team').value,
             amount: document.getElementById('aca_amount').value,
             purpose: document.getElementById('aca_purpose').value,
@@ -1162,32 +1183,44 @@ var _acaEditHasPaidLockedByAdminRule = false; // reserved if you later gate unma
 
 function acaRenderEditContent(id, data) {
     const totalAmount = parseFloat(data.amount) || 0;
-    const paidAmount = data.terms.reduce((sum, t) => sum + (t.status === 'PAID' ? (data.repayment_type === 'OTHERS' ? totalAmount : (parseFloat(data.amount_per_term) || 0)) : 0), 0);
+    // Sum the *actual* amount recorded for each paid term (which may have
+    // been edited away from the even split) rather than assuming every term
+    // was paid at the default split amount.
+    const paidAmount = data.terms.reduce((sum, t) => sum + (t.status === 'PAID' ? (parseFloat(t.amount) || 0) : 0), 0);
     const remaining = Math.max(0, totalAmount - paidAmount);
 
     let rowsHtml = '';
 
+    function termAmountFallback(t) {
+        if (t.amount != null) return parseFloat(t.amount) || 0;
+        return data.repayment_type === 'OTHERS' ? totalAmount : (parseFloat(data.amount_per_term) || 0);
+    }
+
     if (data.repayment_type === 'OTHERS') {
         const t = data.terms[0] || {};
         const isPaid = t.status === 'PAID';
+        const amt = termAmountFallback(t);
         rowsHtml = '<div class="aca-term-row' + (isPaid ? ' is-paid' : '') + '">'
             + '<span class="aca-term-label">Repayment</span>'
-            + '<span class="aca-term-amount">₱' + acaMoney(totalAmount) + '</span>'
             + (isPaid
-                ? '<span class="aca-term-badge-paid' + (ACA_IS_ADMIN ? ' is-clickable' : '') + '"' + (ACA_IS_ADMIN ? ' onclick="acaUnmarkTermPaid(' + t.id + ')" title="Click to undo"' : '') + '>✓ Paid — ' + acaFmtDate(t.date_paid) + '</span>'
-                : '<input type="date" id="aca_term_date_' + t.id + '" class="aca-term-date-input">'
-                  + '<button type="button" class="aca-btn-mark-paid" onclick="acaMarkTermPaid(' + t.id + ')">Paid</button>');
+                ? '<span class="aca-term-amount">₱' + acaMoney(amt) + '</span>'
+                  + '<span class="aca-term-badge-paid' + (ACA_IS_ADMIN ? ' is-clickable' : '') + '"' + (ACA_IS_ADMIN ? ' onclick="acaUnmarkTermPaid(' + t.term_number + ')" title="Click to undo"' : '') + '>✓ Paid — ' + acaFmtDate(t.date_paid) + '</span>'
+                : '<input type="number" step="0.01" min="0.01" id="aca_term_amount_' + t.term_number + '" class="aca-term-amount-input" value="' + amt.toFixed(2) + '">'
+                  + '<input type="date" id="aca_term_date_' + t.term_number + '" class="aca-term-date-input">'
+                  + '<button type="button" class="aca-btn-mark-paid" onclick="acaMarkTermPaid(' + t.term_number + ')">Paid</button>');
         rowsHtml += '</div>';
     } else {
         data.terms.forEach(function(t) {
             const isPaid = t.status === 'PAID';
+            const amt = termAmountFallback(t);
             rowsHtml += '<div class="aca-term-row' + (isPaid ? ' is-paid' : '') + '">'
                 + '<span class="aca-term-label">Term ' + t.term_number + '</span>'
-                + '<span class="aca-term-amount">₱' + acaMoney(data.amount_per_term) + '</span>'
                 + (isPaid
-                    ? '<span class="aca-term-badge-paid' + (ACA_IS_ADMIN ? ' is-clickable' : '') + '"' + (ACA_IS_ADMIN ? ' onclick="acaUnmarkTermPaid(' + t.id + ')" title="Click to undo"' : '') + '>✓ Paid — ' + acaFmtDate(t.date_paid) + '</span>'
-                    : '<input type="date" id="aca_term_date_' + t.id + '" class="aca-term-date-input">'
-                      + '<button type="button" class="aca-btn-mark-paid" onclick="acaMarkTermPaid(' + t.id + ')">Paid</button>')
+                    ? '<span class="aca-term-amount">₱' + acaMoney(amt) + '</span>'
+                      + '<span class="aca-term-badge-paid' + (ACA_IS_ADMIN ? ' is-clickable' : '') + '"' + (ACA_IS_ADMIN ? ' onclick="acaUnmarkTermPaid(' + t.term_number + ')" title="Click to undo"' : '') + '>✓ Paid — ' + acaFmtDate(t.date_paid) + '</span>'
+                    : '<input type="number" step="0.01" min="0.01" id="aca_term_amount_' + t.term_number + '" class="aca-term-amount-input" value="' + amt.toFixed(2) + '">'
+                      + '<input type="date" id="aca_term_date_' + t.term_number + '" class="aca-term-date-input">'
+                      + '<button type="button" class="aca-btn-mark-paid" onclick="acaMarkTermPaid(' + t.term_number + ')">Paid</button>')
                 + '</div>';
         });
     }
@@ -1228,19 +1261,25 @@ function acaCloseEdit() {
     _acaEditCashAdvanceId = null;
 }
 
-function acaMarkTermPaid(termId) {
-    const dateInput = document.getElementById('aca_term_date_' + termId);
+function acaMarkTermPaid(termNumber) {
+    const dateInput = document.getElementById('aca_term_date_' + termNumber);
+    const amountInput = document.getElementById('aca_term_amount_' + termNumber);
     const datePaid = dateInput ? dateInput.value : '';
+    const amount = amountInput ? parseFloat(amountInput.value) : NaN;
 
     if (!datePaid) {
         showToast('Please select the date paid.', 'error', 'Validation Failed');
         return;
     }
+    if (!amount || amount <= 0) {
+        showToast('Please enter a valid amount.', 'error', 'Validation Failed');
+        return;
+    }
 
-    fetch('/agent-cash-advance-repayments/' + termId + '/pay', {
+    fetch('/agent-cash-advance/' + _acaEditCashAdvanceId + '/repayments/' + termNumber + '/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-        body: JSON.stringify({ date_paid: datePaid }),
+        body: JSON.stringify({ date_paid: datePaid, amount: amount }),
     })
     .then(r => r.json().then(json => ({ status: r.status, json })))
     .then(({ status, json }) => {
@@ -1261,10 +1300,10 @@ function acaMarkTermPaid(termId) {
     .catch(() => showToast('Network error. Please try again.', 'error', 'Error'));
 }
 
-function acaUnmarkTermPaid(termId) {
+function acaUnmarkTermPaid(termNumber) {
     if (!ACA_IS_ADMIN) return;
     showConfirm('Undo this payment? This will mark the term as unpaid.', function() {
-        fetch('/agent-cash-advance-repayments/' + termId + '/unpay', {
+        fetch('/agent-cash-advance/' + _acaEditCashAdvanceId + '/repayments/' + termNumber + '/unpay', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
         })
@@ -1490,14 +1529,16 @@ function acaMatchesColumnFilters(row) {
 function acaFilter() {
     var rows = document.querySelectorAll('#acaTable tbody tr[data-amount]');
     var visibleCount = 0;
+    var searchEl = document.getElementById('acaGlobalSearch');
+    var searchQ = searchEl ? searchEl.value.trim().toLowerCase() : '';
 
     rows.forEach(function (row) {
-        var show = acaMatchesColumnFilters(row);
+        var show = acaMatchesColumnFilters(row) && (!searchQ || row.textContent.toLowerCase().includes(searchQ));
         row.style.display = show ? '' : 'none';
         if (show) visibleCount++;
     });
 
-    var hasFilter = Object.keys(acaColumnFilters).length > 0;
+    var hasFilter = Object.keys(acaColumnFilters).length > 0 || !!searchQ;
     var noMatchRow = document.getElementById('acaNoMatchRow');
     if (noMatchRow) {
         noMatchRow.style.display = (hasFilter && rows.length > 0 && visibleCount === 0) ? '' : 'none';
@@ -1720,14 +1761,16 @@ function acaRepayMatchesColumnFilters(row) {
 function acaRepayFilter() {
     var rows = document.querySelectorAll('#acaRepaymentsTable tbody tr[data-id]');
     var visibleCount = 0;
+    var searchEl = document.getElementById('acaRepayGlobalSearch');
+    var searchQ = searchEl ? searchEl.value.trim().toLowerCase() : '';
 
     rows.forEach(function (row) {
-        var show = acaRepayMatchesColumnFilters(row);
+        var show = acaRepayMatchesColumnFilters(row) && (!searchQ || row.textContent.toLowerCase().includes(searchQ));
         row.style.display = show ? '' : 'none';
         if (show) visibleCount++;
     });
 
-    var hasFilter = Object.keys(acaRepayColumnFilters).length > 0;
+    var hasFilter = Object.keys(acaRepayColumnFilters).length > 0 || !!searchQ;
     var noMatchRow = document.getElementById('acaRepayNoMatchRow');
     if (noMatchRow) {
         noMatchRow.style.display = (hasFilter && rows.length > 0 && visibleCount === 0) ? '' : 'none';
@@ -1930,6 +1973,68 @@ function acaRepayConfirmBulkDelete() {
         showToast('Some records may not have been deleted.', 'error', 'Error');
         setTimeout(function() { location.reload(); }, 900);
     });
+}
+
+// ==== Column sorting: shared helpers ====
+function acaCellSortValue(text) {
+    var t = (text || '').trim();
+    var cleaned = t.replace(/₱/g, '').replace(/,/g, '').trim();
+    if (cleaned !== '' && !isNaN(cleaned)) return { type: 'num', val: parseFloat(cleaned) };
+    return { type: 'str', val: t.toLowerCase() };
+}
+function acaCompareSortValues(a, b) {
+    if (a.type === 'num' && b.type === 'num') return a.val - b.val;
+    return a.val < b.val ? -1 : (a.val > b.val ? 1 : 0);
+}
+function acaUpdateSortIndicators(tableId, state) {
+    document.querySelectorAll('#' + tableId + ' thead .sort-indicator').forEach(function (el) {
+        var col = parseInt(el.getAttribute('data-col'), 10);
+        el.textContent = (col === state.colIndex) ? (state.dir === 'asc' ? '▲' : '▼') : '';
+    });
+}
+
+// ---- Agent Cash Advance Records: sort by clicked column ----
+var acaSortState = { colIndex: null, dir: 'asc' };
+function acaSortTable(colIndex) {
+    var tbody = document.querySelector('#acaTable tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr[data-amount]'));
+    acaSortState.dir = (acaSortState.colIndex === colIndex && acaSortState.dir === 'asc') ? 'desc' : 'asc';
+    acaSortState.colIndex = colIndex;
+    rows.sort(function (r1, r2) {
+        var cmp = acaCompareSortValues(
+            acaCellSortValue(r1.children[colIndex].textContent),
+            acaCellSortValue(r2.children[colIndex].textContent)
+        );
+        return acaSortState.dir === 'asc' ? cmp : -cmp;
+    });
+    rows.forEach(function (r) { tbody.appendChild(r); });
+    var emptyRow = document.getElementById('acaEmptyRow');
+    var noMatchRow = document.getElementById('acaNoMatchRow');
+    if (emptyRow) tbody.appendChild(emptyRow);
+    if (noMatchRow) tbody.appendChild(noMatchRow);
+    acaUpdateSortIndicators('acaTable', acaSortState);
+}
+
+// ---- Repayment Records: sort by clicked column ----
+var acaRepaySortState = { colIndex: null, dir: 'asc' };
+function acaRepaySortTable(colIndex) {
+    var tbody = document.querySelector('#acaRepaymentsTable tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr[data-id]'));
+    acaRepaySortState.dir = (acaRepaySortState.colIndex === colIndex && acaRepaySortState.dir === 'asc') ? 'desc' : 'asc';
+    acaRepaySortState.colIndex = colIndex;
+    rows.sort(function (r1, r2) {
+        var cmp = acaCompareSortValues(
+            acaCellSortValue(r1.children[colIndex].textContent),
+            acaCellSortValue(r2.children[colIndex].textContent)
+        );
+        return acaRepaySortState.dir === 'asc' ? cmp : -cmp;
+    });
+    rows.forEach(function (r) { tbody.appendChild(r); });
+    var emptyRow = document.getElementById('acaRepaymentsEmptyRow');
+    var noMatchRow = document.getElementById('acaRepayNoMatchRow');
+    if (emptyRow) tbody.appendChild(emptyRow);
+    if (noMatchRow) tbody.appendChild(noMatchRow);
+    acaUpdateSortIndicators('acaRepaymentsTable', acaRepaySortState);
 }
 </script>
 @endsection
