@@ -81,6 +81,8 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::get('/departmental-expenses/{id}/view-form', [App\Http\Controllers\DepartmentalExpensesController::class, 'viewForm'])->name('departmental-expenses.view-form');
     Route::post('/api/departmental-expenses', [App\Http\Controllers\DepartmentalExpensesController::class, 'store']);
     Route::put('/api/departmental-expenses/{id}', [App\Http\Controllers\DepartmentalExpensesController::class, 'update']);
+    Route::patch('/api/departmental-expenses/{id}/release-status', [App\Http\Controllers\DepartmentalExpensesController::class, 'updateReleaseStatus']);
+    Route::patch('/api/departmental-expenses/{id}/liquidation-status', [App\Http\Controllers\DepartmentalExpensesController::class, 'updateLiquidationStatus']);
     Route::delete('/api/departmental-expenses/{id}', [App\Http\Controllers\DepartmentalExpensesController::class, 'destroy']);
 
     // Autocomplete API Routes
