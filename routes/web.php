@@ -22,10 +22,8 @@ Route::middleware(['guest', 'no.cache'])->group(function () {
     Route::post('/forgot-password/send-email', [AuthController::class, 'sendPasswordResetEmail'])->name('forgot.email');
 });
 
-// Root redirect to login
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+// Public landing page
+Route::view('/', 'landing')->name('landing');
 
 // Tripping Schedule Form (public — no login required)
 Route::get('/tripping', [App\Http\Controllers\TripScheduleController::class, 'show'])->name('tripping');
