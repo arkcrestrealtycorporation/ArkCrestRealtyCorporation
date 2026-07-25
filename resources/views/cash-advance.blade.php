@@ -343,7 +343,7 @@
                     @foreach($records as $r)
                         @foreach($r->repayments as $rep)
                         @php
-                            $repAmount = $r->repayment_type === 'OTHERS' ? $r->amount : ($r->amount_per_term ?? 0);
+                            $repAmount = $rep->amount;
                             $repTermLabel = $r->repayment_type === 'OTHERS' ? 'one-time payment' : ('term ' . $rep->term_number);
                             $repStatusLabel = $rep->status === 'PAID' ? 'paid' : 'partial';
                         @endphp
@@ -711,6 +711,13 @@
     text-transform: uppercase; letter-spacing: .3px; cursor: pointer; white-space: nowrap;
     background: linear-gradient(135deg,#A37929,#d4a03a); color: #fff;
 }
+.ca-btn-divide-equally {
+    display: block; width: 100%; margin-bottom: 10px; padding: 9px 14px;
+    border: 1.5px dashed #A37929; border-radius: 8px; background: #fff7ea;
+    color: #A37929; font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .3px; cursor: pointer; transition: all .15s;
+}
+.ca-btn-divide-equally:hover { background: #fdecc8; }
 .ca-btn-mark-paid:hover { opacity: .92; }
 .ca-btn-mark-paid:disabled { opacity: .5; cursor: not-allowed; }
 .ca-term-badge-paid {
@@ -1181,13 +1188,14 @@ function caPrintView() {
 const CA_IS_ADMIN = {{ auth()->user()->isAdmin() ? 'true' : 'false' }};
 var _caEditHasPaidLockedByAdminRule = false; // reserved if you later gate unmark by an external event (e.g. payroll run)
 
+var _caEditData = null;
+
 function caRenderEditContent(id, data) {
+    _caEditData = data;
     const totalAmount = parseFloat(data.amount) || 0;
-    // Sum the *actual* amount recorded for each paid term (which may have
-    // been edited away from the even split) rather than assuming every term
-    // was paid at the default split amount.
     const paidAmount = data.terms.reduce((sum, t) => sum + (t.status === 'PAID' ? (parseFloat(t.amount) || 0) : 0), 0);
     const remaining = Math.max(0, totalAmount - paidAmount);
+    const unpaidTerms = data.terms.filter(function(t) { return t.status !== 'PAID'; });
 
     let rowsHtml = '';
 
@@ -1205,7 +1213,7 @@ function caRenderEditContent(id, data) {
             + (isPaid
                 ? '<span class="ca-term-amount">₱' + caMoney(amt) + '</span>'
                   + '<span class="ca-term-badge-paid' + (CA_IS_ADMIN ? ' is-clickable' : '') + '"' + (CA_IS_ADMIN ? ' onclick="caUnmarkTermPaid(' + t.term_number + ')" title="Click to undo"' : '') + '>✓ Paid — ' + caFmtDate(t.date_paid) + '</span>'
-                : '<input type="number" step="0.01" min="0.01" id="ca_term_amount_' + t.term_number + '" class="ca-term-amount-input" value="' + amt.toFixed(2) + '">'
+                : '<input type="number" step="0.01" min="0.01" id="ca_term_amount_' + t.term_number + '" class="ca-term-amount-input" placeholder="₱' + amt.toFixed(2) + '">'
                   + '<input type="date" id="ca_term_date_' + t.term_number + '" class="ca-term-date-input">'
                   + '<button type="button" class="ca-btn-mark-paid" onclick="caMarkTermPaid(' + t.term_number + ')">Paid</button>');
         rowsHtml += '</div>';
@@ -1218,11 +1226,17 @@ function caRenderEditContent(id, data) {
                 + (isPaid
                     ? '<span class="ca-term-amount">₱' + caMoney(amt) + '</span>'
                       + '<span class="ca-term-badge-paid' + (CA_IS_ADMIN ? ' is-clickable' : '') + '"' + (CA_IS_ADMIN ? ' onclick="caUnmarkTermPaid(' + t.term_number + ')" title="Click to undo"' : '') + '>✓ Paid — ' + caFmtDate(t.date_paid) + '</span>'
-                    : '<input type="number" step="0.01" min="0.01" id="ca_term_amount_' + t.term_number + '" class="ca-term-amount-input" value="' + amt.toFixed(2) + '">'
+                    : '<input type="number" step="0.01" min="0.01" id="ca_term_amount_' + t.term_number + '" class="ca-term-amount-input" placeholder="₱' + amt.toFixed(2) + '">'
                       + '<input type="date" id="ca_term_date_' + t.term_number + '" class="ca-term-date-input">'
                       + '<button type="button" class="ca-btn-mark-paid" onclick="caMarkTermPaid(' + t.term_number + ')">Paid</button>')
                 + '</div>';
         });
+    }
+
+    var divideBtnHtml = '';
+    if (data.repayment_type === 'INSTALLMENT' && unpaidTerms.length > 1) {
+        divideBtnHtml = '<button type="button" class="ca-btn-divide-equally" onclick="caDivideEqually()">Divide Equally by '
+            + unpaidTerms.length + ' Term' + (unpaidTerms.length === 1 ? '' : 's') + '</button>';
     }
 
     document.getElementById('caEditContent').innerHTML =
@@ -1236,9 +1250,30 @@ function caRenderEditContent(id, data) {
         +   '<div class="ca-edit-summary-remaining"><label>Remaining Balance</label><div>₱' + caMoney(remaining) + '</div></div>'
         +   '<div class="ca-edit-summary-stage"><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px">Payment Stage</label><div>' + caEscapeHtml(data.payment_stage_label) + '</div></div>'
         + '</div>'
+        + divideBtnHtml
         + rowsHtml;
 }
 
+// Splits the *remaining* balance evenly across whatever terms are still
+// unpaid (not the original total ÷ total terms) so it stays correct even
+// after some terms were paid with custom, uneven amounts.
+function caDivideEqually() {
+    if (!_caEditData) return;
+    var data = _caEditData;
+    var totalAmount = parseFloat(data.amount) || 0;
+    var paidAmount = data.terms.reduce(function(sum, t) {
+        return sum + (t.status === 'PAID' ? (parseFloat(t.amount) || 0) : 0);
+    }, 0);
+    var remaining = Math.max(0, totalAmount - paidAmount);
+    var unpaidTerms = data.terms.filter(function(t) { return t.status !== 'PAID'; });
+    if (!unpaidTerms.length) return;
+
+    var split = remaining / unpaidTerms.length;
+    unpaidTerms.forEach(function(t) {
+        var input = document.getElementById('ca_term_amount_' + t.term_number);
+        if (input) input.value = split.toFixed(2);
+    });
+}
 function caOpenEdit(id, controlNumber) {
     _caEditCashAdvanceId = id;
     document.getElementById('caEditTitle').textContent = 'Repayment Tracking — ' + controlNumber;
