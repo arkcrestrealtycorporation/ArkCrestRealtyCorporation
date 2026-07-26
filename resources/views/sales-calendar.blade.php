@@ -133,8 +133,10 @@
 .sc-cell {
     border-right:1px solid #d1d5db;border-bottom:1px solid #d1d5db;
     padding:5px 6px;display:flex;flex-direction:column;
-    overflow:hidden;transition:background .15s;cursor:default;
+    overflow-y:auto;overflow-x:hidden;transition:background .15s;cursor:default;
 }
+.sc-cell::-webkit-scrollbar { width:4px; }
+.sc-cell::-webkit-scrollbar-thumb { background:#cbd5e1;border-radius:2px; }
 .sc-cell:nth-child(7n) { border-right:none; }
 .sc-cell.empty { background:#fafbfc; }
 .sc-cell.weekend { background:#fafbfc; }
@@ -298,15 +300,15 @@
             @endphp
             <div class="sc-cell {{ $cls }}">
                 <span class="sc-day-num">{{ $day }}</span>
-                @foreach($events->take(5) as $ev)
+                @foreach($events->take(2) as $ev)
                 <div class="sc-event type-{{ $ev['type'] }}"
                      onclick="showScModal({{ json_encode($ev) }})"
                      title="{{ $ev['label'] }}{{ $ev['sub'] ? ' — '.$ev['sub'] : '' }}">
                     {{ $ev['label'] }}
                 </div>
                 @endforeach
-                @if($events->count() > 5)
-                <div class="sc-more" onclick="event.stopPropagation(); showScDayEvents('{{ $dateStr }}')">+{{ $events->count()-5 }} more</div>
+                @if($events->count() > 2)
+                <div class="sc-more" onclick="event.stopPropagation(); showScDayEvents('{{ $dateStr }}')">+{{ $events->count()-2 }} more</div>
                 @endif
             </div>
             @endfor
