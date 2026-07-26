@@ -860,46 +860,53 @@ var _caPendingData = null; // holds the validated request data between "Create C
         return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    function buildPreviewHtml(data) {
-        const employeeLabel = document.getElementById('ca_employee_search').value || '';
-        const amount = parseFloat(data.amount) || 0;
-
-        let repaymentRows;
-        if (data.repayment_type === 'INSTALLMENT') {
-            const terms = parseInt(data.installment_terms, 10) || 0;
-            const perTerm = terms > 0 ? (amount / terms) : 0;
-            repaymentRows =
-                '<tr><td style="padding:6px 0;width:190px;color:#555;">Repayment Type</td><td style="padding:6px 0;">Installment</td></tr>' +
-                '<tr><td style="padding:6px 0;color:#555;">Number of Terms</td><td style="padding:6px 0;">' + terms + ' salary deduction' + (terms === 1 ? '' : 's') + '</td></tr>' +
-                '<tr><td style="padding:6px 0;color:#555;">Amount per Term</td><td style="padding:6px 0;">₱ ' + money(perTerm) + '</td></tr>';
-        } else {
-            repaymentRows =
-                '<tr><td style="padding:6px 0;width:190px;color:#555;">Repayment Type</td><td style="padding:6px 0;">Others — One-time Payment</td></tr>' +
-                '<tr><td style="padding:6px 0;color:#555;">Repayment Date</td><td style="padding:6px 0;">' + fmtDate(data.repayment_date) + '</td></tr>';
-        }
-
-        return ''
-            + '<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:18px;">'
-            +   '<img src="{{ asset('images/ArkCrest_Logo.png') }}" style="width:44px;height:44px;object-fit:contain;">'
-            +   '<div>'
-            +     '<div style="font-size:16px;font-weight:700;letter-spacing:.5px;">ArkCrest — Cash Advance Request Form</div>'
-            +     '<div style="font-size:11px;color:#555;" data-control-number>Control No.: <em>To be assigned upon submission</em></div>'
-            +   '</div>'
-            + '</div>'
-            + '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-            +   '<tr><td style="padding:6px 0;width:190px;color:#555;">Employee</td><td style="padding:6px 0;font-weight:600;">' + escapeHtml(employeeLabel) + '</td></tr>'
-            +   '<tr><td style="padding:6px 0;color:#555;">Department</td><td style="padding:6px 0;">' + escapeHtml(data.department) + '</td></tr>'
-            +   '<tr><td style="padding:6px 0;color:#555;">Amount Requested</td><td style="padding:6px 0;font-weight:700;">₱ ' + money(amount) + '</td></tr>'
-            +   '<tr><td style="padding:6px 0;color:#555;">Date Requested</td><td style="padding:6px 0;">' + fmtDate(data.date_requested) + '</td></tr>'
-            +   '<tr><td style="padding:6px 0;color:#555;">Date Needed</td><td style="padding:6px 0;">' + fmtDate(data.date_needed) + '</td></tr>'
-            +   '<tr><td style="padding:6px 0;vertical-align:top;color:#555;">Purpose</td><td style="padding:6px 0;">' + escapeHtml(data.purpose) + '</td></tr>'
-            +   repaymentRows
-            + '</table>'
-            + '<div style="margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:40px;">'
-            +   '<div><div style="border-top:1px solid #111;padding-top:6px;font-size:12px;">Employee Signature</div></div>'
-            +   '<div><div style="border-top:1px solid #111;padding-top:6px;font-size:12px;">Approved By</div></div>'
-            + '</div>';
+    function caCopyBlock(label, data, employeeLabel, controlHtml) {
+    const amount = parseFloat(data.amount) || 0;
+    let repaymentRows;
+    if (data.repayment_type === 'INSTALLMENT') {
+        const terms = parseInt(data.installment_terms, 10) || 0;
+        const perTerm = terms > 0 ? (amount / terms) : 0;
+        repaymentRows =
+            '<tr><td style="padding:4px 0;width:190px;color:#555;">Repayment Type</td><td style="padding:4px 0;">Installment</td></tr>' +
+            '<tr><td style="padding:4px 0;color:#555;">Number of Terms</td><td style="padding:4px 0;">' + terms + ' salary deduction' + (terms === 1 ? '' : 's') + '</td></tr>' +
+            '<tr><td style="padding:4px 0;color:#555;">Amount per Term</td><td style="padding:4px 0;">₱ ' + money(perTerm) + '</td></tr>';
+    } else {
+        repaymentRows =
+            '<tr><td style="padding:4px 0;width:190px;color:#555;">Repayment Type</td><td style="padding:4px 0;">Others — One-time Payment</td></tr>' +
+            '<tr><td style="padding:4px 0;color:#555;">Repayment Date</td><td style="padding:4px 0;">' + fmtDate(data.repayment_date) + '</td></tr>';
     }
+
+    return '<div style="page-break-inside:avoid;">'
+        + '<p style="font-style:italic;margin:0 0 4px;font-size:10px;">' + label + '</p>'
+        + '<div style="display:flex;align-items:center;gap:8px;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px;">'
++           '<img src="{{ asset('images/ArkCrest_Logo.png') }}" style="width:34px;height:34px;object-fit:contain;">'        +   '<div>'
+        +     '<div style="font-size:16px;font-weight:700;letter-spacing:.5px;">ArkCrest — Cash Advance Request Form</div>'
+        +     '<div style="font-size:11px;color:#555;">' + controlHtml + '</div>'
+        +   '</div>'
+        + '</div>'
+        + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+        +   '<tr><td style="padding:4px 0;width:190px;color:#555;">Employee</td><td style="padding:4px 0;font-weight:600;">' + escapeHtml(employeeLabel) + '</td></tr>'
+        +   '<tr><td style="padding:4px 0;color:#555;">Department</td><td style="padding:4px 0;">' + escapeHtml(data.department) + '</td></tr>'
+        +   '<tr><td style="padding:4px 0;color:#555;">Amount Requested</td><td style="padding:4px 0;font-weight:700;">₱ ' + money(amount) + '</td></tr>'
+        +   '<tr><td style="padding:4px 0;color:#555;">Date Requested</td><td style="padding:4px 0;">' + fmtDate(data.date_requested) + '</td></tr>'
+        +   '<tr><td style="padding:4px 0;color:#555;">Date Needed</td><td style="padding:4px 0;">' + fmtDate(data.date_needed) + '</td></tr>'
+        +   '<tr><td style="padding:4px 0;vertical-align:top;color:#555;">Purpose</td><td style="padding:4px 0;">' + escapeHtml(data.purpose) + '</td></tr>'
+        +   repaymentRows
+        + '</table>'
+        + '<table class="nb" style="font-size:11px;margin-top:12px;width:100%;"><tr>'
+        +   '<td style="width:50%;padding-top:12px;border-top:1px solid #111;">Requested by</td>'
+        +   '<td style="padding-top:12px;border-top:1px solid #111;">Approved by</td>'
+        + '</tr></table>'
+        + '</div>';
+}
+
+function buildPreviewHtml(data) {
+    const employeeLabel = document.getElementById('ca_employee_search').value || '';
+    const controlHtml = 'Control No.: <em>To be assigned upon submission</em>';
+    return caCopyBlock('Company Copy', data, employeeLabel, controlHtml)
+        + '<hr style="margin:10px 0;border:none;border-top:1px dashed #999;">'
+        + caCopyBlock("Employee's Copy", data, employeeLabel, controlHtml);
+}
 
     function handleCaSubmit(e) {
         e.preventDefault();
@@ -1024,10 +1031,10 @@ function _caPrintPreview(controlNumber) {
     const source = document.getElementById('caPreviewContent');
     let html = source.innerHTML;
     if (controlNumber) {
-        html = html.replace('<em>To be assigned upon submission</em>', controlNumber);
+        html = html.split('<em>To be assigned upon submission</em>').join(controlNumber);
     }
     const win = window.open('', '_blank');
-    const printHtml = '<html><head><title>Cash Advance Form</title><style>@page{size:letter;margin:.75in}body{font-family:"Times New Roman",serif;font-size:13px;color:#111;margin:0}<' + '/style><' + 'head><body>'
+    const printHtml = '<html><head><title>Cash Advance Form</title><style>@page{size:letter;margin:.75in}body{font-family:"Times New Roman",serif;font-size:12px;color:#111;margin:0}<' + '/style><' + 'head><body>'
         + html + '</body></html>';
     win.document.write(printHtml);
     win.document.close();
@@ -1112,7 +1119,7 @@ function caEscapeHtml(s) {
     return (s || '').toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function caBuildViewHtml(data) {
+function caCopyBlockView(label, data) {
     const amount = parseFloat(data.amount) || 0;
 
     let repaymentRows;
@@ -1120,39 +1127,46 @@ function caBuildViewHtml(data) {
         const terms = parseInt(data.installment_terms, 10) || 0;
         const perTerm = data.amount_per_term != null ? parseFloat(data.amount_per_term) : (terms > 0 ? amount / terms : 0);
         repaymentRows =
-            '<tr><td style="padding:6px 0;width:190px;color:#555;">Repayment Type</td><td style="padding:6px 0;">Installment</td></tr>' +
-            '<tr><td style="padding:6px 0;color:#555;">Number of Terms</td><td style="padding:6px 0;">' + terms + ' salary deduction' + (terms === 1 ? '' : 's') + '</td></tr>' +
-            '<tr><td style="padding:6px 0;color:#555;">Amount per Term</td><td style="padding:6px 0;">₱ ' + caMoney(perTerm) + '</td></tr>' +
-            '<tr><td style="padding:6px 0;color:#555;">Payment Stage</td><td style="padding:6px 0;">' + caEscapeHtml(data.payment_stage_label) + '</td></tr>';
+            '<tr><td style="padding:4px 0;width:190px;color:#555;">Repayment Type</td><td style="padding:4px 0;">Installment</td></tr>' +
+            '<tr><td style="padding:4px 0;color:#555;">Number of Terms</td><td style="padding:4px 0;">' + terms + ' salary deduction' + (terms === 1 ? '' : 's') + '</td></tr>' +
+            '<tr><td style="padding:4px 0;color:#555;">Amount per Term</td><td style="padding:4px 0;">₱ ' + caMoney(perTerm) + '</td></tr>' +
+            '<tr><td style="padding:4px 0;color:#555;">Payment Stage</td><td style="padding:4px 0;">' + caEscapeHtml(data.payment_stage_label) + '</td></tr>';
     } else {
         repaymentRows =
-            '<tr><td style="padding:6px 0;width:190px;color:#555;">Repayment Type</td><td style="padding:6px 0;">Others — One-time Payment</td></tr>' +
-            '<tr><td style="padding:6px 0;color:#555;">Repayment Date</td><td style="padding:6px 0;">' + caFmtDate(data.repayment_date) + '</td></tr>' +
-            '<tr><td style="padding:6px 0;color:#555;">Payment Stage</td><td style="padding:6px 0;">' + caEscapeHtml(data.payment_stage_label) + '</td></tr>';
+            '<tr><td style="padding:4px 0;width:190px;color:#555;">Repayment Type</td><td style="padding:4px 0;">Others — One-time Payment</td></tr>' +
+            '<tr><td style="padding:4px 0;color:#555;">Repayment Date</td><td style="padding:4px 0;">' + caFmtDate(data.repayment_date) + '</td></tr>' +
+            '<tr><td style="padding:4px 0;color:#555;">Payment Stage</td><td style="padding:4px 0;">' + caEscapeHtml(data.payment_stage_label) + '</td></tr>';
     }
 
-    return ''
-        + '<div style="display:flex;align-items:center;gap:12px;border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:18px;">'
-        +   '<img src="{{ asset('images/ArkCrest_Logo.png') }}" style="width:44px;height:44px;object-fit:contain;">'
-        +   '<div>'
+    return '<div style="page-break-inside:avoid;">'
+        + '<p style="font-style:italic;margin:0 0 4px;font-size:10px;">' + label + '</p>'
+        + '<div style="display:flex;align-items:center;gap:8px;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:10px;">'
++           '<img src="{{ asset('images/ArkCrest_Logo.png') }}" style="width:34px;height:34px;object-fit:contain;">'        +   '<div>'
         +     '<div style="font-size:16px;font-weight:700;letter-spacing:.5px;">ArkCrest — Cash Advance Request Form</div>'
         +     '<div style="font-size:11px;color:#555;">Control No.: ' + caEscapeHtml(data.control_number) + '</div>'
         +   '</div>'
         + '</div>'
-        + '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-        +   '<tr><td style="padding:6px 0;width:190px;color:#555;">Employee</td><td style="padding:6px 0;font-weight:600;">' + caEscapeHtml(data.employee_name) + '</td></tr>'
-        +   '<tr><td style="padding:6px 0;color:#555;">Department</td><td style="padding:6px 0;">' + caEscapeHtml(data.department) + '</td></tr>'
-        +   '<tr><td style="padding:6px 0;color:#555;">Amount Requested</td><td style="padding:6px 0;font-weight:700;">₱ ' + caMoney(amount) + '</td></tr>'
-        +   '<tr><td style="padding:6px 0;color:#555;">Date Requested</td><td style="padding:6px 0;">' + caFmtDate(data.date_requested) + '</td></tr>'
-        +   '<tr><td style="padding:6px 0;color:#555;">Date Needed</td><td style="padding:6px 0;">' + caFmtDate(data.date_needed) + '</td></tr>'
-        +   '<tr><td style="padding:6px 0;vertical-align:top;color:#555;">Purpose</td><td style="padding:6px 0;">' + caEscapeHtml(data.purpose) + '</td></tr>'
+        + '<table style="width:100%;border-collapse:collapse;font-size:12px;">'
+        +   '<tr><td style="padding:4px 0;width:190px;color:#555;">Employee</td><td style="padding:4px 0;font-weight:600;">' + caEscapeHtml(data.employee_name) + '</td></tr>'
+        +   '<tr><td style="padding:4px 0;color:#555;">Department</td><td style="padding:4px 0;">' + caEscapeHtml(data.department) + '</td></tr>'
+        +   '<tr><td style="padding:4px 0;color:#555;">Amount Requested</td><td style="padding:4px 0;font-weight:700;">₱ ' + caMoney(amount) + '</td></tr>'
+        +   '<tr><td style="padding:4px 0;color:#555;">Date Requested</td><td style="padding:4px 0;">' + caFmtDate(data.date_requested) + '</td></tr>'
+        +   '<tr><td style="padding:4px 0;color:#555;">Date Needed</td><td style="padding:4px 0;">' + caFmtDate(data.date_needed) + '</td></tr>'
+        +   '<tr><td style="padding:4px 0;vertical-align:top;color:#555;">Purpose</td><td style="padding:4px 0;">' + caEscapeHtml(data.purpose) + '</td></tr>'
         +   repaymentRows
-        +   '<tr><td style="padding:6px 0;color:#555;">Status</td><td style="padding:6px 0;">' + caEscapeHtml(data.display_status) + '</td></tr>'
+        +   '<tr><td style="padding:4px 0;color:#555;">Status</td><td style="padding:4px 0;">' + caEscapeHtml(data.display_status) + '</td></tr>'
         + '</table>'
-        + '<div style="margin-top:36px;display:grid;grid-template-columns:1fr 1fr;gap:40px;">'
-        +   '<div><div style="border-top:1px solid #111;padding-top:6px;font-size:12px;">Employee Signature</div></div>'
-        +   '<div><div style="border-top:1px solid #111;padding-top:6px;font-size:12px;">Approved By</div></div>'
+        + '<table class="nb" style="font-size:11px;margin-top:12px;width:100%;"><tr>'
+        +   '<td style="width:50%;padding-top:12px;border-top:1px solid #111;">Requested by</td>'
+        +   '<td style="padding-top:12px;border-top:1px solid #111;">Approved by</td>'
+        + '</tr></table>'
         + '</div>';
+}
+
+function caBuildViewHtml(data) {
+    return caCopyBlockView('Company Copy', data)
+        + '<hr style="margin:10px 0;border:none;border-top:1px dashed #999;">'
+        + caCopyBlockView("Employee's Copy", data);
 }
 
 function caOpenView(id) {
@@ -1177,7 +1191,7 @@ function caCloseView() {
 function caPrintView() {
     const html = document.getElementById('caViewContent').innerHTML;
     const win = window.open('', '_blank');
-    const printHtml = '<html><head><title>Cash Advance Form</title><style>@page{size:letter;margin:.75in}body{font-family:"Times New Roman",serif;font-size:13px;color:#111;margin:0}<' + '/style><' + 'head><body>'
+    const printHtml = '<html><head><title>Cash Advance Form</title><style>@page{size:letter;margin:.75in}body{font-family:"Times New Roman",serif;font-size:12px;color:#111;margin:0}<' + '/style><' + 'head><body>'
         + html + '</body></html>';
     win.document.write(printHtml);
     win.document.close();
