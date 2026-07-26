@@ -19,6 +19,7 @@
         'release'     => ['color'=>'#059669','bg'=>'#ecfdf5','label'=>'Commission Release'],
         'trip'        => ['color'=>'#A37929','bg'=>'#fffbeb','label'=>'Site Visit'],
         'downpayment' => ['color'=>'#0891b2','bg'=>'#ecfeff','label'=>'Downpayment Date'],
+        'reserved'    => ['color'=>'#7c3aed','bg'=>'#f5f3ff','label'=>'Reserved Client'],
     ];
 @endphp
 
@@ -170,6 +171,7 @@
 .sc-event.type-release     { background:#059669;color:white; }
 .sc-event.type-trip        { background:linear-gradient(135deg,#A37929,#d4a03a);color:white; }
 .sc-event.type-downpayment { background:#0891b2;color:white; }
+.sc-event.type-reserved    { background:#7c3aed;color:white; }
 .sc-more {
     font-size:9px;color:#94a3b8;text-align:right;margin-top:1px;
     flex-shrink:0;font-weight:600;cursor:pointer;text-decoration:underline;
