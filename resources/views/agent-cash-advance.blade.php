@@ -1239,22 +1239,37 @@ function acaRenderEditContent(id, data) {
         data.terms.forEach(function(t) {
             const isPaid = t.status === 'PAID';
             const amt = termAmountFallback(t);
-            rowsHtml += '<div class="aca-term-row' + (isPaid ? ' is-paid' : '') + '">'
+            // If the balance already hit zero before this term's turn (e.g. the
+            // whole advance was paid off at term 2 of 6), there's nothing left
+            // to collect for it — show it as waived instead of still offering
+            // an amount/date input and a "Paid" button for it.
+            const isWaived = !isPaid && remaining <= 0;
+            rowsHtml += '<div class="aca-term-row' + (isPaid ? ' is-paid' : (isWaived ? ' is-waived' : '')) + '">'
                 + '<span class="aca-term-label">Term ' + t.term_number + '</span>'
                 + (isPaid
                     ? '<span class="aca-term-amount">₱' + acaMoney(amt) + '</span>'
                       + '<span class="aca-term-badge-paid' + (ACA_IS_ADMIN ? ' is-clickable' : '') + '"' + (ACA_IS_ADMIN ? ' onclick="acaUnmarkTermPaid(' + t.term_number + ')" title="Click to undo"' : '') + '>✓ Paid — ' + acaFmtDate(t.date_paid) + '</span>'
-                    : '<input type="number" step="0.01" min="0.01" id="aca_term_amount_' + t.term_number + '" class="aca-term-amount-input" placeholder="₱' + amt.toFixed(2) + '">'
-                      + '<input type="date" id="aca_term_date_' + t.term_number + '" class="aca-term-date-input">'
-                      + '<button type="button" class="aca-btn-mark-paid" onclick="acaMarkTermPaid(' + t.term_number + ')">Paid</button>')
+                    : (isWaived
+                        ? '<span class="aca-term-badge-waived" style="display:inline-block;padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;background:#e2e8f0;color:#475569;">Balance already fully paid — no payment needed</span>'
+                        : '<input type="number" step="0.01" min="0.01" id="aca_term_amount_' + t.term_number + '" class="aca-term-amount-input" placeholder="₱' + amt.toFixed(2) + '">'
+                          + '<input type="date" id="aca_term_date_' + t.term_number + '" class="aca-term-date-input">'
+                          + '<button type="button" class="aca-btn-mark-paid" onclick="acaMarkTermPaid(' + t.term_number + ')">Paid</button>'))
                 + '</div>';
         });
     }
 
     var divideBtnHtml = '';
-    if (data.repayment_type === 'INSTALLMENT' && unpaidTerms.length > 1) {
+    if (data.repayment_type === 'INSTALLMENT' && unpaidTerms.length > 1 && remaining > 0) {
         divideBtnHtml = '<button type="button" class="aca-btn-divide-equally" onclick="acaDivideEqually()">Divide Equally by '
             + unpaidTerms.length + ' Term' + (unpaidTerms.length === 1 ? '' : 's') + '</button>';
+    }
+
+    // Flag when the advance was paid off ahead of its original term schedule
+    // so the still-"unpaid" terms don't look like an outstanding balance.
+    var fullyPaidEarlyNoteHtml = '';
+    if (remaining <= 0 && unpaidTerms.length > 0) {
+        fullyPaidEarlyNoteHtml = '<div class="aca-edit-fully-paid-note" style="margin-top:8px;padding:8px 12px;border-radius:8px;background:#dcfce7;color:#166534;font-size:12.5px;font-weight:600;">'
+            + '✓ Fully paid ahead of schedule — the remaining term' + (unpaidTerms.length === 1 ? '' : 's') + ' below no longer require payment.</div>';
     }
 
     document.getElementById('acaEditContent').innerHTML =
@@ -1267,6 +1282,7 @@ function acaRenderEditContent(id, data) {
         +   '</div>'
         +   '<div class="aca-edit-summary-remaining"><label>Remaining Balance</label><div>₱' + acaMoney(remaining) + '</div></div>'
         +   '<div class="aca-edit-summary-stage"><label style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:2px">Payment Stage</label><div>' + acaEscapeHtml(data.payment_stage_label) + '</div></div>'
+        +   fullyPaidEarlyNoteHtml
         + '</div>'
         + divideBtnHtml
         + rowsHtml;
@@ -1285,6 +1301,7 @@ function acaDivideEqually() {
     var remaining = Math.max(0, totalAmount - paidAmount);
     var unpaidTerms = data.terms.filter(function(t) { return t.status !== 'PAID'; });
     if (!unpaidTerms.length) return;
+    if (remaining <= 0) return; // already fully paid off early — nothing left to divide
 
     var split = remaining / unpaidTerms.length;
     unpaidTerms.forEach(function(t) {
@@ -1327,6 +1344,27 @@ function acaMarkTermPaid(termNumber) {
     if (!amount || amount <= 0) {
         showToast('Please enter a valid amount.', 'error', 'Validation Failed');
         return;
+    }
+
+    // Guard against paying a term that's no longer owed because the full
+    // balance was already settled early (e.g. paid off at term 2 of 6).
+    // Without this check, staff could keep "paying" terms with nothing left
+    // to collect, and could also overpay past what's actually remaining.
+    if (_acaEditData) {
+        var totalAmount = parseFloat(_acaEditData.amount) || 0;
+        var paidSoFar = _acaEditData.terms.reduce(function(sum, t) {
+            return sum + (t.status === 'PAID' ? (parseFloat(t.amount) || 0) : 0);
+        }, 0);
+        var remainingBalance = Math.max(0, totalAmount - paidSoFar);
+
+        if (remainingBalance <= 0) {
+            showToast('This cash advance is already fully paid. No further payments are needed.', 'error', 'Already Fully Paid');
+            return;
+        }
+        if (amount > remainingBalance + 0.01) {
+            showToast('Amount exceeds the remaining balance of ₱' + acaMoney(remainingBalance) + '.', 'error', 'Validation Failed');
+            return;
+        }
     }
 
     fetch('/agent-cash-advance/' + _acaEditCashAdvanceId + '/repayments/' + termNumber + '/pay', {
