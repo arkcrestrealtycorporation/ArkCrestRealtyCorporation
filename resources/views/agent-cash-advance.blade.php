@@ -200,23 +200,23 @@
         <div id="acaActiveColumnFiltersRow" class="active-column-filters-row" style="display:none;"></div>
 
         <div class="aca-table-wrap">
-            <table class="aca-table" id="acaTable">
+            <table class="aca-table js-sort-table js-sort-dropdown" id="acaTable">
                 <thead>
                     <tr>
                         <th class="aca-sticky-col aca-sticky-checkbox">
                             <input type="checkbox" id="acaSelectAll" onchange="acaToggleSelectAll(this)" title="Select all">
                         </th>
-                        <th class="aca-sticky-col aca-sticky-id aca-sortable" onclick="acaSortTable(1)">Agent Cash Advance No. <span class="sort-indicator" data-col="1"></span></th>
-                        <th class="aca-sortable" onclick="acaSortTable(2)">Agent <span class="sort-indicator" data-col="2"></span></th>
-                        <th class="aca-sortable" onclick="acaSortTable(3)">Team <span class="sort-indicator" data-col="3"></span></th>
-                        <th class="aca-sortable" onclick="acaSortTable(4)">Amount <span class="sort-indicator" data-col="4"></span></th>
-                        <th class="aca-sortable" onclick="acaSortTable(5)">Date Requested <span class="sort-indicator" data-col="5"></span></th>
-                        <th class="aca-sortable" onclick="acaSortTable(6)">Date Needed <span class="sort-indicator" data-col="6"></span></th>
-                        <th class="aca-sortable" onclick="acaSortTable(7)">Repayment Type <span class="sort-indicator" data-col="7"></span></th>
-                        <th class="aca-sortable" onclick="acaSortTable(8)">Terms <span class="sort-indicator" data-col="8"></span></th>
-                        <th class="aca-sortable" onclick="acaSortTable(9)">Payment Stage <span class="sort-indicator" data-col="9"></span></th>
-                        <th class="aca-sortable" onclick="acaSortTable(10)">Status <span class="sort-indicator" data-col="10"></span></th>
-                        <th class="aca-sortable" onclick="acaSortTable(11)">Created At <span class="sort-indicator" data-col="11"></span></th>
+                        <th class="aca-sticky-col aca-sticky-id">Agent Cash Advance No.</th>
+                        <th>Agent</th>
+                        <th>Team</th>
+                        <th>Amount</th>
+                        <th>Date Requested</th>
+                        <th>Date Needed</th>
+                        <th>Repayment Type</th>
+                        <th>Terms</th>
+                        <th>Payment Stage</th>
+                        <th>Status</th>
+                        <th>Created At</th>
                         <th style="text-align:center;">Actions</th>
                     </tr>
                 </thead>
@@ -235,7 +235,9 @@
                         data-date-requested="{{ optional($r->date_requested)->format('Y-m-d') ?? optional($r->created_at)->format('Y-m-d') }}"
                         data-date-needed="{{ optional($r->date_needed)->format('Y-m-d') ?? '' }}"
                         data-repayment-type="{{ strtolower($r->repayment_type ?? '') }}"
-                        data-status="{{ strtolower($r->display_status ?? '') }}">
+                        data-status="{{ strtolower($r->display_status ?? '') }}"
+                        data-date-added="{{ $r->created_at?->timestamp }}"
+                        data-date-modified="{{ $r->updated_at?->timestamp }}">
                         <td class="aca-sticky-col aca-sticky-checkbox">
                             <input type="checkbox" class="aca-row-checkbox" value="{{ $r->id }}" onchange="acaUpdateBulkBar()">
                         </td>
@@ -324,19 +326,19 @@
         <div id="acaRepayActiveColumnFiltersRow" class="active-column-filters-row" style="display:none;"></div>
 
         <div class="aca-table-wrap">
-            <table class="aca-table" id="acaRepaymentsTable">
+            <table class="aca-table js-sort-table" id="acaRepaymentsTable">
                 <thead>
                     <tr>
                         <th class="aca-sticky-col aca-sticky-checkbox">
                             <input type="checkbox" id="acaRepaySelectAll" onchange="acaRepayToggleSelectAll(this)" title="Select all">
                         </th>
-                        <th class="aca-sticky-col aca-sticky-id aca-sortable" onclick="acaRepaySortTable(1)">Agent Cash Advance No. <span class="sort-indicator" data-col="1"></span></th>
-                        <th class="aca-sortable" onclick="acaRepaySortTable(2)">Agent <span class="sort-indicator" data-col="2"></span></th>
-                        <th class="aca-sortable" onclick="acaRepaySortTable(3)">Repayment Term <span class="sort-indicator" data-col="3"></span></th>
-                        <th class="aca-sortable" onclick="acaRepaySortTable(4)">Amount <span class="sort-indicator" data-col="4"></span></th>
-                        <th class="aca-sortable" onclick="acaRepaySortTable(5)">Payment Stage <span class="sort-indicator" data-col="5"></span></th>
-                        <th class="aca-sortable" onclick="acaRepaySortTable(6)">Status <span class="sort-indicator" data-col="6"></span></th>
-                        <th class="aca-sortable" onclick="acaRepaySortTable(7)">Date Paid <span class="sort-indicator" data-col="7"></span></th>
+                        <th class="aca-sticky-col aca-sticky-id">Agent Cash Advance No.</th>
+                        <th>Agent</th>
+                        <th>Repayment Term</th>
+                        <th>Amount</th>
+                        <th>Payment Stage</th>
+                        <th>Status</th>
+                        <th>Date Paid</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -560,9 +562,6 @@
 .aca-search-input { width: 100%; box-sizing: border-box; padding: 8px 12px 8px 34px; border: 1.5px solid #d0d5dd; border-radius: 8px; font-size: 12.5px; color: #344054; height: 36px; outline: none; transition: border-color .15s; }
 .aca-search-input:focus { border-color: #1e4575; }
 .aca-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #94a3b8; pointer-events: none; }
-.aca-table thead th.aca-sortable { cursor: pointer; user-select: none; }
-.aca-table thead th.aca-sortable:hover { color: #1e4575; }
-.sort-indicator { display: inline-block; width: 10px; font-size: 10px; color: #A37929; }
 .column-filter-dropdown { position: relative; }
 .column-filter-btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 12.5px; font-weight: 700; color: #1e4575; background: #fff; border: 1.5px solid #1e4575; border-radius: 8px; padding: 8px 13px; cursor: pointer; height: 36px; box-sizing: border-box; transition: all .2s ease; }
 .column-filter-btn:hover { background: #eef2f7; }
@@ -2064,68 +2063,6 @@ function acaRepayConfirmBulkDelete() {
         showToast('Some records may not have been deleted.', 'error', 'Error');
         setTimeout(function() { location.reload(); }, 900);
     });
-}
-
-// ==== Column sorting: shared helpers ====
-function acaCellSortValue(text) {
-    var t = (text || '').trim();
-    var cleaned = t.replace(/₱/g, '').replace(/,/g, '').trim();
-    if (cleaned !== '' && !isNaN(cleaned)) return { type: 'num', val: parseFloat(cleaned) };
-    return { type: 'str', val: t.toLowerCase() };
-}
-function acaCompareSortValues(a, b) {
-    if (a.type === 'num' && b.type === 'num') return a.val - b.val;
-    return a.val < b.val ? -1 : (a.val > b.val ? 1 : 0);
-}
-function acaUpdateSortIndicators(tableId, state) {
-    document.querySelectorAll('#' + tableId + ' thead .sort-indicator').forEach(function (el) {
-        var col = parseInt(el.getAttribute('data-col'), 10);
-        el.textContent = (col === state.colIndex) ? (state.dir === 'asc' ? '▲' : '▼') : '';
-    });
-}
-
-// ---- Agent Cash Advance Records: sort by clicked column ----
-var acaSortState = { colIndex: null, dir: 'asc' };
-function acaSortTable(colIndex) {
-    var tbody = document.querySelector('#acaTable tbody');
-    var rows = Array.from(tbody.querySelectorAll('tr[data-amount]'));
-    acaSortState.dir = (acaSortState.colIndex === colIndex && acaSortState.dir === 'asc') ? 'desc' : 'asc';
-    acaSortState.colIndex = colIndex;
-    rows.sort(function (r1, r2) {
-        var cmp = acaCompareSortValues(
-            acaCellSortValue(r1.children[colIndex].textContent),
-            acaCellSortValue(r2.children[colIndex].textContent)
-        );
-        return acaSortState.dir === 'asc' ? cmp : -cmp;
-    });
-    rows.forEach(function (r) { tbody.appendChild(r); });
-    var emptyRow = document.getElementById('acaEmptyRow');
-    var noMatchRow = document.getElementById('acaNoMatchRow');
-    if (emptyRow) tbody.appendChild(emptyRow);
-    if (noMatchRow) tbody.appendChild(noMatchRow);
-    acaUpdateSortIndicators('acaTable', acaSortState);
-}
-
-// ---- Repayment Records: sort by clicked column ----
-var acaRepaySortState = { colIndex: null, dir: 'asc' };
-function acaRepaySortTable(colIndex) {
-    var tbody = document.querySelector('#acaRepaymentsTable tbody');
-    var rows = Array.from(tbody.querySelectorAll('tr[data-id]'));
-    acaRepaySortState.dir = (acaRepaySortState.colIndex === colIndex && acaRepaySortState.dir === 'asc') ? 'desc' : 'asc';
-    acaRepaySortState.colIndex = colIndex;
-    rows.sort(function (r1, r2) {
-        var cmp = acaCompareSortValues(
-            acaCellSortValue(r1.children[colIndex].textContent),
-            acaCellSortValue(r2.children[colIndex].textContent)
-        );
-        return acaRepaySortState.dir === 'asc' ? cmp : -cmp;
-    });
-    rows.forEach(function (r) { tbody.appendChild(r); });
-    var emptyRow = document.getElementById('acaRepaymentsEmptyRow');
-    var noMatchRow = document.getElementById('acaRepayNoMatchRow');
-    if (emptyRow) tbody.appendChild(emptyRow);
-    if (noMatchRow) tbody.appendChild(noMatchRow);
-    acaUpdateSortIndicators('acaRepaymentsTable', acaRepaySortState);
 }
 </script>
 @endsection

@@ -200,23 +200,23 @@
         <div id="caActiveColumnFiltersRow" class="active-column-filters-row" style="display:none;"></div>
 
         <div class="ca-table-wrap">
-            <table class="ca-table" id="caTable">
+            <table class="ca-table js-sort-table js-sort-dropdown" id="caTable">
                 <thead>
                     <tr>
                         <th class="ca-sticky-col ca-sticky-checkbox">
                             <input type="checkbox" id="caSelectAll" onchange="caToggleSelectAll(this)" title="Select all">
                         </th>
-                        <th class="ca-sticky-col ca-sticky-id ca-sortable" onclick="caSortTable(1)">Cash Advance No. <span class="sort-indicator" data-col="1"></span></th>
-                        <th class="ca-sortable" onclick="caSortTable(2)">Employee <span class="sort-indicator" data-col="2"></span></th>
-                        <th class="ca-sortable" onclick="caSortTable(3)">Department <span class="sort-indicator" data-col="3"></span></th>
-                        <th class="ca-sortable" onclick="caSortTable(4)">Amount <span class="sort-indicator" data-col="4"></span></th>
-                        <th class="ca-sortable" onclick="caSortTable(5)">Date Requested <span class="sort-indicator" data-col="5"></span></th>
-                        <th class="ca-sortable" onclick="caSortTable(6)">Date Needed <span class="sort-indicator" data-col="6"></span></th>
-                        <th class="ca-sortable" onclick="caSortTable(7)">Repayment Type <span class="sort-indicator" data-col="7"></span></th>
-                        <th class="ca-sortable" onclick="caSortTable(8)">Terms <span class="sort-indicator" data-col="8"></span></th>
-                        <th class="ca-sortable" onclick="caSortTable(9)">Payment Stage <span class="sort-indicator" data-col="9"></span></th>
-                        <th class="ca-sortable" onclick="caSortTable(10)">Status <span class="sort-indicator" data-col="10"></span></th>
-                        <th class="ca-sortable" onclick="caSortTable(11)">Created At <span class="sort-indicator" data-col="11"></span></th>
+                        <th class="ca-sticky-col ca-sticky-id">Cash Advance No.</th>
+                        <th>Employee</th>
+                        <th>Department</th>
+                        <th>Amount</th>
+                        <th>Date Requested</th>
+                        <th>Date Needed</th>
+                        <th>Repayment Type</th>
+                        <th>Terms</th>
+                        <th>Payment Stage</th>
+                        <th>Status</th>
+                        <th>Created At</th>
                         <th style="text-align:center;">Actions</th>
                     </tr>
                 </thead>
@@ -235,7 +235,9 @@
                         data-date-requested="{{ optional($r->date_requested)->format('Y-m-d') ?? optional($r->created_at)->format('Y-m-d') }}"
                         data-date-needed="{{ optional($r->date_needed)->format('Y-m-d') ?? '' }}"
                         data-repayment-type="{{ strtolower($r->repayment_type ?? '') }}"
-                        data-status="{{ strtolower($r->display_status ?? '') }}">
+                        data-status="{{ strtolower($r->display_status ?? '') }}"
+                        data-date-added="{{ $r->created_at?->timestamp }}"
+                        data-date-modified="{{ $r->updated_at?->timestamp }}">
                         <td class="ca-sticky-col ca-sticky-checkbox">
                             <input type="checkbox" class="ca-row-checkbox" value="{{ $r->id }}" onchange="caUpdateBulkBar()">
                         </td>
@@ -324,19 +326,19 @@
         <div id="caRepayActiveColumnFiltersRow" class="active-column-filters-row" style="display:none;"></div>
 
         <div class="ca-table-wrap">
-            <table class="ca-table" id="caRepaymentsTable">
+            <table class="ca-table js-sort-table" id="caRepaymentsTable">
                 <thead>
                     <tr>
                         <th class="ca-sticky-col ca-sticky-checkbox">
                             <input type="checkbox" id="caRepaySelectAll" onchange="caRepayToggleSelectAll(this)" title="Select all">
                         </th>
-                        <th class="ca-sticky-col ca-sticky-id ca-sortable" onclick="caRepaySortTable(1)">Cash Advance No. <span class="sort-indicator" data-col="1"></span></th>
-                        <th class="ca-sortable" onclick="caRepaySortTable(2)">Employee <span class="sort-indicator" data-col="2"></span></th>
-                        <th class="ca-sortable" onclick="caRepaySortTable(3)">Repayment Term <span class="sort-indicator" data-col="3"></span></th>
-                        <th class="ca-sortable" onclick="caRepaySortTable(4)">Amount <span class="sort-indicator" data-col="4"></span></th>
-                        <th class="ca-sortable" onclick="caRepaySortTable(5)">Payment Stage <span class="sort-indicator" data-col="5"></span></th>
-                        <th class="ca-sortable" onclick="caRepaySortTable(6)">Status <span class="sort-indicator" data-col="6"></span></th>
-                        <th class="ca-sortable" onclick="caRepaySortTable(7)">Date Paid <span class="sort-indicator" data-col="7"></span></th>
+                        <th class="ca-sticky-col ca-sticky-id">Cash Advance No.</th>
+                        <th>Employee</th>
+                        <th>Repayment Term</th>
+                        <th>Amount</th>
+                        <th>Payment Stage</th>
+                        <th>Status</th>
+                        <th>Date Paid</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -560,9 +562,6 @@
 .ca-search-input { width: 100%; box-sizing: border-box; padding: 8px 12px 8px 34px; border: 1.5px solid #d0d5dd; border-radius: 8px; font-size: 12.5px; color: #344054; height: 36px; outline: none; transition: border-color .15s; }
 .ca-search-input:focus { border-color: #1e4575; }
 .ca-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #94a3b8; pointer-events: none; }
-.ca-table thead th.ca-sortable { cursor: pointer; user-select: none; }
-.ca-table thead th.ca-sortable:hover { color: #1e4575; }
-.sort-indicator { display: inline-block; width: 10px; font-size: 10px; color: #A37929; }
 .column-filter-dropdown { position: relative; }
 .column-filter-btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 12.5px; font-weight: 700; color: #1e4575; background: #fff; border: 1.5px solid #1e4575; border-radius: 8px; padding: 8px 13px; cursor: pointer; height: 36px; box-sizing: border-box; transition: all .2s ease; }
 .column-filter-btn:hover { background: #eef2f7; }
@@ -2060,68 +2059,6 @@ function caRepayConfirmBulkDelete() {
         showToast('Some records may not have been deleted.', 'error', 'Error');
         setTimeout(function() { location.reload(); }, 900);
     });
-}
-
-// ==== Column sorting: shared helpers ====
-function caCellSortValue(text) {
-    var t = (text || '').trim();
-    var cleaned = t.replace(/₱/g, '').replace(/,/g, '').trim();
-    if (cleaned !== '' && !isNaN(cleaned)) return { type: 'num', val: parseFloat(cleaned) };
-    return { type: 'str', val: t.toLowerCase() };
-}
-function caCompareSortValues(a, b) {
-    if (a.type === 'num' && b.type === 'num') return a.val - b.val;
-    return a.val < b.val ? -1 : (a.val > b.val ? 1 : 0);
-}
-function caUpdateSortIndicators(tableId, state) {
-    document.querySelectorAll('#' + tableId + ' thead .sort-indicator').forEach(function (el) {
-        var col = parseInt(el.getAttribute('data-col'), 10);
-        el.textContent = (col === state.colIndex) ? (state.dir === 'asc' ? '▲' : '▼') : '';
-    });
-}
-
-// ---- Cash Advance Records: sort by clicked column ----
-var caSortState = { colIndex: null, dir: 'asc' };
-function caSortTable(colIndex) {
-    var tbody = document.querySelector('#caTable tbody');
-    var rows = Array.from(tbody.querySelectorAll('tr[data-amount]'));
-    caSortState.dir = (caSortState.colIndex === colIndex && caSortState.dir === 'asc') ? 'desc' : 'asc';
-    caSortState.colIndex = colIndex;
-    rows.sort(function (r1, r2) {
-        var cmp = caCompareSortValues(
-            caCellSortValue(r1.children[colIndex].textContent),
-            caCellSortValue(r2.children[colIndex].textContent)
-        );
-        return caSortState.dir === 'asc' ? cmp : -cmp;
-    });
-    rows.forEach(function (r) { tbody.appendChild(r); });
-    var emptyRow = document.getElementById('caEmptyRow');
-    var noMatchRow = document.getElementById('caNoMatchRow');
-    if (emptyRow) tbody.appendChild(emptyRow);
-    if (noMatchRow) tbody.appendChild(noMatchRow);
-    caUpdateSortIndicators('caTable', caSortState);
-}
-
-// ---- Repayment Records: sort by clicked column ----
-var caRepaySortState = { colIndex: null, dir: 'asc' };
-function caRepaySortTable(colIndex) {
-    var tbody = document.querySelector('#caRepaymentsTable tbody');
-    var rows = Array.from(tbody.querySelectorAll('tr[data-id]'));
-    caRepaySortState.dir = (caRepaySortState.colIndex === colIndex && caRepaySortState.dir === 'asc') ? 'desc' : 'asc';
-    caRepaySortState.colIndex = colIndex;
-    rows.sort(function (r1, r2) {
-        var cmp = caCompareSortValues(
-            caCellSortValue(r1.children[colIndex].textContent),
-            caCellSortValue(r2.children[colIndex].textContent)
-        );
-        return caRepaySortState.dir === 'asc' ? cmp : -cmp;
-    });
-    rows.forEach(function (r) { tbody.appendChild(r); });
-    var emptyRow = document.getElementById('caRepaymentsEmptyRow');
-    var noMatchRow = document.getElementById('caRepayNoMatchRow');
-    if (emptyRow) tbody.appendChild(emptyRow);
-    if (noMatchRow) tbody.appendChild(noMatchRow);
-    caUpdateSortIndicators('caRepaymentsTable', caRepaySortState);
 }
 </script>
 @endsection
