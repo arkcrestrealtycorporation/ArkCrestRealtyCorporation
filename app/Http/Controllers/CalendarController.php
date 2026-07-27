@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\CashAdvance;
+use App\Models\CashAdvanceRepayment;
 use App\Models\CommissionRequest;
 use App\Models\CommissionRequestSales;
+use App\Models\DepartmentalExpense;
 use App\Models\TripSchedule;
 
 class CalendarController extends Controller
@@ -23,7 +26,7 @@ class CalendarController extends Controller
         })->get();
 
         $trips = TripSchedule::whereBetween('tripping_date', [$dateFrom, $dateTo])
-            ->whereIn('status', ['confirmed', 'pending'])
+            ->whereIn('status', ['confirmed', 'pending', 'reserved'])
             ->orderBy('tripping_date')
             ->get();
 
@@ -51,7 +54,7 @@ class CalendarController extends Controller
             $day = $t->tripping_date->day;
             if (!$eventsByDay->has($day)) $eventsByDay->put($day, collect());
             $eventsByDay->get($day)->push([
-                'type'   => 'trip',
+                'type'   => $t->status === 'reserved' ? 'reserved' : 'trip',
                 'label'  => $t->client_name,
                 'sub'    => $t->property_name,
                 'agent'  => $t->agent_name,
@@ -80,7 +83,7 @@ class CalendarController extends Controller
         $weekEnd   = now()->endOfWeek(\Carbon\Carbon::SUNDAY)->format('Y-m-d');
 
         $thisWeekTrips = TripSchedule::whereBetween('tripping_date', [$weekStart, $weekEnd])
-            ->whereIn('status', ['confirmed', 'pending'])
+            ->whereIn('status', ['confirmed', 'pending', 'reserved'])
             ->orderBy('tripping_date')->orderBy('tripping_time')
             ->get();
 
@@ -107,15 +110,36 @@ class CalendarController extends Controller
             ->whereYear('date_released', $year)
             ->whereMonth('date_released', $month)
             ->get()
-            ->each(fn($r) => $r->_type = 'sales');
+            ->each(function($r) { $r->_type = 'sales'; $r->_date_key = $r->date_released->format('Y-m-d'); });
         
         $commissionReleases = CommissionRequest::whereNotNull('date_released')
             ->whereYear('date_released', $year)
             ->whereMonth('date_released', $month)
             ->get()
-            ->each(fn($r) => $r->_type = 'commission');
+            ->each(function($r) { $r->_type = 'commission'; $r->_date_key = $r->date_released->format('Y-m-d'); });
 
-        $releases = $clientReleases->merge($commissionReleases)->sortBy('date_released');
+        $expenseReleases = DepartmentalExpense::whereNotNull('date_released')
+            ->whereYear('date_released', $year)
+            ->whereMonth('date_released', $month)
+            ->get()
+            ->each(function($r) { $r->_type = 'expense'; $r->_date_key = $r->date_released->format('Y-m-d'); });
+
+        $cashAdvanceReleases = CashAdvanceRepayment::whereNotNull('date_paid')
+            ->whereYear('date_paid', $year)
+            ->whereMonth('date_paid', $month)
+            ->with('cashAdvance')
+            ->get()
+            ->each(function($r) {
+                $r->_type          = 'cash_advance';
+                $r->date_released  = $r->date_paid;
+                $r->_date_key      = $r->date_paid->format('Y-m-d');
+                $r->employee_name  = optional($r->cashAdvance)->employee_name;
+                $r->control_number = optional($r->cashAdvance)->control_number;
+                $r->repayment_type = optional($r->cashAdvance)->repayment_type;
+                $r->total_terms    = optional($r->cashAdvance)->total_terms;
+                $r->amount_total   = optional($r->cashAdvance)->amount;
+            });
+        $releases = $clientReleases->merge($commissionReleases)->merge($expenseReleases)->merge($cashAdvanceReleases)->sortBy('date_released');
 
         $releasesByDay = $releases->groupBy(fn($r) => $r->date_released->day);
 
@@ -129,7 +153,17 @@ class CalendarController extends Controller
             ->distinct()
             ->pluck('year');
 
-        $availableYears = $clientYears->merge($commissionYears)->unique()->sortDesc()->values();
+        $expenseYears = DepartmentalExpense::whereNotNull('date_released')
+            ->selectRaw('YEAR(date_released) as year')
+            ->distinct()
+            ->pluck('year');
+
+        $cashAdvanceYears = CashAdvanceRepayment::whereNotNull('date_paid')
+            ->selectRaw('YEAR(date_paid) as year')
+            ->distinct()
+            ->pluck('year');
+
+        $availableYears = $clientYears->merge($commissionYears)->merge($expenseYears)->merge($cashAdvanceYears)->unique()->sortDesc()->values();
 
         if (!$availableYears->contains((int)$year)) {
             $availableYears->prepend((int)$year);
