@@ -1,5 +1,5 @@
-@extends('layouts.dashboard')
-@section('title', 'Persuasion Practice')
+@extends('layouts.academy')
+@section('title', 'Persuasion Practice · ArkCrest Sales Academy')
 
 @section('content')
 @php

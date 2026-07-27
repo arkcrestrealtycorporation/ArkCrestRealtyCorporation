@@ -1,9 +1,9 @@
-@extends('layouts.dashboard')
-@section('title', 'Practice Session')
+@extends('layouts.academy')
+@section('title', 'Practice Session · ArkCrest Sales Academy')
 
 @section('content')
 <style>
-.pc-page { display:flex;flex-direction:column;height:calc(100vh - 62px - 20px);gap:14px; }
+.pc-page { display:flex;flex-direction:column;height:calc(100vh - 154px);gap:14px; }
 .pc-topbar {
     background:linear-gradient(135deg,#1e4575 0%,#2563eb 60%,#1e4575 100%);
     border-radius:16px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;
