@@ -745,7 +745,7 @@
       <div class="grid">
         <div class="ph">
           <img
-            src="{{ asset('images/DSC_6783.jpg') }}"
+            src="{{ asset('images') }}"
             alt="ArkCrest Realty team"
             loading="lazy"
           >
