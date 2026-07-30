@@ -25,6 +25,11 @@ Route::middleware(['guest', 'no.cache'])->group(function () {
 // Public landing page
 Route::view('/', 'landing')->name('landing');
 
+// Landing page "Inquire Now" popup form (public — no login required)
+Route::post('/inquire', [App\Http\Controllers\InquiryController::class, 'store'])
+    ->name('inquire.store')
+    ->middleware('throttle:6,1');
+
 // Tripping Schedule Form (public — no login required)
 Route::get('/tripping', [App\Http\Controllers\TripScheduleController::class, 'show'])->name('tripping');
 Route::post('/tripping', [App\Http\Controllers\TripScheduleController::class, 'store'])->name('tripping.store');
