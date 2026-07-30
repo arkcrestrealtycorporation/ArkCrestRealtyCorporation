@@ -17,9 +17,9 @@
                         your understanding before each next module unlocks.
                     </p>
                     <div class="training-actions">
-                        <a href="{{ route('agent-training.module', $continueModule) }}" class="start-course-btn">
+                        <a href="{{ $allModulesCompleted ? route('practice') : route('agent-training.module', $continueModule) }}" class="start-course-btn">
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            {{ $completedCount > 0 ? 'Continue Course' : 'Start Course' }}
+                            {{ $allModulesCompleted ? 'Start Challenge' : ($completedCount > 0 ? 'Continue Course' : 'Start Course') }}
                         </a>
                         <a href="#course-modules" class="outline-course-btn">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
