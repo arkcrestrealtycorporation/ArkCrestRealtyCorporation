@@ -17,9 +17,9 @@
                         your understanding before each next module unlocks.
                     </p>
                     <div class="training-actions">
-                        <a href="{{ route('agent-training.module', $continueModule) }}" class="start-course-btn">
+                        <a href="{{ $allModulesCompleted ? route('practice') : route('agent-training.module', $continueModule) }}" class="start-course-btn">
                             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            {{ $completedCount > 0 ? 'Continue Course' : 'Start Course' }}
+                            {{ $allModulesCompleted ? 'Start Challenge' : ($completedCount > 0 ? 'Continue Course' : 'Start Course') }}
                         </a>
                         <a href="#course-modules" class="outline-course-btn">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
@@ -75,7 +75,7 @@
                         @endif
                     @endforeach
                     <a href="{{ route('practice') }}" class="module-card module-card-link" id="module-07">
-                        <div class="module-number">07</div>
+                        <div class="module-number module-number-challenge">CHALLENGE</div>
                         <h3>Persuasion Practice</h3>
                         <p>Practice live persuasion and closing skills against an AI buyer roleplay, then get scored feedback.</p>
                         <div class="module-meta"><span>AI Roleplay · Self-paced</span><span class="module-status">Ready</span></div>
@@ -134,6 +134,22 @@
 @push('academy-scripts')
 <style>
     .module-status.is-complete { color: #2f8f4e; }
+    .module-number-challenge {
+        width: auto;
+        height: auto;
+        min-width: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #fdecea !important;
+        color: #c0392b;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        line-height: 1;
+        padding: 5px 10px;
+        border-radius: 999px;
+    }
     .crs-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     @media (max-width: 900px) { .crs-info-grid { grid-template-columns: 1fr; } }
 

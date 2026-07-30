@@ -27,14 +27,21 @@ class TrainingCourseController extends Controller
         $completedCount = AgentTrainingCourseService::completedCount($progress);
 
         // Where the "Start / Continue Course" button should jump to: the
-        // first unlocked-but-not-yet-completed module, defaulting to Module 1.
-        $continueModule = 1;
-        foreach ($progress as $m) {
-            if ($m['unlocked'] && !$m['completed']) {
-                $continueModule = $m['number'];
+        // first unlocked-but-not-yet-completed *numbered* module, defaulting
+        // to Module 1. We only look at real training modules here (1..TOTAL_MODULES) —
+        // $progress may also carry non-module entries (e.g. Persuasion Practice),
+        // which must never be picked as $continueModule since it isn't rendered
+        // by training-modules.module-XX / the module route.
+        $totalModules = AgentTrainingCourseService::TOTAL_MODULES;
+        $continueModule = null;
+        for ($number = 1; $number <= $totalModules; $number++) {
+            if (isset($progress[$number]) && $progress[$number]['unlocked'] && !$progress[$number]['completed']) {
+                $continueModule = $number;
                 break;
             }
         }
+        // All numbered modules are complete — nothing left to "continue" into.
+        $allModulesCompleted = is_null($continueModule);
 
         return view('training-course', [
             'progress'       => $progress,
@@ -43,6 +50,7 @@ class TrainingCourseController extends Controller
             'completedCount' => $completedCount,
             'passingScore'   => AgentTrainingCourseService::PASSING_SCORE,
             'continueModule' => $continueModule,
+            'allModulesCompleted' => $allModulesCompleted,
         ]);
     }
 
