@@ -54,9 +54,32 @@
    FRIENDLY DATE PICKER (readonly formatted display + hidden
    native date input opened via .showPicker()/click passthrough)
    ============================================================ */
-.friendly-date-wrap{position:relative;display:inline-block;width:100%}
-.friendly-date-display{cursor:pointer;background:transparent}
-.friendly-date-hidden{position:absolute;top:0;left:0;opacity:0;width:1px;height:1px;padding:0;margin:0;border:none;pointer-events:none}
+.friendly-date-wrap{
+    position:relative;
+    display:inline-block;
+    width:100%;
+}
+.friendly-date-display{
+    width:100%;
+    cursor:pointer;
+    background:transparent;
+    pointer-events:none;
+}
+.friendly-date-hidden{
+    position:absolute;
+    inset:0;
+    z-index:2;
+    width:100%;
+    height:100%;
+    opacity:0;
+    padding:0;
+    margin:0;
+    border:none;
+    cursor:pointer;
+    pointer-events:auto;
+    -webkit-appearance:auto;
+    appearance:auto;
+}
 
 /* ============================================================
    Hide the native scrollbar on the tables (info-tbl, liq-tbl,
