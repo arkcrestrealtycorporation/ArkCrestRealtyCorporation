@@ -25,11 +25,6 @@ Route::middleware(['guest', 'no.cache'])->group(function () {
 // Public landing page
 Route::view('/', 'landing')->name('landing');
 
-// Landing page "Inquire Now" popup form (public — no login required)
-Route::post('/inquire', [App\Http\Controllers\InquiryController::class, 'store'])
-    ->name('inquire.store')
-    ->middleware('throttle:6,1');
-
 // Tripping Schedule Form (public — no login required)
 Route::get('/tripping', [App\Http\Controllers\TripScheduleController::class, 'show'])->name('tripping');
 Route::post('/tripping', [App\Http\Controllers\TripScheduleController::class, 'store'])->name('tripping.store');
@@ -60,6 +55,8 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
 
     // Staff sales and real estate agent training — Real Estate Agent Training course
     Route::get('/agent-training', [App\Http\Controllers\TrainingCourseController::class, 'index'])->name('agent-training');
+    Route::get('/agent-training/module/{module}', [App\Http\Controllers\TrainingCourseController::class, 'showModule'])
+        ->name('agent-training.module');
     Route::post('/agent-training/module/{module}/quiz', [App\Http\Controllers\TrainingCourseController::class, 'submitQuiz'])
         ->name('agent-training.quiz.submit')
         ->middleware('throttle:20,1');
@@ -260,7 +257,6 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::get('/commission-dashboard', [App\Http\Controllers\CommissionMonitoringController::class, 'dashboard'])->name('commission-dashboard');
     Route::get('/commission-monitoring', [App\Http\Controllers\CommissionMonitoringController::class, 'index'])->name('commission-monitoring')->middleware('page.visible');
     Route::post('/commission-monitoring', [App\Http\Controllers\CommissionMonitoringController::class, 'store'])->name('commission-monitoring.store');
-    Route::post('/api/commission-notifications/{notificationId}/process', [App\Http\Controllers\CommissionMonitoringController::class, 'processCommissionNotification'])->name('commission-notifications.process');
     Route::get('/api/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'show']);
     Route::put('/api/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'update']);
     Route::put('/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'update'])->name('commission-monitoring.update');
