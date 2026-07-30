@@ -602,7 +602,7 @@
                             @if(count($cashAdvanceChildren) > 0)
                             <li class="nav-item-wrapper">
                                 <div class="nav-item-container">
-                                    <a href="{{ route('cash-advance') }}" class="nav-subitem nav-item-with-dropdown" data-page="Employee-cash-advance" onclick="event.stopPropagation();">
+                                    <a href="{{ route('cash-advance') }}" class="nav-subitem nav-item-with-dropdown" data-page="cash-advance" onclick="event.stopPropagation();">
                                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
                                         </svg>
@@ -855,6 +855,14 @@
                                 </a>
                             </li>
                             @endif
+                            @if($isAdminUser)
+                            <li>
+                                <a href="{{ route('practice.admin') }}" class="nav-subitem" data-page="practice-admin">
+                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8-1.284 0-2.503-.24-3.605-.671L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                    <span class="sidebar-text">Practice Scenarios</span>
+                                </a>
+                            </li>
+                            @endif
                             @if($canSeeSetting('settings.activity'))
                             <li>
                                 <a href="{{ route('settings') }}?panel=activity" class="nav-subitem" data-page="settings-activity">
@@ -993,12 +1001,29 @@
         const panel = document.getElementById('notificationPanel');
         if (panel) panel.classList.remove('show');
 
-        fetch('/notifications/' + notifId + '/read', {
+        fetch('/api/commission-notifications/' + encodeURIComponent(notifId) + '/process', {
             method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' }
-        }).catch(() => {});
-
-        window.location.href = '/commission-monitoring?stage_request=' + encodeURIComponent(stageRequestId);
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ stage_request_id: stageRequestId })
+        })
+        .then(async function(response) {
+            const data = await response.json().catch(function() { return {}; });
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Unable to create the commission request.');
+            }
+            window.location.href = data.url;
+        })
+        .catch(function(error) {
+            if (typeof showToast === 'function') {
+                showToast(error.message, 'error', 'Commission Request');
+            } else {
+                alert(error.message);
+            }
+        });
     }
 
     function handleClientDoneNotifClick(notifId, recordId) {
