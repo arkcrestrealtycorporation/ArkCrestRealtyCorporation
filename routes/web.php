@@ -25,6 +25,11 @@ Route::middleware(['guest', 'no.cache'])->group(function () {
 // Public landing page
 Route::view('/', 'landing')->name('landing');
 
+// Landing page "Inquire Now" popup form (public — no login required)
+Route::post('/inquire', [App\Http\Controllers\InquiryController::class, 'store'])
+    ->name('inquire.store')
+    ->middleware('throttle:6,1');
+
 // Tripping Schedule Form (public — no login required)
 Route::get('/tripping', [App\Http\Controllers\TripScheduleController::class, 'show'])->name('tripping');
 Route::post('/tripping', [App\Http\Controllers\TripScheduleController::class, 'store'])->name('tripping.store');
@@ -255,6 +260,7 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::get('/commission-dashboard', [App\Http\Controllers\CommissionMonitoringController::class, 'dashboard'])->name('commission-dashboard');
     Route::get('/commission-monitoring', [App\Http\Controllers\CommissionMonitoringController::class, 'index'])->name('commission-monitoring')->middleware('page.visible');
     Route::post('/commission-monitoring', [App\Http\Controllers\CommissionMonitoringController::class, 'store'])->name('commission-monitoring.store');
+    Route::post('/api/commission-notifications/{notificationId}/process', [App\Http\Controllers\CommissionMonitoringController::class, 'processCommissionNotification'])->name('commission-notifications.process');
     Route::get('/api/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'show']);
     Route::put('/api/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'update']);
     Route::put('/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'update'])->name('commission-monitoring.update');
@@ -268,8 +274,9 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::post('/cash-advance/{id}/approve', [App\Http\Controllers\CashAdvanceController::class, 'approve'])->name('cash-advance.approve');
     Route::post('/cash-advance/{id}/reject', [App\Http\Controllers\CashAdvanceController::class, 'reject'])->name('cash-advance.reject');
     Route::get('/cash-advance/{id}/repayments', [App\Http\Controllers\CashAdvanceController::class, 'repayments'])->name('cash-advance.repayments');
-Route::post('/cash-advance/{id}/repayments/{term}/pay', [App\Http\Controllers\CashAdvanceController::class, 'markRepaymentPaid'])->name('cash-advance-repayments.pay');
+    Route::post('/cash-advance/{id}/repayments/{term}/pay', [App\Http\Controllers\CashAdvanceController::class, 'markRepaymentPaid'])->name('cash-advance-repayments.pay');
     Route::post('/cash-advance/{id}/repayments/{term}/unpay', [App\Http\Controllers\CashAdvanceController::class, 'unmarkRepaymentPaid'])->name('cash-advance-repayments.unpay');
+    Route::delete('/cash-advance-repayments/{repaymentId}', [App\Http\Controllers\CashAdvanceController::class, 'destroyRepayment'])->name('cash-advance-repayments.destroy');
 
     Route::delete('/cash-advance/{id}', [App\Http\Controllers\CashAdvanceController::class, 'destroy'])->name('cash-advance.destroy');
     Route::get('/agent-cash-advance', [App\Http\Controllers\AgentCashAdvanceController::class, 'index'])->name('agent-cash-advance')->middleware('page.visible');
