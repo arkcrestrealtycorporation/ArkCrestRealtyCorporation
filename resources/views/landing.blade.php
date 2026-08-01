@@ -567,8 +567,6 @@
           <a href="#" class="btn btn-outline js-open-inquiry">Inquire Now</a>
         </div>
         <div class="hero-stats mono">
-          <span><b>10+</b>Elite Regions</span>
-          <span><b>500+</b>Legacy Partners</span>
           <span><b>100%</b>Verified Titles</span>
         </div>
       </div>
@@ -602,9 +600,7 @@
           <a href="#" class="text-link"><span class="rule"></span>Our Full Story</a>
         </div>
         <div class="ledger reveal">
-          <div class="ledger-item"><span class="k">Founded</span><span class="v mono">EST. 2013</span></div>
-          <div class="ledger-item"><span class="k">Regions Represented</span><span class="v mono">10+ NATIONWIDE</span></div>
-          <div class="ledger-item"><span class="k">Legacy Partners</span><span class="v mono">500+ FAMILIES</span></div>
+          <div class="ledger-item"><span class="k">Founded</span><span class="v mono">EST. 2024</span></div>
           <div class="ledger-item"><span class="k">Title Verification</span><span class="v mono">100% CLEARED</span></div>
           <div class="ledger-item"><span class="k">Current Listings</span><span class="v mono">VIA FACEBOOK</span></div>
         </div>
