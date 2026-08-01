@@ -52,6 +52,33 @@
                 <div class="ca-stat-value" id="caStatTotalRequested">₱{{ number_format($totalRequested, 2) }}</div>
             </div>
         </div>
+        <div class="ca-stat-card">
+            <div class="ca-stat-icon ca-stat-icon-released">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            </div>
+            <div>
+                <div class="ca-stat-label">Total Released</div>
+                <div class="ca-stat-value" id="caStatTotalReleased">₱{{ number_format($totalReleased, 2) }}</div>
+            </div>
+        </div>
+        <div class="ca-stat-card">
+            <div class="ca-stat-icon ca-stat-icon-remaining">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <div class="ca-stat-label">Total Remaining Payable</div>
+                <div class="ca-stat-value" id="caStatTotalRemaining">₱{{ number_format($totalRemaining, 2) }}</div>
+            </div>
+        </div>
+        <div class="ca-stat-card">
+            <div class="ca-stat-icon ca-stat-icon-returned">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <div class="ca-stat-label">Total Returned</div>
+                <div class="ca-stat-value" id="caStatTotalReturned">₱{{ number_format($totalReturned, 2) }}</div>
+            </div>
+        </div>
     </div>
 
     <!-- New Request Form (styled like Departmental Expenses → Add New Expense) -->
@@ -492,6 +519,9 @@
 .ca-stat-icon-records { background: #eef2ff; color: #4338ca; }
 .ca-stat-icon-pending { background: #fff7ed; color: #c2410c; }
 .ca-stat-icon-requested { background: #ecfdf5; color: #059669; }
+.ca-stat-icon-released { background: #eff6ff; color: #1d4ed8; }
+.ca-stat-icon-remaining { background: #fef2f2; color: #b91c1c; }
+.ca-stat-icon-returned { background: #f0fdf4; color: #15803d; }
 .ca-stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #8A9BAD; margin-bottom: 4px; }
 .ca-stat-value { font-size: 24px; font-weight: 700; color: #1e2a3a; }
 
