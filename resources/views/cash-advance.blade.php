@@ -152,7 +152,7 @@
                             <option value="5">5</option>
                             <option value="6">6</option>
                         </select>
-                        <input type="number" id="ca_installment_terms_other" class="form-control" min="1" step="1" placeholder="Enter number of terms" style="display:none;">
+                        <input type="number" id="ca_installment_terms_other" class="form-control" min="7" step="1" placeholder="Put in terms more than 6" style="display:none;">
                         <span class="ca-hint" id="ca_terms_hint">Each term is one installment. Maximum of 6 terms.</span>
                         <span class="ca-error" id="err_installment_terms"></span>
                     </div>
@@ -818,6 +818,10 @@ var _caPendingData = null; // holds the validated request data between "Create C
             if (termsEl) termsEl.classList.add('ca-invalid');
             if (termsErrEl) termsErrEl.textContent = 'A maximum of 6 terms is allowed for Installment.';
             valid = false;
+        } else if (data.repayment_type === 'OTHERS' && termsVal <= 6) {
+            if (termsEl) termsEl.classList.add('ca-invalid');
+            if (termsErrEl) termsErrEl.textContent = 'Others requires more than 6 terms — use Installment for 6 or fewer.';
+            valid = false;
         }
 
         return valid;
@@ -869,9 +873,13 @@ var _caPendingData = null; // holds the validated request data between "Create C
         +   '<tr><td style="padding:4px 0;vertical-align:top;color:#555;">Purpose</td><td style="padding:4px 0;">' + escapeHtml(data.purpose) + '</td></tr>'
         +   repaymentRows
         + '</table>'
-        + '<table class="nb" style="font-size:11px;margin-top:12px;width:100%;"><tr>'
-        +   '<td style="width:50%;padding-top:12px;border-top:1px solid #111;">Requested by</td>'
-        +   '<td style="padding-top:12px;border-top:1px solid #111;">Approved by</td>'
+        + '<div style="border-bottom:2px solid #111;margin:2px 0 8px;"></div>'
+        + '<table class="nb" style="font-size:11px;margin-top:0;width:100%;"><tr>'
+        +   '<td style="width:50%;padding-top:6px;">Requested by: <span style="display:inline-block;width:140px;border-bottom:1px solid #111;">&nbsp;</span></td>'
+        +   '<td style="padding-top:6px;">Approved by: <span style="display:inline-block;width:140px;border-bottom:1px solid #111;">&nbsp;</span></td>'
+        + '</tr><tr>'
+        +   '<td style="width:50%;padding-top:20px;">Received by: <span style="display:inline-block;width:140px;border-bottom:1px solid #111;">&nbsp;</span></td>'
+        +   '<td></td>'
         + '</tr></table>'
         + '</div>';
 }
@@ -1124,9 +1132,13 @@ function caCopyBlockView(label, data) {
         +   repaymentRows
         +   '<tr><td style="padding:4px 0;color:#555;">Status</td><td style="padding:4px 0;">' + caEscapeHtml(data.display_status) + '</td></tr>'
         + '</table>'
-        + '<table class="nb" style="font-size:11px;margin-top:12px;width:100%;"><tr>'
-        +   '<td style="width:50%;padding-top:12px;border-top:1px solid #111;">Requested by</td>'
-        +   '<td style="padding-top:12px;border-top:1px solid #111;">Approved by</td>'
+        + '<div style="border-bottom:2px solid #111;margin:2px 0 8px;"></div>'
+        + '<table class="nb" style="font-size:11px;margin-top:0;width:100%;"><tr>'
+        +   '<td style="width:50%;padding-top:6px;">Requested by: <span style="display:inline-block;width:140px;border-bottom:1px solid #111;">&nbsp;</span></td>'
+        +   '<td style="padding-top:6px;">Approved by: <span style="display:inline-block;width:140px;border-bottom:1px solid #111;">&nbsp;</span></td>'
+        + '</tr><tr>'
+        +   '<td style="width:50%;padding-top:20px;">Received by: <span style="display:inline-block;width:140px;border-bottom:1px solid #111;">&nbsp;</span></td>'
+        +   '<td></td>'
         + '</tr></table>'
         + '</div>';
 }
