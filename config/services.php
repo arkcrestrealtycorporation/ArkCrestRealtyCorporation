@@ -83,7 +83,7 @@ return [
 
         'model' => env(
             'OPENAI_MODEL',
-            'gpt-5-mini'
+            'gpt-5.6-luna'
         ),
 
         'base_url' => env(
