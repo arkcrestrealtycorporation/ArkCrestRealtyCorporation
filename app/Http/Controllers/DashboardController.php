@@ -152,7 +152,18 @@ class DashboardController extends Controller
 
         $today = Carbon::today()->toDateString();
         $todayTrips     = TripSchedule::whereDate('tripping_date', $today)->whereIn('status', ['confirmed', 'pending'])->count();
-        $todayReleases  = CommissionRequestSales::whereDate('date_released', $today)->whereIn('status', ['Not Yet Released', 'Not Released'])->count();
+
+        // Commission releases due today — sourced from commission_requests
+        // (the actual filed/finance-tracked records), matching how the
+        // Calendar page defines a "commission release" for a given date.
+        // Deliberately not filtered by status: a release scheduled for
+        // today should show whether it's already been marked Released or
+        // is still Not Yet Released.
+        $todayReleaseRecords = CommissionRequest::whereDate('date_released', $today)
+            ->orderBy('agent_name')
+            ->get();
+        $todayReleases  = $todayReleaseRecords->count();
+        $todayReleasesTotal = $todayReleaseRecords->sum('commission');
         $todayEvents    = CommissionRequestSales::where(function($q) use ($today) {
             $q->whereDate('reservation_date', $today)
               ->orWhereDate('date_of_downpayment', $today);
@@ -166,6 +177,6 @@ class DashboardController extends Controller
             ->sortDesc()
             ->values();
 
-        return view('dashboard', compact('departmentData', 'totalExpenses', 'expenseBreakdown', 'currentMonth', 'currentYear', 'units', 'grossSales', 'yearlySales', 'receivables', 'monthlySales', 'tomorrowReleases', 'todayTrips', 'todayReleases', 'todayEvents', 'pendingReservation', 'cancelledReservation', 'totalReservation', 'selectedMonth', 'selectedYear', 'isCurrentMonth', 'availableYears'));
+        return view('dashboard', compact('departmentData', 'totalExpenses', 'expenseBreakdown', 'currentMonth', 'currentYear', 'units', 'grossSales', 'yearlySales', 'receivables', 'monthlySales', 'tomorrowReleases', 'todayTrips', 'todayReleases', 'todayReleaseRecords', 'todayReleasesTotal', 'todayEvents', 'pendingReservation', 'cancelledReservation', 'totalReservation', 'selectedMonth', 'selectedYear', 'isCurrentMonth', 'availableYears'));
     }
 }
