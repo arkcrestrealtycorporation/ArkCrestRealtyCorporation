@@ -47,6 +47,10 @@
                 isActive = true;
             } else if (page === 'arkcrest-sales' && currentPath.includes('/arkcrest-sales')) {
                 isActive = true;
+            } else if (page === 'cash-advance' && currentPath.includes('/cash-advance') && !currentPath.includes('/agent-cash-advance')) {
+                isActive = true;
+            } else if (page === 'agent-cash-advance' && currentPath.includes('/agent-cash-advance')) {
+                isActive = true;
             } else if (page === 'forms' && currentPath === '/forms') {
                 isActive = true;
             } else if (page === 'settings' && currentPath.includes('/settings')) {
@@ -90,6 +94,8 @@
             } else if (page === 'settings-backup' && currentPath.includes('/settings/backup')) {
                 isActive = true;
             } else if (page === 'settings-export' && currentPath.includes('/admin/export')) {
+                isActive = true;
+            } else if (page === 'practice-admin' && currentPath.includes('/practice/admin')) {
                 isActive = true;
             }
             

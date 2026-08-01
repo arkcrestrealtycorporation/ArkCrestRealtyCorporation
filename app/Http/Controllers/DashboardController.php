@@ -56,17 +56,15 @@ class DashboardController extends Controller
         $monthStart = $viewDate->copy()->startOfMonth()->toDateString();
         $monthEnd   = $viewDate->copy()->endOfMonth()->toDateString();
 
-        // Sums number_of_units directly off CommissionRequest — matching
-        // ArkcrestSalesController's $totalUnits — rather than counting rows
-        // in arkcrest_commission_rates, which undercounts any released sale
-        // that doesn't have its ArkCrest commission % entered yet.
-        $units = \App\Models\CommissionRequest::where('status', 'Released')
-            ->whereBetween('date_released', [$monthStart, $monthEnd])
-            ->sum('number_of_units');
-
-        $grossSales = \App\Models\ArkcrestCommissionRate::whereHas('commissionRequest', function($q) use ($monthStart, $monthEnd) {
-            $q->where('status', 'Released')->whereBetween('date_released', [$monthStart, $monthEnd]);
-        })->sum('arkcrest_commission');
+        // Units and Gross Sales are whatever was manually entered on the
+        // Summary Report page for this month/year — not computed from
+        // ArkcrestCommissionRate/CommissionRequest anymore, since Summary
+        // Report is the source of truth the Finance team actually fills in.
+        $summaryReportForMonth = SummaryReport::where('month', $currentMonthNumber)
+            ->where('year', $currentYear)
+            ->first();
+        $units = $summaryReportForMonth ? (float) $summaryReportForMonth->units : 0;
+        $grossSales = $summaryReportForMonth ? (float) $summaryReportForMonth->gross_sales : 0;
 
         $pendingReservation = CommissionRequestSales::whereBetween('reservation_date', [$monthStart, $monthEnd])
             ->where(function($q) {
@@ -97,7 +95,7 @@ class DashboardController extends Controller
             $monthlySales[] = $report ? (float)$report->gross_sales : 0;
         }
 
-        $receivables = CommissionRequest::whereIn('status', ['Requested', 'Not Yet Released', 'Not Released'])->sum('commission');
+        $receivables = CommissionRequest::where('status', 'Not Yet Released')->sum('commission');
 
         $departments = Department::where('slug', '!=', 'capex')->get();
 
@@ -153,9 +151,30 @@ class DashboardController extends Controller
             ->get();
 
         $today = Carbon::today()->toDateString();
-        $todayTrips     = TripSchedule::whereDate('tripping_date', $today)->whereIn('status', ['confirmed', 'pending'])->count();
-        $todayReleases  = CommissionRequestSales::whereDate('date_released', $today)->whereIn('status', ['Not Yet Released', 'Not Released'])->count();
-        $todayEvents    = CommissionRequestSales::where(function($q) use ($today) {
+        $todayTrips = TripSchedule::whereDate('tripping_date', $today)->whereIn('status', ['confirmed', 'pending'])->count();
+
+        // Commission releases due today (PR #177)
+        $todayReleaseRecords = CommissionRequest::whereDate('date_released', $today)
+            ->whereIn('status', ['Not Yet Released', 'Not Released'])
+            ->orderBy('agent_name')
+            ->get();
+        $todayReleases      = $todayReleaseRecords->count();
+        $todayReleasesTotal = $todayReleaseRecords->sum('commission');
+
+        // Expense releases due today. Unlike commissions, an expense's
+        // date_released is only ever populated once it's actually RELEASED
+        // (normalizeWorkflow() forces it to null while release_status is
+        // NOT YET RELEASED), so we key off date_requested instead to find
+        // today's pending expense releases.
+        $todayExpenseReleaseRecords = DepartmentalExpense::whereDate('date_requested', $today)
+            ->where('release_status', 'NOT YET RELEASED')
+            ->orderBy('department')
+            ->orderBy('requestor_name')
+            ->get();
+        $todayExpenseReleases      = $todayExpenseReleaseRecords->count();
+        $todayExpenseReleasesTotal = $todayExpenseReleaseRecords->sum('requested_amount');
+
+        $todayEvents = CommissionRequestSales::where(function($q) use ($today) {
             $q->whereDate('reservation_date', $today)
               ->orWhereDate('date_of_downpayment', $today);
         })->count();
@@ -168,6 +187,6 @@ class DashboardController extends Controller
             ->sortDesc()
             ->values();
 
-        return view('dashboard', compact('departmentData', 'totalExpenses', 'expenseBreakdown', 'currentMonth', 'currentYear', 'units', 'grossSales', 'yearlySales', 'receivables', 'monthlySales', 'tomorrowReleases', 'todayTrips', 'todayReleases', 'todayEvents', 'pendingReservation', 'cancelledReservation', 'totalReservation', 'selectedMonth', 'selectedYear', 'isCurrentMonth', 'availableYears'));
+        return view('dashboard', compact('departmentData', 'totalExpenses', 'expenseBreakdown', 'currentMonth', 'currentYear', 'units', 'grossSales', 'yearlySales', 'receivables', 'monthlySales', 'tomorrowReleases', 'todayTrips', 'todayReleases', 'todayReleaseRecords', 'todayReleasesTotal', 'todayEvents', 'todayExpenseReleaseRecords', 'todayExpenseReleases', 'todayExpenseReleasesTotal', 'pendingReservation', 'cancelledReservation', 'totalReservation', 'selectedMonth', 'selectedYear', 'isCurrentMonth', 'availableYears'));
     }
 }
