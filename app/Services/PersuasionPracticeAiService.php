@@ -6,6 +6,7 @@ use App\Models\PersuasionScenario;
 use App\Models\PersuasionSession;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class PersuasionPracticeAiService
 {
@@ -18,6 +19,14 @@ class PersuasionPracticeAiService
     // up API costs. The system prompt nudges the AI to wind down before
     // this point; this constant is the failsafe if it doesn't listen.
     public const MAX_AGENT_TURNS = 15;
+
+    // Longest side (in px) an attached image is downscaled to before being
+    // sent to the AI. Vision token cost is driven by pixel dimensions, not
+    // file size — 1568px is the point past which both Claude and Gemini
+    // stop giving extra "resolution" for extra tokens, so anything bigger
+    // is wasted cost. The original upload on disk is left untouched; this
+    // only affects the copy sent to the API.
+    private const MAX_IMAGE_DIMENSION = 1568;
 
     /**
      * Sends the full conversation so far to the AI, roleplaying as the
@@ -35,9 +44,11 @@ class PersuasionPracticeAiService
         $systemPrompt = $this->buildSystemPrompt($scenario, $session->difficulty, $agentTurns);
 
         try {
-            $text = $this->provider() === 'gemini'
-                ? $this->callGeminiChat($systemPrompt, $messages)
-                : $this->callAnthropicChat($systemPrompt, $messages);
+            $text = match ($this->provider()) {
+                'openai' => $this->callOpenAIChat($systemPrompt, $messages),
+                'gemini' => $this->callGeminiChat($systemPrompt, $messages),
+                default  => $this->callAnthropicChat($systemPrompt, $messages),
+            };
 
             return $this->extractDecision($text);
         } catch (\Throwable $e) {
@@ -73,9 +84,11 @@ class PersuasionPracticeAiService
         $systemPrompt = $this->buildScoringPrompt($scenario, $session->difficulty);
 
         try {
-            $text = $this->provider() === 'gemini'
-                ? $this->callGeminiScoring($systemPrompt, $transcript)
-                : $this->callAnthropicScoring($systemPrompt, $transcript);
+            $text = match ($this->provider()) {
+                'openai' => $this->callOpenAIScoring($systemPrompt, $transcript),
+                'gemini' => $this->callGeminiScoring($systemPrompt, $transcript),
+                default  => $this->callAnthropicScoring($systemPrompt, $transcript),
+            };
 
             $clean = preg_replace('/```json|```/', '', $text);
             $parsed = json_decode(trim($clean), true);
@@ -121,7 +134,7 @@ class PersuasionPracticeAiService
             'system'     => $systemPrompt,
             'messages'   => $messages->map(fn ($m) => [
                 'role'    => $m->sender === 'AGENT' ? 'user' : 'assistant',
-                'content' => $m->message,
+                'content' => $this->anthropicContentFor($m),
             ])->values()->all(),
         ]);
 
@@ -154,6 +167,82 @@ class PersuasionPracticeAiService
         return collect($response->json('content'))->where('type', 'text')->pluck('text')->implode("\n");
     }
 
+    // ── OpenAI calls ──────────────────────────────────────────────────────
+
+    private function callOpenAIChat(string $systemPrompt, $messages): string
+    {
+        $input = $messages->map(fn ($message) => [
+            'role'    => $message->sender === 'AGENT' ? 'user' : 'assistant',
+            'content' => $this->openAIContentFor($message),
+        ])->values()->all();
+
+        return $this->callOpenAI($systemPrompt, $input, 800);
+    }
+
+    private function callOpenAIScoring(string $systemPrompt, string $transcript): string
+    {
+        return $this->callOpenAI($systemPrompt, [
+            [
+                'role' => 'user',
+                'content' => [
+                    [
+                        'type' => 'input_text',
+                        'text' => "Transcript:\n\n{$transcript}",
+                    ],
+                ],
+            ],
+        ], 1200);
+    }
+
+    private function callOpenAI(string $instructions, array $input, int $maxOutputTokens): string
+    {
+        $apiKey = config('services.openai.key');
+        $model = config('services.openai.model', 'gpt-5-mini');
+        $baseUrl = rtrim(
+            config('services.openai.base_url', 'https://api.openai.com/v1'),
+            '/'
+        );
+
+        if (blank($apiKey)) {
+            throw new \RuntimeException('OPENAI_API_KEY is missing.');
+        }
+
+        $response = Http::withToken($apiKey)
+            ->acceptJson()
+            ->asJson()
+            ->timeout(60)
+            ->post($baseUrl . '/responses', [
+                'model'             => $model,
+                'instructions'      => $instructions,
+                'input'             => $input,
+                'max_output_tokens' => $maxOutputTokens,
+            ]);
+
+        if (!$response->successful()) {
+            throw new \RuntimeException(
+                'OpenAI API error ' . $response->status() . ': ' . $response->body()
+            );
+        }
+
+        $text = collect($response->json('output', []))
+            ->where('type', 'message')
+            ->flatMap(fn ($output) => $output['content'] ?? [])
+            ->where('type', 'output_text')
+            ->pluck('text')
+            ->filter()
+            ->implode("\n");
+
+        if (trim($text) === '') {
+            $text = (string) $response->json('output_text', '');
+        }
+
+        if (trim($text) === '') {
+            throw new \RuntimeException('OpenAI returned an empty response.');
+        }
+
+        return $text;
+    }
+
     // ── Gemini calls ─────────────────────────────────────────────────────
 
     private function callGeminiChat(string $systemPrompt, $messages): string
@@ -169,7 +258,7 @@ class PersuasionPracticeAiService
             // the AI's own turns; "user" stays the same.
             'contents' => $messages->map(fn ($m) => [
                 'role'  => $m->sender === 'AGENT' ? 'user' : 'model',
-                'parts' => [['text' => $m->message]],
+                'parts' => $this->geminiPartsFor($m),
             ])->values()->all(),
         ]);
 
@@ -202,6 +291,162 @@ class PersuasionPracticeAiService
     }
 
     // ── Shared prompt building / parsing (provider-agnostic) ─────────────
+
+    /**
+     * Reads an agent-attached image off the 'public' disk and returns its
+     * mime type + base64 data, ready to embed in an API request. Returns
+     * null if the message has no image or the file is missing (e.g. was
+     * cleaned up) — callers just fall back to text-only in that case.
+     *
+     * The image is downscaled (via GD) to MAX_IMAGE_DIMENSION before being
+     * base64-encoded, since vision token cost scales with pixel dimensions
+     * rather than file size — this keeps token cost predictable regardless
+     * of whether the agent uploaded a small screenshot or a full-size phone
+     * photo. Falls back to the untouched original bytes if GD isn't
+     * available or can't decode the file, so the feature degrades
+     * gracefully rather than breaking.
+     */
+    private function imageDataFor($message): ?array
+    {
+        if (empty($message->image_path)) {
+            return null;
+        }
+
+        $disk = Storage::disk('public');
+
+        if (!$disk->exists($message->image_path)) {
+            return null;
+        }
+
+        $raw = $disk->get($message->image_path);
+
+        return $this->downscaleForAi($raw) ?? [
+            'mime' => $disk->mimeType($message->image_path) ?: 'image/jpeg',
+            'data' => base64_encode($raw),
+        ];
+    }
+
+    /**
+     * Decodes raw image bytes with GD, scales down to MAX_IMAGE_DIMENSION
+     * on the longest side if needed, and re-encodes as JPEG (keeps the
+     * payload small and normalizes every input format to one mime type).
+     * Returns null on any failure so the caller falls back to the original.
+     */
+    private function downscaleForAi(string $raw): ?array
+    {
+        if (!function_exists('imagecreatefromstring')) {
+            Log::warning('Persuasion practice: GD not available, sending original image bytes uncompressed.');
+            return null;
+        }
+
+        $image = @imagecreatefromstring($raw);
+        if (!$image) {
+            return null;
+        }
+
+        $width  = imagesx($image);
+        $height = imagesy($image);
+        $longestSide = max($width, $height);
+
+        if ($longestSide > self::MAX_IMAGE_DIMENSION) {
+            $scale     = self::MAX_IMAGE_DIMENSION / $longestSide;
+            $newWidth  = max(1, (int) round($width * $scale));
+            $newHeight = max(1, (int) round($height * $scale));
+
+            $resized = imagecreatetruecolor($newWidth, $newHeight);
+            // Flatten onto white instead of black for images with
+            // transparency (PNG/GIF) since we're converting to JPEG, which
+            // has no alpha channel.
+            $white = imagecolorallocate($resized, 255, 255, 255);
+            imagefill($resized, 0, 0, $white);
+            imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+            imagedestroy($image);
+            $image = $resized;
+        }
+
+        ob_start();
+        $ok = imagejpeg($image, null, 82);
+        $jpegData = ob_get_clean();
+        imagedestroy($image);
+
+        if (!$ok || empty($jpegData)) {
+            return null;
+        }
+
+        return ['mime' => 'image/jpeg', 'data' => base64_encode($jpegData)];
+    }
+
+    /** Builds an Anthropic `content` value (plain string, or a block array when an image is attached). */
+    private function anthropicContentFor($message)
+    {
+        $image = $this->imageDataFor($message);
+
+        if (!$image) {
+            return $message->message;
+        }
+
+        $blocks = [[
+            'type'   => 'image',
+            'source' => ['type' => 'base64', 'media_type' => $image['mime'], 'data' => $image['data']],
+        ]];
+
+        if (trim((string) $message->message) !== '') {
+            $blocks[] = ['type' => 'text', 'text' => $message->message];
+        }
+
+        return $blocks;
+    }
+
+    /** Builds an OpenAI Responses API content array, including an optional image. */
+    private function openAIContentFor($message): array
+    {
+        $content = [];
+        $text = trim((string) $message->message);
+
+        if ($text !== '') {
+            $content[] = [
+                'type' => 'input_text',
+                'text' => (string) $message->message,
+            ];
+        }
+
+        $image = $this->imageDataFor($message);
+
+        if ($image) {
+            $content[] = [
+                'type'      => 'input_image',
+                'image_url' => "data:{$image['mime']};base64,{$image['data']}",
+                'detail'    => 'auto',
+            ];
+        }
+
+        // Every message must contain at least one content item.
+        if (empty($content)) {
+            $content[] = [
+                'type' => 'input_text',
+                'text' => '',
+            ];
+        }
+
+        return $content;
+    }
+
+    /** Builds a Gemini `parts` array (image part first, then text if present). */
+    private function geminiPartsFor($message): array
+    {
+        $image = $this->imageDataFor($message);
+        $parts = [];
+
+        if ($image) {
+            $parts[] = ['inline_data' => ['mime_type' => $image['mime'], 'data' => $image['data']]];
+        }
+
+        if (trim((string) $message->message) !== '' || !$image) {
+            $parts[] = ['text' => (string) $message->message];
+        }
+
+        return $parts;
+    }
 
     /**
      * Builds the buyer-persona system prompt from scenario fields, with
@@ -270,6 +515,9 @@ PACING:
 CONVERSATION RULES:
 - Reply as the buyer only, in first person, in natural conversational
   language. Keep replies concise (1-4 sentences), like a real chat message.
+- The agent may sometimes attach an image (e.g. a listing photo, floor
+  plan, or document). React to it naturally as the buyer would — comment
+  on what you see and how it affects your interest or objections.
 - If the agent has genuinely met your win conditions, decide to buy.
 - If the agent triggers a walk-away condition, or the conversation drags
   with no progress, decide to end the conversation without buying.
