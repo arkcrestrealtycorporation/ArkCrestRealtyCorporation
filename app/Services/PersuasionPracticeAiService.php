@@ -167,6 +167,7 @@ class PersuasionPracticeAiService
         return collect($response->json('content'))->where('type', 'text')->pluck('text')->implode("\n");
     }
 
+
     // ── OpenAI calls ──────────────────────────────────────────────────────
 
     private function callOpenAIChat(string $systemPrompt, $messages): string
@@ -197,7 +198,7 @@ class PersuasionPracticeAiService
     private function callOpenAI(string $instructions, array $input, int $maxOutputTokens): string
     {
         $apiKey = config('services.openai.key');
-        $model = config('services.openai.model', 'gpt-5-mini');
+        $model = config('services.openai.model', 'gpt-5.6-luna');
         $baseUrl = rtrim(
             config('services.openai.base_url', 'https://api.openai.com/v1'),
             '/'
@@ -397,9 +398,24 @@ class PersuasionPracticeAiService
         return $blocks;
     }
 
-    /** Builds an OpenAI Responses API content array, including an optional image. */
+
+    /**
+     * Builds content for an OpenAI Responses API conversation message.
+     *
+     * AGENT messages become user input.
+     * BUYER messages become previous assistant output.
+     */
     private function openAIContentFor($message): array
     {
+        if ($message->sender === 'BUYER') {
+            return [
+                [
+                    'type' => 'output_text',
+                    'text' => (string) $message->message,
+                ],
+            ];
+        }
+
         $content = [];
         $text = trim((string) $message->message);
 
@@ -420,7 +436,6 @@ class PersuasionPracticeAiService
             ];
         }
 
-        // Every message must contain at least one content item.
         if (empty($content)) {
             $content[] = [
                 'type' => 'input_text',
