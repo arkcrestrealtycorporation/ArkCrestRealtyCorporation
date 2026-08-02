@@ -78,11 +78,25 @@ class PersuasionPracticeController extends Controller
     /** The chat screen for an in-progress (or finished/read-only) session. */
     public function chat(Request $request, PersuasionSession $session)
     {
-        abort_unless($session->user_id === $request->user()->id, 403);
+        abort_unless($session->user_id === $request->user()->id || $request->user()->isAdmin(), 403);
 
         $session->load(['scenario', 'messages']);
 
-        return view('practice.chat', compact('session'));
+        // Admins viewing another agent's session get a read-only transcript —
+        // they can't type as the agent or end someone else's session.
+        $isOwner = $session->user_id === $request->user()->id;
+
+        // Separate from $isOwner: an admin viewing their OWN old session is
+        // still an admin, and should be sent back to the admin Practice
+        // History page (not the regular agent-facing one) if the scenario
+        // has since been deleted.
+        $isAdmin = $request->user()->isAdmin();
+
+        // Scenario relation is null when the scenario was soft-deleted after
+        // this session took place — show a friendly notice instead of a 500.
+        $scenarioDeleted = $session->scenario === null;
+
+        return view('practice.chat', compact('session', 'isOwner', 'isAdmin', 'scenarioDeleted'));
     }
 
     /**
