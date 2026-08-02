@@ -65,6 +65,10 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
         ->middleware('throttle:20,1');
     Route::get('/agent-training/module/{module}/exam', [TrainingCourseController::class, 'showExam'])->name('agent-training.module.exam');
     Route::get('/agent-training/module/{module}/exam/results', [TrainingCourseController::class, 'examResults'])->name('agent-training.module.exam.results');
+    Route::get('/agent-training/congratulations', [TrainingCourseController::class, 'congratulations'])->name('agent-training.congratulations');
+    Route::get('/agent-training/certificate', [TrainingCourseController::class, 'certificate'])->name('agent-training.certificate');
+    Route::get('/agent-training/certificate/preview', [TrainingCourseController::class, 'certificatePreview'])->name('agent-training.certificate.preview');
+    Route::get('/agent-training/certificate/download', [TrainingCourseController::class, 'certificateDownload'])->name('agent-training.certificate.download');
 
     // Summary Report
     Route::get('/summary-report', [App\Http\Controllers\SummaryReportController::class, 'index'])->name('summary-report')->middleware('page.visible');
