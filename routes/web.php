@@ -121,16 +121,17 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::get('/practice/admin', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'index'])->name('practice.admin');
 
     // Persuasion Practice — team-wide history (admin/manager view of every
-    // agent's sessions, scores, and transcripts). View access follows Page
-    // Visibility ('settings.practice-history'); deleting a session is admin-only.
+    // agent's sessions, scores, and transcripts). Both view AND delete access
+    // follow Page Visibility ('settings.practice-history'), checked inside
+    // the controller — any staff granted this page can also delete records.
     Route::get('/practice/admin/history', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'history'])->name('practice.admin.history');
+    Route::delete('/practice/admin/history/{session}', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'destroySession'])->name('practice.admin.history.destroy');
+    Route::post('/practice/admin/history/bulk-delete', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'bulkDestroySession'])->name('practice.admin.history.bulk-destroy');
 
     Route::middleware('admin')->group(function () {
         Route::post('/practice/admin', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'store'])->name('practice.admin.store');
         Route::put('/practice/admin/{scenario}', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'update'])->name('practice.admin.update');
         Route::delete('/practice/admin/{scenario}', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'destroy'])->name('practice.admin.destroy');
-        Route::delete('/practice/admin/history/{session}', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'destroySession'])->name('practice.admin.history.destroy');
-        Route::post('/practice/admin/history/bulk-delete', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'bulkDestroySession'])->name('practice.admin.history.bulk-destroy');
     });
 
     // Settings

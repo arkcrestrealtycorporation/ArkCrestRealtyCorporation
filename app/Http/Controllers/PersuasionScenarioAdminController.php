@@ -44,10 +44,13 @@ class PersuasionScenarioAdminController extends Controller
         return view('practice.admin.history', compact('sessions'));
     }
 
-    /** Admin-only: permanently removes an agent's practice session (soft delete). */
+    /** Permanently removes an agent's practice session (soft delete). Allowed for admins and any staff granted access to the Practice History page. */
     public function destroySession(Request $request, PersuasionSession $session)
     {
-        if (!$request->user()->isAdmin()) abort(403);
+        $user = $request->user();
+        if (!$user->isAdmin() && in_array('settings.practice-history', $user->hidden_pages ?? [])) {
+            abort(403, 'You do not have permission to delete Practice History records.');
+        }
 
         $session->loadMissing(['scenario', 'user']);
 
@@ -80,7 +83,10 @@ class PersuasionScenarioAdminController extends Controller
     /** Bulk-delete multiple practice sessions at once from the checkbox selection on Practice History. */
     public function bulkDestroySession(Request $request)
     {
-        if (!$request->user()->isAdmin()) abort(403);
+        $user = $request->user();
+        if (!$user->isAdmin() && in_array('settings.practice-history', $user->hidden_pages ?? [])) {
+            abort(403, 'You do not have permission to delete Practice History records.');
+        }
 
         $data = $request->validate([
             'ids'   => 'required|array|min:1',

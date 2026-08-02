@@ -78,19 +78,29 @@ class PersuasionPracticeController extends Controller
     /** The chat screen for an in-progress (or finished/read-only) session. */
     public function chat(Request $request, PersuasionSession $session)
     {
-        abort_unless($session->user_id === $request->user()->id || $request->user()->isAdmin(), 403);
+        $user = $request->user();
+
+        // Same permission model as the admin history LIST page: an admin
+        // always has access, and a staff member has access if the
+        // 'settings.practice-history' page hasn't been hidden from them via
+        // Page Visibility. Without this, a staff member could see another
+        // agent's session in the history table but hit a 403 clicking into it.
+        $canViewTeamHistory = $user->isAdmin() || !in_array('settings.practice-history', $user->hidden_pages ?? []);
+
+        abort_unless($session->user_id === $user->id || $canViewTeamHistory, 403);
 
         $session->load(['scenario', 'messages']);
 
-        // Admins viewing another agent's session get a read-only transcript —
+        // Anyone viewing another agent's session (admin or a staff member
+        // with the Practice History permission) gets a read-only transcript —
         // they can't type as the agent or end someone else's session.
-        $isOwner = $session->user_id === $request->user()->id;
+        $isOwner = $session->user_id === $user->id;
 
-        // Separate from $isOwner: an admin viewing their OWN old session is
-        // still an admin, and should be sent back to the admin Practice
-        // History page (not the regular agent-facing one) if the scenario
-        // has since been deleted.
-        $isAdmin = $request->user()->isAdmin();
+        // Separate from $isOwner: used to decide where "Back to Practice
+        // History" sends the viewer if the scenario has since been deleted —
+        // anyone with team-history access should land on the admin/team
+        // Practice History page, not the personal one.
+        $isAdmin = $canViewTeamHistory;
 
         // Scenario relation is null when the scenario was soft-deleted after
         // this session took place — show a friendly notice instead of a 500.

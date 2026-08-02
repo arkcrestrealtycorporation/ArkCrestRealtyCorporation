@@ -147,7 +147,7 @@
             <button type="button" class="pc-end-btn" onclick="ppEndSession()">End Session</button>
             @endif
             @if(!$isOwner)
-            <span class="pc-diff-pill" style="background:#fef3c7;color:#92400e;">Viewing as Admin — read only</span>
+            <span class="pc-diff-pill" style="background:#fef3c7;color:#92400e;">Viewing another agent's session — read only</span>
             @endif
         </div>
     </div>
