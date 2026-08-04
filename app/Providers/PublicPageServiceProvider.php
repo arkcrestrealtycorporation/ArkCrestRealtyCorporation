@@ -20,6 +20,11 @@ class PublicPageServiceProvider extends ServiceProvider
             Route::get('/news-updates', [NewsUpdateController::class, 'index'])
                 ->name('news-updates');
 
+            Route::get(
+                '/news-updates/media/{media}',
+                [NewsUpdateController::class, 'media']
+            )->name('news-updates.media');
+
             Route::middleware(['auth', 'no.cache', 'admin'])
                 ->prefix('admin/news-updates')
                 ->name('admin.news-updates.')

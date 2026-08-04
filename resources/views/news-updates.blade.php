@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>News &amp; Updates | ArkCrest Realty</title>
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<link rel="icon" type="image/png" href="{{ asset('images/ArkCrest_Logo.png') }}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -474,6 +475,219 @@
     .hero-content h1{ font-size:28px; }
     .brand .name{ display:none; }
   }
+
+/* -------- DYNAMIC NEWS POSTS -------- */
+.news-empty-state{
+  padding:70px 32px;
+  border:1px solid var(--parchment-line);
+  background:#fff;
+  text-align:center;
+}
+.news-empty-state h2{
+  margin-top:16px;
+  color:var(--navy-950);
+  font-size:clamp(28px,3.8vw,44px);
+}
+.news-empty-state p{
+  max-width:540px;
+  margin:16px auto 0;
+  color:var(--ink-soft);
+  font-size:14px;
+}
+.news-post-featured{
+  overflow:hidden;
+  margin-bottom:28px;
+  border:1px solid var(--parchment-line);
+  background:#fff;
+}
+.news-featured-media{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:1px;
+  background:var(--parchment-line);
+}
+.news-featured-media figure{
+  min-height:310px;
+  background:var(--navy-950);
+}
+.news-featured-media img,
+.news-featured-media video{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:310px;
+  max-height:520px;
+  object-fit:cover;
+  background:var(--navy-950);
+}
+.news-featured-copy{
+  padding:46px 50px 50px;
+}
+.news-post-date{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:var(--clay);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+}
+.news-post-date::before{
+  content:'';
+  width:24px;
+  height:1px;
+  background:currentColor;
+}
+.news-featured-copy h2{
+  margin-top:16px;
+  color:var(--navy-950);
+  font-size:clamp(30px,4vw,48px);
+}
+.news-featured-description{
+  margin-top:20px;
+  color:var(--ink-soft);
+  font-size:15px;
+  line-height:1.8;
+}
+.news-post-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:22px;
+}
+.news-post-card{
+  display:flex;
+  overflow:hidden;
+  flex-direction:column;
+  border:1px solid var(--parchment-line);
+  background:#fff;
+}
+.news-post-media{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:1px;
+  background:var(--parchment-line);
+}
+.news-post-media figure{
+  min-height:210px;
+  background:var(--navy-950);
+}
+.news-post-media img,
+.news-post-media video{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:210px;
+  max-height:340px;
+  object-fit:cover;
+  background:var(--navy-950);
+}
+.news-post-card-copy{
+  display:flex;
+  flex:1;
+  flex-direction:column;
+  padding:30px;
+}
+.news-post-card-copy h2{
+  margin-top:13px;
+  color:var(--navy-950);
+  font-size:25px;
+}
+.news-post-excerpt{
+  margin-top:14px;
+  color:var(--ink-soft);
+  font-size:13px;
+  line-height:1.7;
+}
+.news-post-details{
+  margin-top:18px;
+  border-top:1px solid var(--parchment-line);
+}
+.news-post-details summary{
+  padding-top:15px;
+  color:var(--clay);
+  cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:1px;
+  list-style:none;
+  text-transform:uppercase;
+}
+.news-post-details summary::-webkit-details-marker{
+  display:none;
+}
+.news-post-details-content{
+  padding-top:14px;
+  color:var(--ink-soft);
+  font-size:13px;
+  line-height:1.75;
+}
+.news-page-pagination{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:15px;
+  margin-top:42px;
+  color:var(--ink-soft);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+.news-page-pagination a,
+.news-page-pagination span{
+  padding:9px 13px;
+  border:1px solid var(--parchment-line);
+}
+.news-page-pagination a{
+  color:var(--navy-900);
+  background:#fff;
+}
+.news-page-pagination .disabled{
+  color:#a1a9b1;
+  background:#f7f7f5;
+}
+.news-media-placeholder{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:250px;
+  background:
+    linear-gradient(135deg,rgba(156,128,84,.16),rgba(187,90,42,.10)),
+    var(--navy-950);
+  color:rgba(255,255,255,.6);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+}
+@media(max-width:900px){
+  .news-post-grid{
+    grid-template-columns:1fr;
+  }
+  .news-featured-copy{
+    padding:36px 30px 40px;
+  }
+}
+@media(max-width:600px){
+  .news-featured-media,
+  .news-post-media{
+    grid-template-columns:1fr;
+  }
+  .news-featured-media figure,
+  .news-featured-media img,
+  .news-featured-media video{
+    min-height:230px;
+  }
+  .news-post-card-copy{
+    padding:25px 22px;
+  }
+  .news-page-pagination{
+    gap:8px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -622,46 +836,119 @@
         </span>
         <h1>News &amp; <em>Updates</em></h1>
         <p>
-          This dedicated page will contain company announcements, property highlights,
-          community activities, and other official updates from ArkCrest Realty.
+          Official ArkCrest Realty announcements, property highlights,
+          recognitions, activities, and community updates.
         </p>
       </header>
 
-      <section class="news-feature reveal">
-        <div class="news-feature-copy">
-          <span class="eyebrow"><span class="rule"></span>ArkCrest Bulletin</span>
-          <h2>Updates are <em>coming soon.</em></h2>
-          <p>
-            The News &amp; Updates feature is ready for future content. Published announcements
-            and property-related updates can be added here without changing the homepage.
-          </p>
-        </div>
-        <div class="news-feature-side">
-          <span class="news-coming-soon">Coming Soon</span>
-        </div>
-      </section>
+      @if($posts->count() === 0)
+        <section class="news-empty-state reveal">
+          <span class="eyebrow">
+            <span class="rule"></span>
+            ArkCrest Bulletin
+            <span class="rule"></span>
+          </span>
+          <h2>No posts yet.</h2>
+          <p>Published News &amp; Updates posts will appear here.</p>
+        </section>
+      @else
+        @php
+          $featuredPost = $posts->currentPage() === 1 ? $posts->first() : null;
+          $gridPosts = $featuredPost ? $posts->getCollection()->slice(1) : $posts->getCollection();
+        @endphp
 
-      <section class="news-categories reveal-stagger" aria-label="Upcoming news categories">
-        <article class="news-category">
-          <span class="news-category-number">01</span>
-          <h3>Company Announcements</h3>
-          <p>Official notices, milestones, events, and important updates from ArkCrest Realty.</p>
-        </article>
+        @if($featuredPost)
+          <article class="news-post-featured reveal" id="news-post-{{ $featuredPost->id }}">
+            @if($featuredPost->media->isNotEmpty())
+              <div class="news-featured-media">
+                @foreach($featuredPost->media as $media)
+                  <figure>
+                    @if($media->media_type === 'image')
+                      <img src="{{ $media->url }}" alt="{{ $featuredPost->title }}" loading="lazy">
+                    @else
+                      <video src="{{ $media->url }}" controls preload="metadata"></video>
+                    @endif
+                  </figure>
+                @endforeach
+              </div>
+            @else
+              <div class="news-media-placeholder">ArkCrest Realty Update</div>
+            @endif
 
-        <article class="news-category">
-          <span class="news-category-number">02</span>
-          <h3>Property Highlights</h3>
-          <p>Featured properties, availability updates, project details, and investment opportunities.</p>
-        </article>
+            <div class="news-featured-copy">
+              <span class="news-post-date">
+                Posted {{ $featuredPost->published_at->format('F d, Y \a\t g:i A') }}
+              </span>
+              <h2>{{ $featuredPost->title }}</h2>
+              <div class="news-featured-description">
+                {!! nl2br(e($featuredPost->description)) !!}
+              </div>
+            </div>
+          </article>
+        @endif
 
-        <article class="news-category">
-          <span class="news-category-number">03</span>
-          <h3>Community Updates</h3>
-          <p>Team activities, recognitions, partnerships, and community-related developments.</p>
-        </article>
-      </section>
+        @if($gridPosts->isNotEmpty())
+          <section class="news-post-grid reveal-stagger" aria-label="Published News and Updates">
+            @foreach($gridPosts as $post)
+              <article class="news-post-card" id="news-post-{{ $post->id }}">
+                @if($post->media->isNotEmpty())
+                  <div class="news-post-media">
+                    @foreach($post->media as $media)
+                      <figure>
+                        @if($media->media_type === 'image')
+                          <img src="{{ $media->url }}" alt="{{ $post->title }}" loading="lazy">
+                        @else
+                          <video src="{{ $media->url }}" controls preload="metadata"></video>
+                        @endif
+                      </figure>
+                    @endforeach
+                  </div>
+                @else
+                  <div class="news-media-placeholder">ArkCrest Realty Update</div>
+                @endif
+
+                <div class="news-post-card-copy">
+                  <span class="news-post-date">Posted {{ $post->published_at->format('F d, Y \a\t g:i A') }}</span>
+                  <h2>{{ $post->title }}</h2>
+                  <p class="news-post-excerpt">
+                    {{ \Illuminate\Support\Str::limit($post->description, 240) }}
+                  </p>
+
+                  @if(\Illuminate\Support\Str::length($post->description) > 240)
+                    <details class="news-post-details">
+                      <summary>Read Full Update</summary>
+                      <div class="news-post-details-content">
+                        {!! nl2br(e($post->description)) !!}
+                      </div>
+                    </details>
+                  @endif
+                </div>
+              </article>
+            @endforeach
+          </section>
+        @endif
+
+        @if($posts->hasPages())
+          <nav class="news-page-pagination" aria-label="News and Updates pages">
+            @if($posts->onFirstPage())
+              <span class="disabled">Previous</span>
+            @else
+              <a href="{{ $posts->previousPageUrl() }}">Previous</a>
+            @endif
+
+            <span>Page {{ $posts->currentPage() }} of {{ $posts->lastPage() }}</span>
+
+            @if($posts->hasMorePages())
+              <a href="{{ $posts->nextPageUrl() }}">Next</a>
+            @else
+              <span class="disabled">Next</span>
+            @endif
+          </nav>
+        @endif
+      @endif
     </div>
   </main>
+
 
 
   <!-- CTA AND FOOTER -->
