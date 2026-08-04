@@ -209,15 +209,25 @@ class NewsPostController extends Controller
     private function notifyAllUsersAboutPublishedPost(NewsPost $post): void
     {
         try {
+            // Use the authenticated account that actually performed the publish action.
+            // This is more accurate than relying on the post's creator/updater relationship.
+            $publisherName = trim((string) (auth()->user()?->name ?? ''));
+
+            if ($publisherName === '') {
+                $publisherName = 'An ArkCrest account';
+            }
+
+            $notificationTitle = $publisherName . ' just posted a new update';
+
             User::query()
                 ->select('id')
                 ->orderBy('id')
-                ->chunkById(200, function ($users) use ($post): void {
+                ->chunkById(200, function ($users) use ($post, $notificationTitle): void {
                     foreach ($users as $user) {
                         SystemNotification::notify(
                             $user->id,
                             'news_update_published',
-                            'New News & Updates Post',
+                            $notificationTitle,
                             $post->title,
                             $post->id
                         );
@@ -278,7 +288,8 @@ class NewsPostController extends Controller
             $path = Storage::disk($disk)->putFileAs(
                 $directory,
                 $file,
-                $filename
+                $filename,
+                ['visibility' => 'public']
             );
 
             if (!$path) {
