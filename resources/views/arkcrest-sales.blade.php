@@ -128,7 +128,7 @@
         <div style="padding:40px;text-align:center;color:#94a3b8;font-size:14px;">No released commissions for this period.</div>
         @else
         <div class="arc-table-scroll" style="overflow-x:auto;">
-        <table class="arc-table js-sort-table">
+        <table class="arc-table js-sort-table js-sort-dropdown">
             <thead>
                 <tr>
                     <th>#</th>
@@ -139,6 +139,7 @@
                     <th>Units</th>
                     <th>Net TCP</th>
                     <th>Commission Terms</th>
+                    <th>DP Stage</th>
                     <th>ARC % </th>
                     <th>ARC Commission</th>
                 </tr>
@@ -152,10 +153,14 @@
                 data-project="{{ $r->project_name ?? '' }}"
                 data-agent="{{ $r->agent_name ?? '' }}"
                 data-units="{{ $r->number_of_units ?? 0 }}"
+                data-source-id="{{ $r->source_client_record_id ?: 'standalone-'.$r->id }}"
                 data-net-tcp="{{ $r->net_tcp ?? 0 }}"
                 data-commission-terms="{{ $r->payment_type ?? '' }}"
-                data-arc-percent="{{ $rate ? $rate->arkcrest_percent : '' }}"
-                data-arc-commission="{{ $rate ? $rate->arkcrest_commission : '' }}">
+                data-dp-stage="{{ $r->commission_stage ? $r->commission_stage.'/'.($r->commission_stage_total ?: 1) : '' }}"
+                data-arc-percent="{{ $rate ? \App\Support\ExactFinancialMath::normalizePercentage($rate->arkcrest_percent) : '' }}"
+                data-arc-commission="{{ $rate ? $rate->arkcrest_commission : '' }}"
+                data-date-added="{{ $r->created_at?->timestamp }}"
+                data-date-modified="{{ $r->updated_at?->timestamp }}">
                 <td style="color:#cbd5e1;font-weight:600;">{{ $i + 1 }}</td>
                 <td style="white-space:nowrap;color:#059669;font-weight:600;">{{ $r->date_released ? $r->date_released->format('M d, Y') : '—' }}</td>
                 <td style="font-weight:600;color:#0f172a;">{{ $r->client_name ?? '—' }}</td>
@@ -172,11 +177,14 @@
                         <option value="3 Months Commission" {{ ($r->payment_type ?? '') == '3 Months Commission' ? 'selected' : '' }}>3 Months Commission</option>
                     </select>
                 </td>
+                <td style="font-weight:700;color:#1e4575;white-space:nowrap;">
+                    {{ $r->commission_stage ? $r->commission_stage.'/'.($r->commission_stage_total ?: 1) : '—' }}
+                </td>
                 <td>
                     <div style="display:flex;align-items:center;gap:6px;">
                         <input type="number" class="arc-pct-input" id="pct-{{ $r->id }}"
-                            value="{{ $rate ? $rate->arkcrest_percent : '' }}"
-                            placeholder="0.00" step="0.01" min="0" max="100">
+                            value="{{ $rate ? \App\Support\ExactFinancialMath::normalizePercentage($rate->arkcrest_percent) : '' }}"
+                            placeholder="0.00" step="any" min="0" max="100">
                         <span style="font-size:12px;color:#94a3b8;">%</span>
                         <button class="arc-save-btn" onclick="saveRate({{ $r->id }}, {{ $r->net_tcp ?? 0 }})">Save</button>
                     </div>
@@ -189,7 +197,7 @@
             </tbody>
             <tfoot>
                 <tr style="background:#f8fafc;border-top:2px solid #e2e8f0;">
-                    <td colspan="9" style="padding:12px 14px;font-size:13px;font-weight:700;color:#0f172a;text-align:right;">
+                    <td colspan="10" style="padding:12px 14px;font-size:13px;font-weight:700;color:#0f172a;text-align:right;">
                         Total Units Sold: <span id="arcUnitsFooterTotal" style="color:#A37929;">{{ number_format($totalUnits) }}</span>
                         &nbsp;&nbsp;·&nbsp;&nbsp; ARC Gross Sales Total:
                     </td>
@@ -213,7 +221,7 @@ arcTotals[{{ $r->id }}] = {{ $rate ? $rate->arkcrest_commission : 0 }};
 function onTermsChange(id, netTcp) {
     const terms = document.getElementById('terms-' + id).value;
     if (!terms) return;
-    const pct = parseFloat(document.getElementById('pct-' + id).value) || 0;
+    const pct = (document.getElementById('pct-' + id).value || '0').trim();
     fetch('/api/arkcrest-sales/' + id + '/rate', {
         method: 'POST',
         headers: {'Content-Type':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content},
@@ -235,7 +243,7 @@ function onTermsChange(id, netTcp) {
 }
 
 function saveRate(id, netTcp) {
-    const pct   = parseFloat(document.getElementById('pct-' + id).value) || 0;
+    const pct   = (document.getElementById('pct-' + id).value || '0').trim();
     const terms = document.getElementById('terms-' + id)?.value || '';
     fetch('/api/arkcrest-sales/' + id + '/rate', {
         method: 'POST',
@@ -277,6 +285,7 @@ var FILTERABLE_COLUMNS = [
     { key: 'net-tcp',            label: 'Net TCP',            type: 'numrange', data: 'netTcp' },
     { key: 'commission-terms',  label: 'Commission Terms',   type: 'select', data: 'commissionTerms',
         options: ['Full Payment', '2 Months Commission', '3 Months Commission'] },
+    { key: 'dp-stage',          label: 'DP Stage',            type: 'text',   data: 'dpStage' },
     { key: 'arc-percent',       label: 'ARC %',               type: 'number', data: 'arcPercent' },
     { key: 'arc-commission',    label: 'ARC Commission',     type: 'numrange', data: 'arcCommission' }
 ];
@@ -522,9 +531,14 @@ function applyArcFilters() {
     });
 
     var visibleUnits = 0;
+    var seenSourceIds = new Set();
     document.querySelectorAll('.arc-table tbody tr').forEach(function (row) {
         if (row.style.display !== 'none') {
-            visibleUnits += parseInt(row.dataset.units || 0, 10);
+            var sourceId = row.dataset.sourceId;
+            if (!seenSourceIds.has(sourceId)) {
+                seenSourceIds.add(sourceId);
+                visibleUnits += parseInt(row.dataset.units || 0, 10);
+            }
         }
     });
     var unitsEl = document.getElementById('arcUnitsFooterTotal');

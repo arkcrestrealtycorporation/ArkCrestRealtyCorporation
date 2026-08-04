@@ -61,10 +61,12 @@ class CommissionRequestSales extends Model
         'lot_area' => 'decimal:4',
         'price_sqm' => 'decimal:2',
         'tcp' => 'decimal:2',
-        'discount' => 'decimal:2',
+        // Store financial percentages as exact decimals. A floating-point
+        // cast can introduce binary rounding errors before the value reaches MySQL.
+        'discount' => 'decimal:30',
         'discount_value' => 'decimal:2',
         'net_tcp' => 'decimal:2',
-        'commission_percent' => 'decimal:4',
+        'commission_percent' => 'decimal:30',
         'commission' => 'decimal:2',
         'number_of_units' => 'integer',
         'downpayment_stage' => 'integer',

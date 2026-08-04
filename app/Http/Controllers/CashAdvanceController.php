@@ -4,15 +4,17 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\CashAdvance;
+use App\Models\CashAdvanceRepayment;
 use App\Models\ActivityLog;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class CashAdvanceController extends Controller
 {
     public function index()
     {
-        $records = CashAdvance::with(['employee', 'reviewer'])
+        $records = CashAdvance::with(['employee', 'reviewer', 'repayments'])
             ->orderBy('id', 'desc')
             ->get();
 
@@ -22,51 +24,112 @@ class CashAdvanceController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'employee_id', 'position']);
 
+        // Departments for the new "Department" field on the request form,
+        // sourced the same way as the Departmental Expenses module.
+        $departments = \App\Models\Department::orderBy('name')->pluck('name');
+
         $totalRecords = $records->count();
         $pendingCount = $records->where('status', 'PENDING')->count();
         // Rejected requests no longer count toward money committed.
         $totalRequested = $records->where('status', '!=', 'REJECTED')->sum('amount');
 
-        return view('cash-advance', compact('records', 'employees', 'totalRecords', 'pendingCount', 'totalRequested'));
+        // Total Released: only Approved/Completed requests ever had funds
+        // actually handed out (Pending hasn't been released, Rejected never
+        // will be).
+        $totalReleased = $records->whereIn('status', ['APPROVED', 'COMPLETED'])->sum('amount');
+
+        // Total Returned: sum of every repayment that's actually been paid.
+        // A repayment row only exists once a term is paid, so summing all
+        // of them across all records gives the total amount returned so far.
+        $totalReturned = $records->flatMap(function ($record) {
+            return $record->repayments;
+        })->sum('amount');
+
+        // Total Remaining: what's left to be paid back out of what's been
+        // released so far.
+        $totalRemaining = $totalReleased - $totalReturned;
+
+        return view('cash-advance', compact('records', 'employees', 'departments', 'totalRecords', 'pendingCount', 'totalRequested', 'totalReleased', 'totalRemaining', 'totalReturned'));
     }
 
     public function store(Request $request)
     {
         try {
             $validated = $request->validate([
-                'employee_id'     => 'required|integer|exists:users,id',
-                'amount'          => 'required|numeric|gt:0',
-                'reason'          => 'required|string|max:500',
-                'repayment_date'  => 'required|date|after_or_equal:' . now()->toDateString(),
+                'employee_id'        => 'nullable|integer|exists:users,id',
+                'employee_name'      => 'required_without:employee_id|nullable|string|max:150',
+                'department'         => 'required|string|max:150',
+                'amount'             => 'required|numeric|gt:0',
+                'purpose'            => 'required|string|max:500',
+                'date_requested'     => 'required|date',
+                'date_needed'        => 'required|date|after_or_equal:date_requested',
+                'repayment_type'     => 'required|in:INSTALLMENT,OTHERS',
+                'installment_terms'  => [
+                    'required',
+                    'integer',
+                    'min:1',
+                    function ($attribute, $value, $fail) use ($request) {
+                        if ($request->input('repayment_type') === 'INSTALLMENT' && $value > CashAdvance::MAX_INSTALLMENT_TERMS) {
+                            $fail('A maximum of ' . CashAdvance::MAX_INSTALLMENT_TERMS . ' terms is allowed for Installment.');
+                        }
+                    },
+                ],
             ], [
-                'employee_id.required'    => 'Please select an employee.',
                 'employee_id.exists'      => 'Selected employee could not be found.',
+                'employee_name.required_without' => 'Please enter or select an employee.',
+                'department.required'     => 'Please select a department.',
                 'amount.required'         => 'Please enter an amount.',
                 'amount.gt'               => 'Amount must be greater than ₱0.',
-                'reason.required'         => 'Please enter a reason.',
-                'repayment_date.required' => 'Please select a repayment date.',
-                'repayment_date.after_or_equal' => 'Repayment date cannot be earlier than today.',
+                'purpose.required'        => 'Please enter a purpose.',
+                'date_requested.required' => 'Please select the date requested.',
+                'date_needed.required'    => 'Please select the date needed.',
+                'date_needed.after_or_equal' => 'Date needed cannot be earlier than the date requested.',
+                'repayment_type.required' => 'Please select a repayment type.',
+                'repayment_type.in'       => 'Repayment type must be either Installment or Others.',
+                'installment_terms.required' => 'Please enter the number of terms.',
+                'installment_terms.integer'  => 'Number of terms must be a whole number.',
+                'installment_terms.min'      => 'Number of terms must be at least 1.',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['success' => false, 'message' => $e->validator->errors()->first()], 422);
         }
 
-        $employee = User::find($validated['employee_id']);
-        if (!$employee) {
-            return response()->json(['success' => false, 'message' => 'Selected employee could not be found.'], 422);
+        // A selected employee (from the Users table) is still resolved and
+        // used exactly as before. If none was selected, fall back to
+        // whatever name was typed directly into the field — the request is
+        // no longer required to match an existing user.
+        $employee = null;
+        if (!empty($validated['employee_id'])) {
+            $employee = User::find($validated['employee_id']);
+            if (!$employee) {
+                return response()->json(['success' => false, 'message' => 'Selected employee could not be found.'], 422);
+            }
         }
 
+        $employeeName = $employee ? $employee->name : trim($validated['employee_name']);
+
+        // Both repayment types now store a term count — Installment picks
+        // from a capped dropdown, Others types in any number of terms.
         $record = CashAdvance::create([
-            'control_number'  => CashAdvance::nextControlNumber(),
-            'employee_id'     => $employee->id,
-            'employee_name'   => $employee->name,
-            'amount'          => $validated['amount'],
-            'reason'          => $validated['reason'],
-            'repayment_date'  => $validated['repayment_date'],
-            'status'          => 'PENDING',
+            'control_number'     => CashAdvance::nextControlNumber(),
+            'employee_id'        => $employee?->id,
+            'employee_name'      => $employeeName,
+            'department'         => $validated['department'],
+            'amount'             => $validated['amount'],
+            'purpose'            => $validated['purpose'],
+            'date_requested'     => $validated['date_requested'],
+            'date_needed'        => $validated['date_needed'],
+            'repayment_type'     => $validated['repayment_type'],
+            'installment_terms'  => $validated['installment_terms'],
+            'status'             => 'PENDING',
         ]);
 
-        ActivityLog::log('create', 'Cash Advance', "Submitted cash advance {$record->control_number} for {$employee->name} (₱" . number_format($validated['amount'], 2) . ")");
+        // No repayment rows are created here anymore. The term schedule
+        // (1..total_terms) is derived on the fly from installment_terms /
+        // repayment_type — a row in cash_advance_repayments is only ever
+        // written once a term is actually paid (see markRepaymentPaid()).
+
+        ActivityLog::log('create', 'Cash Advance', "Submitted cash advance {$record->control_number} for {$employeeName} (₱" . number_format($validated['amount'], 2) . ")");
 
         return response()->json([
             'success' => true,
@@ -121,6 +184,205 @@ class CashAdvanceController extends Controller
         ]);
     }
 
+    /**
+     * Full record detail for the View (read-only, printable) modal.
+     */
+    public function show($id)
+    {
+        $record = CashAdvance::with(['employee', 'reviewer', 'repayments'])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data'    => array_merge($record->toArray(), [
+                'payment_stage_label' => $record->payment_stage_label,
+                'display_status'      => $record->display_status,
+                'amount_per_term'     => $record->amount_per_term,
+            ]),
+        ]);
+    }
+
+    /**
+     * Repayment terms for the Edit (repayment-tracking) modal.
+     */
+    public function repayments($id)
+    {
+        $record = CashAdvance::with('repayments')->findOrFail($id);
+
+        // Default amount suggested per term: the amount split evenly across
+        // total_terms, for both INSTALLMENT and OTHERS alike. This is only
+        // ever a starting suggestion — the actual amount recorded is
+        // whatever is submitted with the payment.
+        $defaultTermAmount = $record->amount_per_term;
+
+        $paidByTerm = $record->repayments->keyBy('term_number');
+
+        // The schedule (1..total_terms) is generated on the fly. A term
+        // only has a row in cash_advance_repayments once it has actually
+        // been paid — unpaid terms are synthesized here so the modal still
+        // has something to render for each term.
+        $terms = collect(range(1, $record->total_terms))->map(function ($termNumber) use ($paidByTerm, $defaultTermAmount) {
+            $paid = $paidByTerm->get($termNumber);
+
+            if ($paid) {
+                return [
+                    'id'          => $paid->id,
+                    'term_number' => $termNumber,
+                    'status'      => $paid->status,
+                    'amount'      => $paid->amount !== null ? (float) $paid->amount : $defaultTermAmount,
+                    'date_paid'   => optional($paid->date_paid)->format('Y-m-d'),
+                ];
+            }
+
+            return [
+                'id'          => null,
+                'term_number' => $termNumber,
+                'status'      => 'PENDING',
+                'amount'      => $defaultTermAmount,
+                'date_paid'   => null,
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'repayment_type'      => $record->repayment_type,
+                'amount'              => $record->amount,
+                'amount_per_term'     => $record->amount_per_term,
+                'repayment_date'      => optional($record->repayment_date)->format('Y-m-d'),
+                'status'              => $record->status,
+                'payment_stage_label' => $record->payment_stage_label,
+                'terms'               => $terms,
+            ],
+        ]);
+    }
+
+    /**
+     * Recompute the Payment Stage and, once every term is settled,
+     * automatically flip the record's Status to Completed.
+     */
+    private function syncPaymentProgress(CashAdvance $record): CashAdvance
+    {
+        $record->refresh();
+
+        $totalTerms = $record->total_terms;
+        $paidTerms  = $record->paid_terms;
+
+        if ($record->status === 'APPROVED' && $totalTerms > 0 && $paidTerms >= $totalTerms) {
+            $record->update(['status' => 'COMPLETED']);
+            $record->refresh();
+        }
+
+        return $record;
+    }
+
+    /**
+     * Record a payment for a single term. Since terms are no longer
+     * pre-created, $termNumber identifies the term (1..total_terms) rather
+     * than an existing repayment row — the row is created here, the first
+     * and only time it comes into existence.
+     */
+    public function markRepaymentPaid(Request $request, $id, $termNumber)
+    {
+        $validated = $request->validate([
+            'date_paid' => 'required|date',
+            'amount'    => 'required|numeric|gt:0',
+        ], [
+            'date_paid.required' => 'Please enter the date paid.',
+            'amount.required'    => 'Please enter the amount paid.',
+            'amount.gt'          => 'Amount must be greater than ₱0.',
+        ]);
+
+        return DB::transaction(function () use ($validated, $id, $termNumber) {
+            $record = CashAdvance::lockForUpdate()->findOrFail($id);
+
+            if ($record->status !== 'APPROVED' && $record->status !== 'COMPLETED') {
+                return response()->json(['success' => false, 'message' => 'Only an approved cash advance can have repayments recorded.'], 422);
+            }
+
+            $termNumber = (int) $termNumber;
+            if ($termNumber < 1 || $termNumber > $record->total_terms) {
+                return response()->json(['success' => false, 'message' => 'Invalid term number.'], 422);
+            }
+
+            $existing = $record->repayments()->where('term_number', $termNumber)->lockForUpdate()->first();
+            if ($existing && $existing->status === 'PAID') {
+                return response()->json(['success' => false, 'message' => 'This term is already marked as paid.'], 422);
+            }
+
+            $term = $record->repayments()->updateOrCreate(
+                ['term_number' => $termNumber],
+                [
+                    'status'    => 'PAID',
+                    'amount'    => $validated['amount'],
+                    'date_paid' => $validated['date_paid'],
+                ]
+            );
+
+            $record = $this->syncPaymentProgress($record);
+
+            ActivityLog::log('update', 'Cash Advance', "Recorded repayment term {$term->term_number} for {$record->control_number} ({$record->employee_name})");
+
+            return response()->json([
+                'success'             => true,
+                'message'             => $record->status === 'COMPLETED'
+                    ? "All repayment terms are settled — {$record->control_number} is now Completed."
+                    : 'Term marked as paid.',
+                'status'              => $record->status,
+                'display_status'      => $record->display_status,
+                'payment_stage_label' => $record->payment_stage_label,
+                'term'                => [
+                    'id'        => $term->id,
+                    'status'    => $term->status,
+                    'amount'    => (float) $term->amount,
+                    'date_paid' => optional($term->date_paid)->format('Y-m-d'),
+                ],
+            ]);
+        });
+    }
+
+    /**
+     * Undo a payment. Since a repayment row now only ever exists because a
+     * payment was recorded, undoing it deletes the row entirely rather than
+     * resetting it to PENDING, keeping the table free of un-paid entries.
+     */
+    public function unmarkRepaymentPaid($id, $termNumber)
+    {
+        abort_unless(auth()->check() && auth()->user()->isAdmin(), 403);
+
+        return DB::transaction(function () use ($id, $termNumber) {
+            $record = CashAdvance::lockForUpdate()->findOrFail($id);
+            $term = $record->repayments()->where('term_number', (int) $termNumber)->lockForUpdate()->first();
+
+            if (!$term) {
+                return response()->json(['success' => false, 'message' => 'This term has not been paid yet.'], 422);
+            }
+
+            $term->delete();
+
+            // A record that was auto-completed reverts to Approved once a
+            // term is unmarked, since it's no longer fully settled.
+            if ($record->status === 'COMPLETED') {
+                $record->update(['status' => 'APPROVED']);
+                $record->refresh();
+            }
+            $record->unsetRelation('repayments');
+
+            return response()->json([
+                'success'             => true,
+                'message'             => 'Payment removed; term reverted to pending.',
+                'status'              => $record->status,
+                'display_status'      => $record->display_status,
+                'payment_stage_label' => $record->payment_stage_label,
+                'term'                => [
+                    'id'          => null,
+                    'term_number' => (int) $termNumber,
+                    'status'      => 'PENDING',
+                    'date_paid'   => null,
+                ],
+            ]);
+        });
+    }
+
     public function destroy($id)
     {
         $record = CashAdvance::findOrFail($id);
@@ -141,5 +403,28 @@ class CashAdvanceController extends Controller
             'success' => true,
             'message' => "{$record->control_number} was deleted.",
         ]);
+        
     }
+    public function destroyRepayment($repaymentId)
+{
+    $term = CashAdvanceRepayment::findOrFail($repaymentId);
+    $record = $term->cashAdvance;
+
+    ActivityLog::log('delete', 'Cash Advance Repayment', "Deleted repayment term {$term->term_number} for " . ($record->control_number ?? '#' . $term->cash_advance_id) . ($record ? " ({$record->employee_name})" : ''), [
+    'model_class'     => CashAdvanceRepayment::class,
+    'record_id'       => $term->id,
+    'cash_advance_id' => $term->cash_advance_id,
+    'term_number'     => $term->term_number,
+    'status'          => $term->status,
+    'amount'          => $term->amount,
+    'date_paid'       => optional($term->date_paid)->format('Y-m-d'),
+]);
+
+    $term->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Repayment record was deleted.',
+    ]);
+}
 }

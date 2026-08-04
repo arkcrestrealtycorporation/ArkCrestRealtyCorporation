@@ -57,6 +57,204 @@
             max-width: calc(100vw - 20px) !important;
         }
     }
+
+    .header-brand-link {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        color: inherit;
+        text-decoration: none;
+        min-width: 0;
+    }
+    .header-brand-link:hover .company-name {
+        filter: brightness(1.14);
+    }
+    .training-header-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 13px;
+        margin-right: 6px;
+        border: 1px solid rgba(240,201,106,.62);
+        border-radius: 8px;
+        background: rgba(240,201,106,.10);
+        color: #f7df9a;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: .2s ease;
+    }
+    .training-header-btn svg {
+        width: 17px;
+        height: 17px;
+        flex-shrink: 0;
+    }
+    .training-header-btn:hover {
+        color: #0a1628;
+        background: linear-gradient(135deg,#f7df9a,#d6a944);
+        border-color: #f7df9a;
+        transform: translateY(-1px);
+    }
+
+    /* Header user account dropdown */
+    .ark-account-menu {
+        position: relative;
+        flex-shrink: 0;
+    }
+    .ark-account-trigger {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 210px;
+        padding: 6px 10px 6px 7px;
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 10px;
+        background: rgba(4,16,31,.28);
+        color: #fff;
+        cursor: pointer;
+        font-family: inherit;
+        text-align: left;
+        transition: background .2s ease, border-color .2s ease;
+    }
+    .ark-account-trigger:hover,
+    .ark-account-menu.open .ark-account-trigger {
+        background: rgba(4,16,31,.48);
+        border-color: rgba(240,201,106,.42);
+    }
+    .ark-account-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg,#f7d56f,#d6a944);
+        color: #10223a;
+        font-size: 15px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+    .ark-account-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .ark-account-copy {
+        min-width: 0;
+        flex: 1;
+    }
+    .ark-account-name,
+    .ark-account-email {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .ark-account-name {
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 1.25;
+    }
+    .ark-account-email {
+        margin-top: 2px;
+        color: rgba(255,255,255,.62);
+        font-size: 10px;
+        line-height: 1.2;
+    }
+    .ark-account-chevron {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        transition: transform .2s ease;
+    }
+    .ark-account-menu.open .ark-account-chevron {
+        transform: rotate(180deg);
+    }
+    .ark-account-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        width: 260px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 18px 45px rgba(15,23,42,.22);
+        z-index: 10050;
+    }
+    .ark-account-menu.open .ark-account-dropdown {
+        display: block;
+    }
+    .ark-account-dropdown-head {
+        padding: 14px 16px;
+        border-bottom: 1px solid #eef2f7;
+        background: #f8fafc;
+    }
+    .ark-account-dropdown-head strong,
+    .ark-account-dropdown-head span {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .ark-account-dropdown-head strong {
+        color: #0f2745;
+        font-size: 13px;
+    }
+    .ark-account-dropdown-head span {
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 11px;
+    }
+    .ark-account-action {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 13px 16px;
+        color: #163a63;
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: background .18s ease, color .18s ease;
+    }
+    .ark-account-action:hover {
+        color: #9a6e12;
+        background: #fff8e7;
+    }
+    .ark-account-action svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 760px) {
+        .header-brand-link { gap: 8px; }
+        .training-header-btn { width: 38px; height: 38px; padding: 0; justify-content: center; margin-right: 2px; }
+        .training-header-btn span { display: none; }
+        .ark-account-trigger {
+            min-width: 0;
+            width: 42px;
+            height: 42px;
+            padding: 2px;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .ark-account-avatar { width: 36px; height: 36px; }
+        .ark-account-copy, .ark-account-chevron { display: none; }
+        .ark-account-dropdown {
+            position: fixed;
+            top: 66px;
+            right: 10px;
+            width: min(280px, calc(100vw - 20px));
+        }
+    }
     </style>
 </head>
 <body>
@@ -71,14 +269,23 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                          </svg>
                     </button>
-                <div class="logo">
-                    <img src="{{ asset('images/ArkCrest_Logo.png') }}" alt="ARCKREST Logo" class="logo-img">
-    </div>
-    <h1 class="company-name">ARCKREST REALTY CORPORATION</h1>
+                <a href="{{ route('landing') }}" class="header-brand-link" title="Go to ArkCrest landing page">
+                    <div class="logo">
+                        <img src="{{ asset('images/ArkCrest_Logo.png') }}" alt="ARCKREST Logo" class="logo-img">
+                    </div>
+                    <h1 class="company-name">ARCKREST REALTY CORPORATION</h1>
+                </a>
 </div>
 
                 <!-- Right Side: Search and Notification -->
                 <div class="header-right">
+                    <a href="{{ route('agent-training') }}" class="training-header-btn" title="Open ArkCrest Agent Training">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5s3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18s-3.332.477-4.5 1.253"/>
+                        </svg>
+                        <span>Agent Training</span>
+                    </a>
+
                     <!-- Search -->
                     <div class="search-container">
                         <button id="searchToggle" class="hdr-btn" title="Search">
@@ -230,6 +437,46 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- User account menu -->
+                    <div class="ark-account-menu" data-account-menu>
+                        <button
+                            type="button"
+                            class="ark-account-trigger"
+                            data-account-trigger
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                            title="Open profile menu"
+                        >
+                            <span class="ark-account-avatar">
+                                @if(auth()->user()->avatar_url)
+                                    <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->name }} profile picture">
+                                @else
+                                    {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
+                                @endif
+                            </span>
+                            <span class="ark-account-copy">
+                                <span class="ark-account-name">{{ auth()->user()->name ?? 'Staff' }}</span>
+                                <span class="ark-account-email">{{ auth()->user()->email ?? '' }}</span>
+                            </span>
+                            <svg class="ark-account-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+
+                        <div class="ark-account-dropdown" data-account-dropdown>
+                            <div class="ark-account-dropdown-head">
+                                <strong>{{ auth()->user()->name ?? 'Staff' }}</strong>
+                                <span>{{ auth()->user()->email ?? '' }}</span>
+                            </div>
+                            <a href="{{ route('settings', ['panel' => 'profile']) }}" class="ark-account-action">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6.768-6.768a2.5 2.5 0 113.536 3.536L12.536 14.536A4 4 0 019.707 15.7L7 16l.3-2.707A4 4 0 018.464 10.464L9 11zm-2 9.5V19h4.5"/>
+                                </svg>
+                                Edit Profile Settings
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -269,24 +516,33 @@
                 $hiddenPages = [];
                 if (auth()->check() && !auth()->user()->isAdmin()) {
                     $allHidden = array_values(auth()->user()->hidden_pages ?? []);
-                    $hiddenPages = array_filter($allHidden, fn($k) => strpos($k, '.') === false);
+                    $hiddenPages = $allHidden;
                 }
                 $canSee = fn($key) => !in_array($key, $hiddenPages);
                 @endphp
                 <ul class="nav-list">
                     <!-- Finance with Dropdown -->
                     @php
-                    $financeChildren = array_filter(['departments','summary-report','commission-monitoring','cash-advance'], fn($k) => $canSee($k));
+                    $financeChildren = array_filter(['departments','summary-report','arkcrest-sales','commission-monitoring','cash-advance','agent-cash-advance'], fn($k) => $canSee($k));
                     @endphp
                     @if(count($financeChildren) > 0)
                     <li class="nav-item-wrapper">
                         <div class="nav-item-container">
+                            @if($canSee('dashboard'))
                             <a href="{{ route('dashboard') }}" class="nav-item nav-item-with-dropdown" data-page="dashboard" onclick="event.stopPropagation();">
                                 <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                                 <span class="sidebar-text">Finance</span>
                             </a>
+                            @else
+                            <span class="nav-item nav-item-with-dropdown" data-page="dashboard" onclick="event.stopPropagation();" style="cursor:default;">
+                                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span class="sidebar-text">Finance</span>
+                            </span>
+                            @endif
                             <button class="dropdown-toggle-btn" id="financeDropdownToggle" type="button" onclick="toggleFinanceDropdown(event)">
                                 <svg class="dropdown-arrow" id="financeArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -314,6 +570,7 @@
                                 </a>
                             </li>
                             @endif
+                            @if($canSee('arkcrest-sales'))
                             <li>
                                 <a href="{{ route('arkcrest-sales') }}" class="nav-subitem" data-page="arkcrest-sales">
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -322,6 +579,7 @@
                                     <span class="sidebar-text">ARC Sales</span>
                                 </a>
                             </li>
+                            @endif
                             @if($canSee('commission-monitoring'))
                             <li class="nav-item-wrapper">
                                 <div class="nav-item-container">
@@ -338,6 +596,7 @@
                                     </button>
                                 </div>
                                 <ul class="nav-submenu" id="commissionSubmenu" style="padding-left:12px;">
+                                    @if($canSee('commission-monitoring.dashboard'))
                                     <li>
                                         <a href="{{ route('commission-dashboard') }}" class="nav-subitem" data-page="commission-dashboard" style="font-size:11px;">
                                             <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:13px;height:13px;">
@@ -346,17 +605,50 @@
                                             <span class="sidebar-text" style="font-size:10px;">Commission Dashboard</span>
                                         </a>
                                     </li>
+                                    @endif
                                 </ul>
                             </li>
                             @endif
-                            @if($canSee('cash-advance'))
-                            <li>
-                                <a href="{{ route('cash-advance') }}" class="nav-subitem" data-page="cash-advance">
-                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                    </svg>
-                                    <span class="sidebar-text">Cash Advance</span>
-                                </a>
+                            @php
+                            $cashAdvanceChildren = array_filter(['cash-advance', 'agent-cash-advance'], fn($k) => $canSee($k));
+                            @endphp
+                            @if(count($cashAdvanceChildren) > 0)
+                            <li class="nav-item-wrapper">
+                                <div class="nav-item-container">
+                                    @if($canSee('cash-advance'))
+                                    <a href="{{ route('cash-advance') }}" class="nav-subitem nav-item-with-dropdown" data-page="cash-advance" onclick="event.stopPropagation();">
+                                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                        </svg>
+                                        <span class="sidebar-text" style="font-size:11px;">Cash Advance</span>
+                                    </a>
+                                    @else
+                                    <span class="nav-subitem nav-item-with-dropdown" data-page="cash-advance" onclick="event.stopPropagation();" style="cursor:default;">
+                                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                        </svg>
+                                        <span class="sidebar-text" style="font-size:11px;">Cash Advance</span>
+                                    </span>
+                                    @endif
+                                    <button class="dropdown-toggle-btn" type="button" onclick="toggleCashAdvanceDropdown(event)">
+                                        <svg class="dropdown-arrow" id="cashAdvanceArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <ul class="nav-submenu" id="cashAdvanceSubmenu" style="padding-left:12px;">
+                                    
+                                    @if($canSee('agent-cash-advance'))
+                                    <li>
+                                        <a href="{{ route('agent-cash-advance') }}" class="nav-subitem" data-page="agent-cash-advance" style="font-size:11px;">
+                                            <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:13px;height:13px;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            </svg>
+                                            <span class="sidebar-text" style="font-size:10px;">Agent Cash Advance</span>
+                                        </a>
+                                    </li>
+                                    @endif
+                                </ul>
                             </li>
                             @endif
                             @if($canSee('calendar'))
@@ -374,15 +666,27 @@
                     @endif {{-- end finance --}}
                     
                     <!-- Sales & Marketing with Dropdown -->
-                    @if($canSee('sales-marketing'))
+                    @php
+                    $salesMarketingChildren = array_filter(['sales-marketing','client-database','client-database.list','client-database.property','site-visit-database','sales-calendar'], fn($k) => $canSee($k));
+                    @endphp
+                    @if(count($salesMarketingChildren) > 0)
                     <li class="nav-item-wrapper">
                         <div class="nav-item-container">
+                            @if($canSee('sales-marketing'))
                             <a href="{{ route('sales-marketing') }}" class="nav-item nav-item-with-dropdown" data-page="sales-marketing" onclick="event.stopPropagation();">
                                 <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                                 <span class="sidebar-text">Sales & Marketing</span>
                             </a>
+                            @else
+                            <span class="nav-item nav-item-with-dropdown" data-page="sales-marketing" onclick="event.stopPropagation();" style="cursor:default;">
+                                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span class="sidebar-text">Sales & Marketing</span>
+                            </span>
+                            @endif
                             <button class="dropdown-toggle-btn" id="salesDropdownToggle" type="button" onclick="toggleSalesDropdown(event)">
                                 <svg class="dropdown-arrow" id="salesArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -390,14 +694,27 @@
                             </button>
                         </div>
                         <ul class="nav-submenu" id="salesSubmenu">
+                            @php
+                            $clientDbChildren = array_filter(['client-database', 'client-database.list', 'client-database.property'], fn($k) => $canSee($k));
+                            @endphp
+                            @if(count($clientDbChildren) > 0)
                             <li class="nav-item-wrapper">
                                 <div class="nav-item-container">
+                                    @if($canSee('client-database'))
                                     <a href="{{ route('client-database') }}" class="nav-subitem nav-item-with-dropdown" data-page="client-database" onclick="event.stopPropagation();">
                                         <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                                         </svg>
                                         <span class="sidebar-text">Clients</span>
                                     </a>
+                                    @else
+                                    <span class="nav-subitem nav-item-with-dropdown" data-page="client-database" onclick="event.stopPropagation();" style="cursor:default;">
+                                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        <span class="sidebar-text">Clients</span>
+                                    </span>
+                                    @endif
                                     <button class="dropdown-toggle-btn" id="clientDbDropdownToggle" type="button" onclick="toggleClientDbDropdown(event)">
                                         <svg class="dropdown-arrow" id="clientDbArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -405,20 +722,26 @@
                                     </button>
                                 </div>
                                 <ul class="nav-submenu" id="clientDbSubmenu" style="padding-left:12px;">
+                                    @if($canSee('client-database.list'))
                                     <li>
                                         <a href="{{ route('reserved-clients') }}" class="nav-subitem" data-page="cd-clients" style="font-size:11px;">
                                             <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                                             <span class="sidebar-text">List of Clients</span>
                                         </a>
                                     </li>
+                                    @endif
+                                    @if($canSee('client-database.property'))
                                     <li>
                                         <a href="{{ route('property-list') }}" class="nav-subitem" data-page="cd-properties" style="font-size:11px;">
                                             <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                                             <span class="sidebar-text">List of Properties</span>
                                         </a>
                                     </li>
+                                    @endif
                                 </ul>
                             </li>
+                            @endif
+                            @if($canSee('site-visit-database'))
                             <li>
                                 <a href="{{ route('site-visit-database') }}" class="nav-subitem" data-page="site-visit-database">
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -427,6 +750,8 @@
                                     <span class="sidebar-text">Site Visits</span>
                                 </a>
                             </li>
+                            @endif
+                            @if($canSee('sales-calendar'))
                             <li>
                                 <a href="{{ route('sales-calendar') }}" class="nav-subitem" data-page="sm-calendar">
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -435,20 +760,33 @@
                                     <span class="sidebar-text">Calendar</span>
                                 </a>
                             </li>
+                            @endif
                         </ul>
                     </li>
                     @endif
                     
                     <!-- Human Resource -->
-                    @if($canSee('human-resource'))
+                    @php
+                    $hrChildren = array_filter(['human-resource','human-resource.employee-data','human-resource.contact-list'], fn($k) => $canSee($k));
+                    @endphp
+                    @if(count($hrChildren) > 0)
                     <li class="nav-item-wrapper">
                         <div class="nav-item-container">
+                            @if($canSee('human-resource'))
                             <a href="{{ route('human-resource') }}" class="nav-item nav-item-with-dropdown" data-page="human-resource" onclick="event.stopPropagation();">
                                 <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
                                 <span class="sidebar-text">Human Resource</span>
                             </a>
+                            @else
+                            <span class="nav-item nav-item-with-dropdown" data-page="human-resource" onclick="event.stopPropagation();" style="cursor:default;">
+                                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                                <span class="sidebar-text">Human Resource</span>
+                            </span>
+                            @endif
                             <button class="dropdown-toggle-btn" type="button" onclick="toggleHRDropdown(event)">
                                 <svg class="dropdown-arrow" id="hrArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -456,6 +794,7 @@
                             </button>
                         </div>
                         <ul class="nav-submenu" id="hrSubmenu">
+                            @if($canSee('human-resource.employee-data'))
                             <li>
                                 <a href="{{ route('hr.employee-data') }}" class="nav-subitem" data-page="hr-employee-data">
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -464,6 +803,8 @@
                                     <span class="sidebar-text">Employee Data</span>
                                 </a>
                             </li>
+                            @endif
+                            @if($canSee('human-resource.contact-list'))
                             <li>
                                 <a href="{{ route('hr.contact-list') }}" class="nav-subitem" data-page="hr-contact-list">
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -472,6 +813,7 @@
                                     <span class="sidebar-text">ARC Contact List</span>
                                 </a>
                             </li>
+                            @endif
                         </ul>
                     </li>
                     @endif
@@ -566,7 +908,7 @@
                                 $userHiddenSettings = $isAdminUser ? [] : ($allHidden ?? []);
                                 $canSeeSetting = fn($k) => $isAdminUser || !in_array($k, $userHiddenSettings);
                             @endphp
-                            @if($isAdminUser || array_filter(['settings.users','settings.visibility','settings.activity','settings.deleted','settings.teams','settings.period-lock','settings.backup','settings.export'], fn($k) => !in_array($k, $userHiddenSettings)))
+                            @if($isAdminUser || array_filter(['settings.users','settings.visibility','settings.practice-scenarios','settings.practice-history','settings.activity','settings.edit-history','settings.deleted','settings.teams','settings.properties','settings.period-lock','settings.backup','settings.export'], fn($k) => !in_array($k, $userHiddenSettings)))
                             <li class="nav-submenu-label">Admin</li>
                             @endif
                             @if($canSeeSetting('settings.users'))
@@ -585,6 +927,22 @@
                                 </a>
                             </li>
                             @endif
+                            @if($canSeeSetting('settings.practice-scenarios'))
+                            <li>
+                                <a href="{{ route('practice.admin') }}" class="nav-subitem {{ request()->routeIs('practice.admin') ? 'active' : '' }}" data-page="practice-admin">
+                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8-1.284 0-2.503-.24-3.605-.671L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                                    <span class="sidebar-text">Practice Scenarios</span>
+                                </a>
+                            </li>
+                            @endif
+                            @if($canSeeSetting('settings.practice-history'))
+                            <li>
+                                <a href="{{ route('practice.admin.history') }}" class="nav-subitem {{ request()->routeIs('practice.admin.history') ? 'active' : '' }}" data-page="practice-admin-history">
+                                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span class="sidebar-text">Practice History</span>
+                                </a>
+                            </li>
+                            @endif
                             @if($canSeeSetting('settings.activity'))
                             <li>
                                 <a href="{{ route('settings') }}?panel=activity" class="nav-subitem" data-page="settings-activity">
@@ -593,7 +951,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if($isAdminUser)
+                            @if($canSeeSetting('settings.edit-history'))
                             <li>
                                 <a href="{{ route('settings.edit-history') }}" class="nav-subitem" data-page="settings-edit-history">
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -633,7 +991,7 @@
                                 </a>
                             </li>
                             @endif
-                            @if($isAdminUser)
+                            @if($canSeeSetting('settings.properties'))
                             <li>
                                 <a href="{{ route('settings') }}?panel=properties" class="nav-subitem" data-page="settings-properties">
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -723,12 +1081,29 @@
         const panel = document.getElementById('notificationPanel');
         if (panel) panel.classList.remove('show');
 
-        fetch('/notifications/' + notifId + '/read', {
+        fetch('/api/commission-notifications/' + encodeURIComponent(notifId) + '/process', {
             method: 'POST',
-            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json' }
-        }).catch(() => {});
-
-        window.location.href = '/commission-monitoring?stage_request=' + encodeURIComponent(stageRequestId);
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ stage_request_id: stageRequestId })
+        })
+        .then(async function(response) {
+            const data = await response.json().catch(function() { return {}; });
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Unable to create the commission request.');
+            }
+            window.location.href = data.url;
+        })
+        .catch(function(error) {
+            if (typeof showToast === 'function') {
+                showToast(error.message, 'error', 'Commission Request');
+            } else {
+                alert(error.message);
+            }
+        });
     }
 
     function handleClientDoneNotifClick(notifId, recordId) {
@@ -848,6 +1223,23 @@
             event.stopPropagation();
             const submenu = document.getElementById('commissionSubmenu');
             const arrow   = document.getElementById('commissionArrow');
+            if (submenu && arrow) {
+                const isOpen = submenu.classList.contains('open');
+                if (isOpen) {
+                    submenu.classList.remove('open');
+                    arrow.classList.remove('open');
+                } else {
+                    submenu.classList.add('open');
+                    arrow.classList.add('open');
+                }
+            }
+        }
+
+        function toggleCashAdvanceDropdown(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const submenu = document.getElementById('cashAdvanceSubmenu');
+            const arrow   = document.getElementById('cashAdvanceArrow');
             if (submenu && arrow) {
                 const isOpen = submenu.classList.contains('open');
                 if (isOpen) {
@@ -992,6 +1384,22 @@
                 document.querySelectorAll('#settingsSubmenu .nav-subitem').forEach(a => {
                     a.classList.toggle('active', a.getAttribute('data-page') === 'settings-' + activePanel);
                 });
+            }
+
+            // Practice Scenarios (/practice/admin) and Practice History (/practice/admin/history)
+            // now get their 'active' class rendered server-side via request()->routeIs()
+            // (see the sidebar markup above) — no JS needed for highlighting them.
+            // We still need JS here to auto-open the Settings dropdown when landing
+            // directly on one of these pages (e.g. via a link from elsewhere).
+            const editHistoryLink = document.querySelector('#settingsSubmenu .nav-subitem[data-page="settings-edit-history"]');
+            if (editHistoryLink) {
+                editHistoryLink.classList.toggle('active', currentPage.includes('/settings/edit-history'));
+            }
+            if (currentPage.includes('/practice/admin') || currentPage.includes('/settings/edit-history')) {
+                if (settingsSubmenu && settingsArrow) {
+                    settingsSubmenu.classList.add('open');
+                    settingsArrow.classList.add('open');
+                }
             }
         });
         
@@ -1971,5 +2379,47 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 @endif
+
+<script>
+(function () {
+    var menus = Array.prototype.slice.call(document.querySelectorAll('[data-account-menu]'));
+
+    function closeMenu(menu) {
+        menu.classList.remove('open');
+        var trigger = menu.querySelector('[data-account-trigger]');
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    }
+
+    menus.forEach(function (menu) {
+        var trigger = menu.querySelector('[data-account-trigger]');
+        if (!trigger) return;
+
+        trigger.addEventListener('click', function (event) {
+            event.stopPropagation();
+            var willOpen = !menu.classList.contains('open');
+
+            menus.forEach(function (otherMenu) {
+                if (otherMenu !== menu) closeMenu(otherMenu);
+            });
+
+            menu.classList.toggle('open', willOpen);
+            trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        });
+
+        menu.addEventListener('click', function (event) {
+            event.stopPropagation();
+        });
+    });
+
+    document.addEventListener('click', function () {
+        menus.forEach(closeMenu);
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') menus.forEach(closeMenu);
+    });
+})();
+</script>
+
 </body>
 </html>
