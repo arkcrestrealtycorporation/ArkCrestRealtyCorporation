@@ -106,12 +106,50 @@
   .brand .mark{ width:38px; height:38px; border-radius:50%; background:#fff; object-fit:contain; padding:2px; flex-shrink:0; }
   .brand .name{ font-size:14px; letter-spacing:3px; font-weight:700; text-transform:uppercase; }
   .nav-links{ display:flex; align-items:center; gap:32px; justify-self:center; }
-  .nav-links > a{
+  .nav-links > a,
+  .nav-dropdown-trigger{
     color:rgba(255,255,255,0.88); font-size:12px; letter-spacing:2px; text-transform:uppercase; font-weight:600;
-    padding-bottom:8px; border-bottom:2px solid transparent; transition:.25s;
+    padding:0 0 8px; border:0; border-bottom:2px solid transparent; background:transparent;
+    font-family:inherit; line-height:1.6; cursor:pointer; transition:.25s;
   }
-  .nav-links > a.active, .nav-links > a:hover{ border-color:var(--clay); color:#fff; }
+  .nav-links > a.active,
+  .nav-links > a:hover,
+  .nav-dropdown.active > .nav-dropdown-trigger,
+  .nav-dropdown.open > .nav-dropdown-trigger,
+  .nav-dropdown-trigger:hover{ border-color:var(--clay); color:#fff; }
   .nav-links > a.fb-link{ color:#7fa8d6; }
+
+  .nav-dropdown{ position:relative; display:flex; align-items:center; }
+  .nav-dropdown-trigger{ display:inline-flex; align-items:center; gap:7px; }
+  .nav-dropdown-chevron{ width:13px; height:13px; transition:transform .22s ease; }
+  .nav-dropdown.open .nav-dropdown-chevron{ transform:rotate(180deg); }
+  .nav-dropdown-menu{
+    position:absolute; top:calc(100% + 14px); left:50%; width:270px; padding:10px;
+    display:grid; gap:3px; opacity:0; visibility:hidden; pointer-events:none;
+    transform:translate(-50%,10px); background:rgba(13,26,43,.99);
+    border:1px solid rgba(255,255,255,.12); border-radius:6px;
+    box-shadow:0 18px 42px rgba(0,0,0,.34); transition:opacity .2s ease, transform .2s ease, visibility .2s ease;
+  }
+  .nav-dropdown.open .nav-dropdown-menu,
+  .nav-dropdown:focus-within .nav-dropdown-menu{
+    opacity:1; visibility:visible; pointer-events:auto; transform:translate(-50%,0);
+  }
+  .nav-dropdown-menu a{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:11px 12px; color:rgba(255,255,255,.78); border-radius:4px;
+    font-size:11px; letter-spacing:.8px; font-weight:600; text-transform:none;
+    transition:background .2s ease, color .2s ease, padding-left .2s ease;
+  }
+  .nav-dropdown-menu a::after{ content:'›'; color:var(--gold); font-size:17px; line-height:1; }
+  .nav-dropdown-menu a:hover,
+  .nav-dropdown-menu a.active{ color:#fff; background:rgba(255,255,255,.08); padding-left:16px; }
+
+  @media (min-width:901px) and (hover:hover) and (pointer:fine){
+    .nav-dropdown:hover .nav-dropdown-menu{
+      opacity:1; visibility:visible; pointer-events:auto; transform:translate(-50%,0);
+    }
+    .nav-dropdown:hover .nav-dropdown-chevron{ transform:rotate(180deg); }
+  }
   .nav-actions{ display:flex; align-items:center; gap:10px; flex-shrink:0; justify-self:end; }
   .nav-mobile-actions{ display:none; }
 
@@ -566,6 +604,22 @@
     }
   }
 
+  /* -------- NEWS & UPDATES -------- */
+  .news-updates{ padding:105px 0; background:#fff; }
+  .news-updates-panel{
+    display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:40px;
+    padding:46px 50px; border:1px solid var(--parchment-line); background:var(--cream);
+  }
+  .news-updates h2{ margin-top:14px; color:var(--navy-950); font-size:clamp(28px,3.5vw,42px); }
+  .news-updates p{ max-width:650px; margin-top:16px; color:var(--ink-soft); font-size:14px; }
+  .news-status{
+    display:inline-flex; align-items:center; gap:8px; padding:9px 13px;
+    border:1px solid var(--parchment-line); color:var(--clay);
+    font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:1.2px; text-transform:uppercase;
+    background:#fff; white-space:nowrap;
+  }
+  .news-status::before{ content:''; width:7px; height:7px; border-radius:50%; background:var(--clay); }
+
   /* -------- FOOTER CTA -------- */
   .cta-band{ background:var(--cream); color:var(--navy-950); padding:110px 0; text-align:center; }
   .cta-band h2{ color:var(--navy-950); font-size:clamp(26px,3.4vw,38px); margin-bottom:26px; }
@@ -601,7 +655,20 @@
       background:rgba(13,26,43,0.99); border:1px solid rgba(255,255,255,0.10); border-radius:5px; box-shadow:0 18px 40px rgba(0,0,0,0.32);
     }
     .nav-links.open{ display:flex; }
-    .nav-links > a{ width:100%; padding:14px 6px; font-size:13px; }
+    .nav-links > a,
+    .nav-dropdown-trigger{ width:100%; padding:14px 6px; font-size:13px; text-align:left; }
+    .nav-dropdown{ width:100%; display:block; }
+    .nav-dropdown-trigger{ justify-content:space-between; }
+    .nav-dropdown-menu{
+      position:static; width:100%; padding:4px 0 4px 12px; display:none; gap:2px;
+      opacity:1; visibility:visible; pointer-events:auto; transform:none;
+      background:rgba(255,255,255,.035); border:0; border-left:1px solid rgba(156,128,84,.55);
+      border-radius:0; box-shadow:none; transition:none;
+    }
+    .nav-dropdown.open .nav-dropdown-menu{ display:grid; transform:none; }
+    .nav-dropdown-menu a{ padding:11px 12px; font-size:12px; }
+    .nav-dropdown-menu a:hover,
+    .nav-dropdown-menu a.active{ padding-left:16px; }
     .nav-actions{ display:none; }
     .nav-mobile-actions{ display:grid; gap:9px; padding-top:12px; margin-top:6px; border-top:1px solid rgba(255,255,255,0.12); }
     .nav-mobile-actions .btn{ width:100%; padding:14px 18px; }
@@ -616,6 +683,9 @@
     .about{ padding:80px 0; }
     .why{ padding:80px 0; }
     .philosophy{ padding:90px 0; }
+    .news-updates{ padding:76px 0; }
+    .news-updates-panel{ grid-template-columns:1fr; padding:36px 30px; gap:24px; }
+    .news-status{ justify-self:start; }
     .cta-band{ padding:76px 0; }
 
     .about .grid{ grid-template-columns:1fr; gap:40px; }
@@ -662,9 +732,33 @@
       </a>
 
       <div class="nav-links" id="landingNavLinks">
-        <a href="#home" class="active">Home</a>
-        <a href="#about">About</a>
-        <a href="#why">Why Us</a>
+        <div class="nav-dropdown active" data-home-nav-dropdown>
+          <button
+            type="button"
+            class="nav-dropdown-trigger"
+            data-home-nav-trigger
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="homeSectionMenu"
+          >
+            <span>Home</span>
+            <svg class="nav-dropdown-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+
+          <div class="nav-dropdown-menu" id="homeSectionMenu" role="menu">
+            <a href="#home" role="menuitem" class="active">Home Overview</a>
+            <a href="#about" role="menuitem">Our Heritage</a>
+            <a href="#why" role="menuitem">Why Choose ArkCrest</a>
+            <a href="#testimonials" role="menuitem">Words from Our Clients</a>
+            <a href="#services" role="menuitem">The ArkCrest Distinction</a>
+            <a href="#awards" role="menuitem">Our Awards</a>
+            <a href="#inquire" role="menuitem">Begin Your Legacy</a>
+          </div>
+        </div>
+
+        <a href="{{ route('news-updates') }}" data-news-nav>News &amp; Updates</a>
         <a href="https://facebook.com/ArkCrestRealty" target="_blank" rel="noopener noreferrer" class="fb-link">Facebook</a>
 
         <div class="nav-mobile-actions">
@@ -1046,6 +1140,7 @@
     </div>
   </section>
 
+
   <!-- CTA -->
   <section class="cta-band" id="inquire">
     <div class="wrap reveal" style="text-align:center;">
@@ -1063,9 +1158,9 @@
     <div class="wrap">
       <div class="brand" style="font-size:13px; letter-spacing:2px; text-transform:uppercase; font-weight:700;">ArkCrest Realty</div>
       <div class="foot-links">
+        <a href="#home">Home</a>
+        <a href="{{ route('news-updates') }}">News &amp; Updates</a>
         <a href="https://facebook.com/ArkCrestRealty" target="_blank" rel="noopener noreferrer">Facebook</a>
-        <a href="#about">About</a>
-        <a href="#why">Why Us</a>
       </div>
       <div>&copy; 2026 ArkCrest Realty Corporation. All rights reserved.</div>
     </div>
@@ -1112,37 +1207,79 @@
     (function () {
       var toggle = document.querySelector('.mobile-toggle');
       var links = document.querySelector('.nav-links');
+      var homeDropdown = document.querySelector('[data-home-nav-dropdown]');
+      var homeTrigger = document.querySelector('[data-home-nav-trigger]');
+      var homeSectionLinks = Array.prototype.slice.call(
+        document.querySelectorAll('#homeSectionMenu a[href^="#"]')
+      );
 
-      toggle.addEventListener('click', function () {
-        var isOpen = links.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      });
+      function setHomeDropdown(open) {
+        if (!homeDropdown || !homeTrigger) return;
+        homeDropdown.classList.toggle('open', open);
+        homeTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
 
-      links.querySelectorAll('a').forEach(function (link) {
-        link.addEventListener('click', function () {
-          links.classList.remove('open');
-          toggle.setAttribute('aria-expanded', 'false');
+      function closeMobileMenu() {
+        if (!links || !toggle) return;
+        links.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        setHomeDropdown(false);
+      }
+
+      if (toggle && links) {
+        toggle.addEventListener('click', function () {
+          var isOpen = links.classList.toggle('open');
+          toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+          if (!isOpen) setHomeDropdown(false);
         });
-      });
+      }
+
+      if (homeTrigger) {
+        homeTrigger.addEventListener('click', function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          setHomeDropdown(!homeDropdown.classList.contains('open'));
+        });
+      }
+
+      if (links) {
+        links.querySelectorAll('a').forEach(function (link) {
+          link.addEventListener('click', function () {
+            closeMobileMenu();
+          });
+        });
+      }
 
       document.addEventListener('click', function (event) {
+        if (homeDropdown && !event.target.closest('[data-home-nav-dropdown]')) {
+          setHomeDropdown(false);
+        }
         if (!event.target.closest('.nav')) {
-          links.classList.remove('open');
-          toggle.setAttribute('aria-expanded', 'false');
+          closeMobileMenu();
         }
       });
 
-      var navLinks = Array.prototype.slice.call(
-        document.querySelectorAll('#landingNavLinks > a[href^="#"]')
-      );
-      var sections = navLinks
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+          setHomeDropdown(false);
+          closeMobileMenu();
+        }
+      });
+
+      var trackedLinks = homeSectionLinks.slice();
+
+      var sections = trackedLinks
         .map(function (link) {
           return document.getElementById(link.getAttribute('href').slice(1));
         })
         .filter(Boolean);
 
       function setActive(id) {
-        navLinks.forEach(function (link) {
+        if (homeDropdown) {
+          homeDropdown.classList.add('active');
+        }
+
+        homeSectionLinks.forEach(function (link) {
           link.classList.toggle('active', link.getAttribute('href') === '#' + id);
         });
       }
@@ -1150,18 +1287,18 @@
       if ('IntersectionObserver' in window && sections.length) {
         var observer = new IntersectionObserver(
           function (entries) {
-            var visible = entries.filter(function (e) { return e.isIntersecting; });
+            var visible = entries.filter(function (entry) { return entry.isIntersecting; });
             if (visible.length) {
               visible.sort(function (a, b) { return b.intersectionRatio - a.intersectionRatio; });
               setActive(visible[0].target.id);
             }
           },
-          { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+          { rootMargin: '-42% 0px -42% 0px', threshold: 0 }
         );
         sections.forEach(function (section) { observer.observe(section); });
       }
 
-      navLinks.forEach(function (link) {
+      trackedLinks.forEach(function (link) {
         link.addEventListener('click', function () {
           setActive(link.getAttribute('href').slice(1));
         });
