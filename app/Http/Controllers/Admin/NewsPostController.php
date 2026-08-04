@@ -278,8 +278,7 @@ class NewsPostController extends Controller
             $path = Storage::disk($disk)->putFileAs(
                 $directory,
                 $file,
-                $filename,
-                ['visibility' => 'public']
+                $filename
             );
 
             if (!$path) {
