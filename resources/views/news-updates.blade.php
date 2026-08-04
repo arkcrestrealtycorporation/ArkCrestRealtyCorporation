@@ -688,6 +688,319 @@
   }
 }
 
+
+/* -------- LATEST NEWS CARD LAYOUT -------- */
+:root{
+  --news-page-bg:#e7e7e7;
+  --news-card-bg:#ffffff;
+  --news-accent:#54b95b;
+  --news-meta:#7c8794;
+}
+.sr-only{
+  position:absolute !important;
+  width:1px !important;
+  height:1px !important;
+  padding:0 !important;
+  margin:-1px !important;
+  overflow:hidden !important;
+  clip:rect(0,0,0,0) !important;
+  white-space:nowrap !important;
+  border:0 !important;
+}
+.latest-news-page{
+  min-height:100vh;
+  padding:154px 0 100px;
+  background:var(--news-page-bg);
+}
+.latest-news-page .wrap{
+  max-width:1240px;
+}
+.latest-news-header{
+  margin:0 auto 42px;
+  text-align:center;
+}
+.latest-news-header h1{
+  color:#081829;
+  font-size:clamp(42px,5vw,58px);
+  font-weight:600;
+  letter-spacing:-1px;
+}
+.latest-news-header p{
+  max-width:670px;
+  margin:14px auto 0;
+  color:#66717e;
+  font-size:14px;
+}
+.latest-news-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:22px;
+}
+.latest-news-card{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  min-height:292px;
+  overflow:hidden;
+  background:var(--news-card-bg);
+  box-shadow:0 1px 0 rgba(13,26,43,.04);
+  transition:transform .28s ease, box-shadow .28s ease;
+}
+.latest-news-card:only-child{
+  grid-column:1 / -1;
+  width:min(100%,760px);
+  justify-self:center;
+}
+.latest-news-card-media{
+  position:relative;
+  min-height:292px;
+  overflow:hidden;
+  background:#d6d9dc;
+}
+.latest-news-card-media figure{
+  width:100%;
+  height:100%;
+  min-height:292px;
+  margin:0;
+}
+.latest-news-card-media img,
+.latest-news-card-media video{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:292px;
+  object-fit:cover;
+  background:#111d2b;
+  transition:transform .5s cubic-bezier(.16,1,.3,1);
+}
+.latest-news-card-media video{
+  object-fit:cover;
+}
+.latest-news-media-count{
+  position:absolute;
+  right:12px;
+  bottom:12px;
+  z-index:2;
+  padding:6px 9px;
+  border-radius:999px;
+  background:rgba(8,24,41,.78);
+  color:#fff;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.5px;
+  backdrop-filter:blur(6px);
+}
+.latest-news-placeholder{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  min-height:292px;
+  padding:24px;
+  color:rgba(255,255,255,.78);
+  text-align:center;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;
+  letter-spacing:1.4px;
+  text-transform:uppercase;
+  background:
+    linear-gradient(135deg,rgba(156,128,84,.28),rgba(187,90,42,.17)),
+    #132840;
+}
+.latest-news-card-copy{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  min-width:0;
+  padding:43px 30px 34px;
+}
+.latest-news-meta{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  color:var(--news-meta);
+  font-size:11px;
+  line-height:1.4;
+}
+.latest-news-meta-divider{
+  width:1px;
+  height:13px;
+  background:#aeb5bd;
+}
+.latest-news-card-copy h2{
+  margin-top:18px;
+  color:#071828;
+  font-family:'Inter',sans-serif;
+  font-size:clamp(20px,1.8vw,25px);
+  font-weight:500;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+}
+.latest-news-excerpt{
+  display:-webkit-box;
+  overflow:hidden;
+  margin-top:19px;
+  color:#172230;
+  font-family:'Playfair Display',serif;
+  font-size:15px;
+  font-style:italic;
+  line-height:1.55;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+}
+.latest-news-details{
+  width:100%;
+  margin-top:auto;
+  padding-top:26px;
+}
+.latest-news-details summary{
+  position:relative;
+  display:inline-block;
+  color:#111820;
+  cursor:pointer;
+  list-style:none;
+  font-size:14px;
+  font-weight:500;
+  line-height:1.5;
+}
+.latest-news-details summary::-webkit-details-marker{
+  display:none;
+}
+.latest-news-details summary::before{
+  content:'Read More';
+}
+.latest-news-details[open] summary::before{
+  content:'Read Less';
+}
+.latest-news-details summary::after{
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-5px;
+  height:2px;
+  background:var(--news-accent);
+  transform-origin:left;
+  transition:transform .2s ease;
+}
+.latest-news-details summary:hover::after{
+  transform:scaleX(.72);
+}
+.latest-news-details-content{
+  margin-top:18px;
+  padding-top:17px;
+  border-top:1px solid #e5e7e9;
+  color:#4f5c68;
+  font-size:13px;
+  line-height:1.75;
+}
+.latest-news-empty{
+  max-width:760px;
+  margin:0 auto;
+  padding:70px 32px;
+  background:#fff;
+  text-align:center;
+}
+.latest-news-empty h2{
+  color:#081829;
+  font-size:32px;
+}
+.latest-news-empty p{
+  margin-top:12px;
+  color:#687481;
+  font-size:14px;
+}
+.latest-news-pagination{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:40px;
+  color:#5f6974;
+  font-size:12px;
+}
+.latest-news-pagination a,
+.latest-news-pagination span{
+  padding:10px 14px;
+  background:#fff;
+}
+.latest-news-pagination a{
+  color:#0d1a2b;
+  transition:background .2s ease, color .2s ease;
+}
+.latest-news-pagination a:hover{
+  background:#0d1a2b;
+  color:#fff;
+}
+.latest-news-pagination .disabled{
+  color:#9ca3aa;
+  background:#f3f3f3;
+}
+@media (hover:hover) and (pointer:fine){
+  .latest-news-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 14px 34px rgba(13,26,43,.10);
+  }
+  .latest-news-card:hover .latest-news-card-media img{
+    transform:scale(1.035);
+  }
+}
+@media(max-width:1040px){
+  .latest-news-page{
+    padding-top:134px;
+  }
+  .latest-news-grid{
+    grid-template-columns:1fr;
+  }
+  .latest-news-card:only-child{
+    width:100%;
+  }
+  .latest-news-card-copy h2{
+    font-size:24px;
+  }
+}
+@media(max-width:660px){
+  .latest-news-page{
+    padding:118px 0 72px;
+  }
+  .latest-news-header{
+    margin-bottom:30px;
+  }
+  .latest-news-header p{
+    font-size:13px;
+  }
+  .latest-news-card{
+    grid-template-columns:1fr;
+  }
+  .latest-news-card-media,
+  .latest-news-card-media figure,
+  .latest-news-card-media img,
+  .latest-news-card-media video,
+  .latest-news-placeholder{
+    min-height:235px;
+  }
+  .latest-news-card-copy{
+    padding:30px 24px 28px;
+  }
+  .latest-news-details{
+    padding-top:22px;
+  }
+}
+@media(max-width:420px){
+  .latest-news-header h1{
+    font-size:38px;
+  }
+  .latest-news-meta{
+    gap:6px;
+    font-size:10px;
+  }
+  .latest-news-card-copy h2{
+    font-size:21px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -826,110 +1139,72 @@
   </nav>
 
 
-  <main class="news-page">
+  <main class="latest-news-page">
     <div class="wrap">
-      <header class="news-page-head reveal">
-        <span class="eyebrow">
-          <span class="rule"></span>
-          Latest from ArkCrest
-          <span class="rule"></span>
-        </span>
-        <h1>News &amp; <em>Updates</em></h1>
-        <p>
-          Official ArkCrest Realty announcements, property highlights,
-          recognitions, activities, and community updates.
-        </p>
+      <header class="latest-news-header reveal">
+        <h1>Latest News</h1>
+        <p>Official ArkCrest Realty announcements, property highlights, recognitions, activities, and community updates.</p>
       </header>
 
       @if($posts->count() === 0)
-        <section class="news-empty-state reveal">
-          <span class="eyebrow">
-            <span class="rule"></span>
-            ArkCrest Bulletin
-            <span class="rule"></span>
-          </span>
+        <section class="latest-news-empty reveal">
           <h2>No posts yet.</h2>
           <p>Published News &amp; Updates posts will appear here.</p>
         </section>
       @else
-        @php
-          $featuredPost = $posts->currentPage() === 1 ? $posts->first() : null;
-          $gridPosts = $featuredPost ? $posts->getCollection()->slice(1) : $posts->getCollection();
-        @endphp
+        <section class="latest-news-grid reveal-stagger" aria-label="Published News and Updates">
+          @foreach($posts as $post)
+            @php
+              $primaryMedia = $post->media->first();
+              $extraMediaCount = max(0, $post->media->count() - 1);
+            @endphp
 
-        @if($featuredPost)
-          <article class="news-post-featured reveal" id="news-post-{{ $featuredPost->id }}">
-            @if($featuredPost->media->isNotEmpty())
-              <div class="news-featured-media">
-                @foreach($featuredPost->media as $media)
+            <article class="latest-news-card" id="news-post-{{ $post->id }}">
+              <div class="latest-news-card-media">
+                @if($primaryMedia)
                   <figure>
-                    @if($media->media_type === 'image')
-                      <img src="{{ $media->url }}" alt="{{ $featuredPost->title }}" loading="lazy">
+                    @if($primaryMedia->media_type === 'image')
+                      <img src="{{ $primaryMedia->url }}" alt="{{ $post->title }}" loading="lazy">
                     @else
-                      <video src="{{ $media->url }}" controls preload="metadata"></video>
+                      <video src="{{ $primaryMedia->url }}" controls preload="metadata"></video>
                     @endif
                   </figure>
-                @endforeach
-              </div>
-            @else
-              <div class="news-media-placeholder">ArkCrest Realty Update</div>
-            @endif
 
-            <div class="news-featured-copy">
-              <span class="news-post-date">
-                Posted {{ $featuredPost->published_at->format('F d, Y \a\t g:i A') }}
-              </span>
-              <h2>{{ $featuredPost->title }}</h2>
-              <div class="news-featured-description">
-                {!! nl2br(e($featuredPost->description)) !!}
-              </div>
-            </div>
-          </article>
-        @endif
-
-        @if($gridPosts->isNotEmpty())
-          <section class="news-post-grid reveal-stagger" aria-label="Published News and Updates">
-            @foreach($gridPosts as $post)
-              <article class="news-post-card" id="news-post-{{ $post->id }}">
-                @if($post->media->isNotEmpty())
-                  <div class="news-post-media">
-                    @foreach($post->media as $media)
-                      <figure>
-                        @if($media->media_type === 'image')
-                          <img src="{{ $media->url }}" alt="{{ $post->title }}" loading="lazy">
-                        @else
-                          <video src="{{ $media->url }}" controls preload="metadata"></video>
-                        @endif
-                      </figure>
-                    @endforeach
-                  </div>
-                @else
-                  <div class="news-media-placeholder">ArkCrest Realty Update</div>
-                @endif
-
-                <div class="news-post-card-copy">
-                  <span class="news-post-date">Posted {{ $post->published_at->format('F d, Y \a\t g:i A') }}</span>
-                  <h2>{{ $post->title }}</h2>
-                  <p class="news-post-excerpt">
-                    {{ \Illuminate\Support\Str::limit($post->description, 240) }}
-                  </p>
-
-                  @if(\Illuminate\Support\Str::length($post->description) > 240)
-                    <details class="news-post-details">
-                      <summary>Read Full Update</summary>
-                      <div class="news-post-details-content">
-                        {!! nl2br(e($post->description)) !!}
-                      </div>
-                    </details>
+                  @if($extraMediaCount > 0)
+                    <span class="latest-news-media-count">+{{ $extraMediaCount }} media</span>
                   @endif
+                @else
+                  <div class="latest-news-placeholder">ArkCrest Realty Update</div>
+                @endif
+              </div>
+
+              <div class="latest-news-card-copy">
+                <div class="latest-news-meta">
+                  <span>{{ $post->published_at->format('D M d Y') }}</span>
+                  <span class="latest-news-meta-divider" aria-hidden="true"></span>
+                  <span>ArkCrest Update</span>
                 </div>
-              </article>
-            @endforeach
-          </section>
-        @endif
+
+                <h2>{{ $post->title }}</h2>
+                <p class="latest-news-excerpt">
+                  {{ \Illuminate\Support\Str::limit($post->description, 150) }}
+                </p>
+
+                <details class="latest-news-details">
+                  <summary aria-label="Toggle the full update for {{ $post->title }}">
+                    <span class="sr-only">Toggle full update</span>
+                  </summary>
+                  <div class="latest-news-details-content">
+                    {!! nl2br(e($post->description)) !!}
+                  </div>
+                </details>
+              </div>
+            </article>
+          @endforeach
+        </section>
 
         @if($posts->hasPages())
-          <nav class="news-page-pagination" aria-label="News and Updates pages">
+          <nav class="latest-news-pagination" aria-label="News and Updates pages">
             @if($posts->onFirstPage())
               <span class="disabled">Previous</span>
             @else
@@ -948,7 +1223,6 @@
       @endif
     </div>
   </main>
-
 
 
   <!-- CTA AND FOOTER -->
