@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\ActivityLog;
 use App\Models\TeamMonthlyQuota;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class SettingsController extends Controller
 {
@@ -17,6 +18,7 @@ class SettingsController extends Controller
     'dashboard',
     'departments',
     'summary-report',
+    'arkcrest-sales',
     'commission-monitoring',
     'commission-monitoring.dashboard',
     'cash-advance',
@@ -29,6 +31,10 @@ class SettingsController extends Controller
     'settings.period-lock',
     'settings.backup',
     'settings.export',
+    'settings.practice-scenarios',
+    'settings.practice-history',
+    'settings.edit-history',
+    'settings.properties',
 ];
 
     public function index()
@@ -545,24 +551,81 @@ private function getDeletedExpenses()
     public function updateProfile(Request $request)
     {
         $user = auth()->user();
-        $request->validate([
-            'name'     => 'required|string|max:255',
-            'avatar'   => 'nullable|image|max:2048',
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'preferred_address' => ['nullable', 'string', 'max:255'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif', 'max:8192'], // 8MB,
         ]);
 
-        $data = ['name' => $request->name];
+        $disk = config('filesystems.avatar_disk', 'public');
+        $data = [
+            'name' => $validated['name'],
+            'preferred_address' => $validated['preferred_address'] ?? null,
+        ];
+
+        $oldAvatar = $user->avatar;
+        $newAvatar = null;
 
         if ($request->hasFile('avatar')) {
-            if ($user->avatar) {
-                \Storage::disk('public')->delete($user->avatar);
+            try {
+                $newAvatar = $request->file('avatar')->store('avatars', $disk);
+            } catch (\Throwable $exception) {
+                report($exception);
+
+                return back()
+                    ->withInput()
+                    ->with('error', 'Profile photo upload failed. Please try again.')
+                    ->with('open_section', 'profile');
             }
-            $file = $request->file('avatar');
-            $filename = $file->store('avatars', 'public');
-            $data['avatar'] = $filename;
+
+            if (!$newAvatar) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Profile photo upload failed. Please try again.')
+                    ->with('open_section', 'profile');
+            }
+
+            $data['avatar'] = $newAvatar;
         }
 
-        $user->update($data);
-        return redirect()->route('settings')->with('success', 'Profile updated successfully.')->with('open_section', 'profile');
+        try {
+            $user->update($data);
+        } catch (\Throwable $exception) {
+            if ($newAvatar) {
+                try {
+                    Storage::disk($disk)->delete($newAvatar);
+                } catch (\Throwable $cleanupException) {
+                    report($cleanupException);
+                }
+            }
+
+            throw $exception;
+        }
+
+        // Delete the previous uploaded avatar only after the replacement
+        // was successfully stored and the user record was updated.
+        if (
+            $newAvatar &&
+            $oldAvatar &&
+            str_starts_with($oldAvatar, 'avatars/') &&
+            $oldAvatar !== $newAvatar
+        ) {
+            foreach (array_unique([$disk, 'public']) as $oldAvatarDisk) {
+                try {
+                    if (Storage::disk($oldAvatarDisk)->exists($oldAvatar)) {
+                        Storage::disk($oldAvatarDisk)->delete($oldAvatar);
+                    }
+                } catch (\Throwable $exception) {
+                    report($exception);
+                }
+            }
+        }
+
+        return redirect()
+            ->route('settings')
+            ->with('success', 'Profile updated successfully.')
+            ->with('open_section', 'profile');
     }
 
     public function updatePassword(Request $request)
@@ -948,13 +1011,14 @@ private function getDeletedExpenses()
         $user = User::findOrFail($userId);
 
         $allPages = [
-            'dashboard','departments','summary-report','commission-monitoring','commission-monitoring.dashboard',
-            'cash-advance','calendar','sales-marketing','client-database','client-database.list',
+            'dashboard','departments','summary-report','arkcrest-sales','commission-monitoring','commission-monitoring.dashboard',
+            'cash-advance','agent-cash-advance','calendar','sales-marketing','client-database','client-database.list',
             'client-database.property','site-visit-database','sales-calendar','forms',
             'human-resource','human-resource.employee-data','human-resource.contact-list',
             'settings.users','settings.teams',
             'settings.period-lock','settings.visibility','settings.activity','settings.deleted',
             'settings.backup','settings.export',
+            'settings.practice-scenarios','settings.practice-history','settings.edit-history','settings.properties',
         ];
 
         $visiblePages = $request->input('visible_pages', []);

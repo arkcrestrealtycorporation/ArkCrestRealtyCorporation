@@ -15,8 +15,14 @@ class CashAdvance extends Model
         'control_number',
         'employee_id',
         'employee_name',
+        'department',
         'amount',
+        'purpose',
         'reason',
+        'date_requested',
+        'date_needed',
+        'repayment_type',
+        'installment_terms',
         'repayment_date',
         'status',
         'reviewed_by',
@@ -24,13 +30,37 @@ class CashAdvance extends Model
     ];
 
     protected $casts = [
-        'amount'         => 'decimal:2',
-        'repayment_date' => 'date',
-        'reviewed_at'    => 'datetime',
+        'amount'             => 'decimal:2',
+        'date_requested'     => 'date',
+        'date_needed'        => 'date',
+        'repayment_date'     => 'date',
+        'installment_terms'  => 'integer',
+        'reviewed_at'        => 'datetime',
     ];
 
     /** The allowed statuses for a cash advance record. */
-    public const STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];
+    public const STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED'];
+
+    /** The allowed repayment types for a cash advance request. */
+    public const REPAYMENT_TYPES = ['INSTALLMENT', 'OTHERS'];
+
+    /** Maximum number of salary-deduction terms allowed for an installment repayment. */
+    public const MAX_INSTALLMENT_TERMS = 6;
+
+    /**
+     * The amount deducted per term. Both INSTALLMENT and OTHERS store a
+     * number of terms and split the amount evenly across them — OTHERS
+     * simply allows any term count instead of the capped dropdown.
+     * Returns null when no term count has been set.
+     */
+    public function getAmountPerTermAttribute(): ?float
+    {
+        if (!$this->installment_terms) {
+            return null;
+        }
+
+        return round(((float) $this->amount) / $this->installment_terms, 2);
+    }
 
     public function employee()
     {
@@ -40,6 +70,77 @@ class CashAdvance extends Model
     public function reviewer()
     {
         return $this->belongsTo(User::class, 'reviewed_by')->withDefault(['name' => 'System']);
+    }
+
+    public function repayments()
+    {
+        return $this->hasMany(CashAdvanceRepayment::class)->orderBy('term_number');
+    }
+
+    /**
+     * Total number of repayment terms expected. Both INSTALLMENT and
+     * OTHERS store their term count in installment_terms — OTHERS just
+     * lets the requester type any number instead of picking from the
+     * capped dropdown.
+     */
+    public function getTotalTermsAttribute(): int
+    {
+        return (int) ($this->installment_terms ?? 0);
+    }
+
+    /** Number of repayment terms marked PAID so far. */
+    public function getPaidTermsAttribute(): int
+    {
+        return $this->relationLoaded('repayments')
+            ? $this->repayments->where('status', 'PAID')->count()
+            : $this->repayments()->where('status', 'PAID')->count();
+    }
+
+    /**
+     * Total amount actually paid so far across all PAID repayment terms.
+     * Used to detect when the balance is fully settled even if it happened
+     * before the last scheduled term (e.g. paid off at term 2 of 6).
+     */
+    public function getTotalPaidAttribute(): float
+    {
+        return (float) ($this->relationLoaded('repayments')
+            ? $this->repayments->where('status', 'PAID')->sum('amount')
+            : $this->repayments()->where('status', 'PAID')->sum('amount'));
+    }
+
+    /** "x/y" label used in the Records table's Payment Stage column. */
+    public function getPaymentStageLabelAttribute(): string
+    {
+        return $this->paid_terms . '/' . $this->total_terms;
+    }
+
+    /**
+     * Display-only status: Pending / Rejected pass through unchanged.
+     * Once Approved, the record reads as Active / Completed / Overdue
+     * depending on repayment progress, without altering the stored
+     * approval status (except the automatic switch to COMPLETED — see
+     * CashAdvanceController::markRepaymentPaid()).
+     */
+    public function getDisplayStatusAttribute(): string
+    {
+        if (in_array($this->status, ['PENDING', 'REJECTED', 'COMPLETED'], true)) {
+            return ucfirst(strtolower($this->status));
+        }
+
+        // APPROVED
+        // Completed as soon as either every scheduled term is marked PAID, or
+        // the full balance has been paid off early (e.g. settled at term 2 of
+        // 6) — whichever comes first. Checking the count alone missed the
+        // early-payoff case, since fewer terms than total_terms would still
+        // be marked PAID even though nothing is owed anymore.
+        $allTermsPaid = $this->total_terms > 0 && $this->paid_terms >= $this->total_terms;
+        $balanceSettled = ((float) $this->amount) > 0 && $this->total_paid >= ((float) $this->amount) - 0.01;
+
+        if ($allTermsPaid || $balanceSettled) {
+            return 'Completed';
+        }
+
+        return 'Active';
     }
 
     /**

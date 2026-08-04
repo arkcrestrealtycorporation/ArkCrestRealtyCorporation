@@ -14,6 +14,7 @@ use App\Models\Property;
 use App\Models\SystemNotification;
 use App\Models\User;
 use App\Services\CommissionStageService;
+use App\Support\ExactFinancialMath;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
@@ -165,32 +166,67 @@ class SalesMarketingController extends Controller
         $dateFrom = $request->input('date_from', date('Y-m-01'));
         $dateTo   = $request->input('date_to',   date('Y-m-t'));
 
-        $totalNetTcp  = CommissionRequestSales::whereNotNull('date_of_downpayment')
-            ->whereBetween('date_of_downpayment', [$dateFrom, $dateTo])
+        // "Total Net TCP" and "Total Units" are yearly totals — they must
+        // stay fixed no matter what the date range picker above is set to.
+        // They're scoped to the calendar year of the currently selected
+        // "date_from" so browsing into a different year updates them too.
+        $yearForTotals = Carbon::parse($dateFrom)->year;
+        $yearStart = Carbon::create($yearForTotals, 1, 1)->startOfYear()->toDateString();
+        $yearEnd   = Carbon::create($yearForTotals, 1, 1)->endOfYear()->toDateString();
+
+        $totalNetTcp = CommissionRequestSales::whereNotNull('date_of_downpayment')
+            ->whereBetween('date_of_downpayment', [$yearStart, $yearEnd])
             ->where('client_status', '!=', 'Cancelled')
             ->sum('net_tcp');
+
         $totalClients = CommissionRequestSales::whereBetween('date_requested', [$dateFrom, $dateTo])->distinct('client_name')->count('client_name');
-        $totalRecords = CommissionRequestSales::whereBetween('date_requested', [$dateFrom, $dateTo])->count();
 
-        // Units, Pending, Cancelled, Total Reservation for the date range (based on date_of_downpayment)
-        $units = CommissionRequestSales::whereNotNull('date_of_downpayment')
-            ->whereBetween('date_of_downpayment', [$dateFrom, $dateTo])
+        // "Total Units" (previously mislabeled "Total Records") — the total
+        // number of units sold across the whole year, unaffected by the
+        // date range filter. Uses the same units-per-record fallback rule
+        // as the per-agent analytics below (number_of_units, or 1 unit when
+        // a block/lot is present but number_of_units wasn't filled in).
+        $totalUnits = (int) CommissionRequestSales::whereNotNull('date_of_downpayment')
+            ->whereBetween('date_of_downpayment', [$yearStart, $yearEnd])
             ->where('client_status', '!=', 'Cancelled')
-            ->whereNotNull('block_lot_number')
-            ->distinct('block_lot_number')->count('block_lot_number');
+            ->get(['number_of_units', 'block_lot_number'])
+            ->sum(function ($record) {
+                $unitCount = (int) ($record->number_of_units ?? 0);
+                if ($unitCount <= 0 && trim((string) $record->block_lot_number) !== '') {
+                    $unitCount = 1;
+                }
+                return $unitCount;
+            });
+        // Kept for backwards compatibility with the view variable name.
+        $totalRecords = $totalUnits;
 
+        // Units are calculated together with the per-agent analytics below
+        // so the dashboard card and chart always use the same definition.
+        // This one IS scoped to the selected date range.
+        $units = 0;
+
+        // Gross Sales — scoped to the selected date range only.
         $grossSalesFromClient = CommissionRequestSales::whereNotNull('date_of_downpayment')
             ->whereBetween('date_of_downpayment', [$dateFrom, $dateTo])
             ->where('client_status', '!=', 'Cancelled')->sum('net_tcp');
 
+        // Pending Reservation — number of clients within the selected date
+        // range whose reservation is not cancelled and has not yet paid
+        // (or fully paid) its downpayment.
         $pendingReservation = CommissionRequestSales::whereBetween('reservation_date', [$dateFrom, $dateTo])
-            ->where(function($q) { $q->whereNull('downpayment_status')->orWhereNotIn('downpayment_status', ['Paid','Spot Paid']); })
-            ->where(function($q) { $q->whereNull('client_status')->orWhere('client_status','!=','Cancelled'); })->count();
+            ->where(function($q) { $q->whereNull('downpayment_status')->orWhereNotIn('downpayment_status', ['Paid','Spot Paid', 'Partial']); })
+            ->where(function($q) { $q->whereNull('client_status')->orWhere('client_status','!=','Cancelled'); })
+            ->distinct('client_name')
+            ->count('client_name');
 
+        // Cancelled Reservation — number of cancelled reservations within
+        // the selected date range.
         $cancelledReservation = CommissionRequestSales::whereBetween('reservation_date', [$dateFrom, $dateTo])
             ->where('client_status','Cancelled')->count();
 
-        $totalReservation = $units + $pendingReservation - $cancelledReservation;
+        // Total Reservation — total reservation records for the selected
+        // month/date range (independent of the Units/Pending/Cancelled math).
+        $totalReservation = CommissionRequestSales::whereBetween('reservation_date', [$dateFrom, $dateTo])->count();
 
         // Get all teams with agents and quotas
         $teams = SalesTeam::with(['agents', 'quotas'])->orderBy('leader_name')->get();
@@ -240,14 +276,14 @@ class SalesMarketingController extends Controller
         })->sortByDesc('teamTotal')->values();
 
         // Fallback flat list if no teams configured
-        // Fetch raw then normalize agent names in PHP to merge typo variants
-        $rawPerformers = CommissionRequestSales::selectRaw('agent_name, SUM(net_tcp) as total_sales, SUM(commission) as total_commission, COUNT(*) as deals')
+        // Fetch raw rows (not pre-aggregated) so we can apply the same
+        // units-per-record fallback rule used by the per-agent analytics
+        // below, then normalize agent names in PHP to merge typo variants.
+        $rawPerformers = CommissionRequestSales::select('agent_name', 'net_tcp', 'commission', 'number_of_units', 'block_lot_number')
             ->whereNotNull('agent_name')
             ->whereNotNull('date_of_downpayment')
             ->whereBetween('date_of_downpayment', [$dateFrom, $dateTo])
             ->where('client_status', '!=', 'Cancelled')
-            ->groupBy('agent_name')
-            ->orderByDesc('total_sales')
             ->get();
 
         // Normalize: uppercase + collapse spaces + normalize punctuation
@@ -255,11 +291,18 @@ class SalesMarketingController extends Controller
         foreach ($rawPerformers as $row) {
             $key = preg_replace('/[^A-Z0-9 ]/', '', strtoupper(preg_replace('/\s+/', ' ', trim($row->agent_name))));
             if (!isset($merged[$key])) {
-                $merged[$key] = ['agent_name' => trim($row->agent_name), 'total_sales' => 0, 'total_commission' => 0, 'deals' => 0, 'position' => null];
+                $merged[$key] = ['agent_name' => trim($row->agent_name), 'total_sales' => 0, 'total_commission' => 0, 'deals' => 0, 'units' => 0, 'position' => null];
             }
-            $merged[$key]['total_sales']       += $row->total_sales;
-            $merged[$key]['total_commission']   += $row->total_commission;
-            $merged[$key]['deals']              += $row->deals;
+
+            $unitsForRow = (int) ($row->number_of_units ?? 0);
+            if ($unitsForRow <= 0 && trim((string) $row->block_lot_number) !== '') {
+                $unitsForRow = 1;
+            }
+
+            $merged[$key]['total_sales']       += $row->net_tcp;
+            $merged[$key]['total_commission']   += $row->commission;
+            $merged[$key]['deals']              += 1;
+            $merged[$key]['units']              += $unitsForRow;
         }
 
         // Look up position from users table AND team management roles
@@ -301,40 +344,219 @@ class SalesMarketingController extends Controller
             $q->whereDate('reservation_date', $today)->orWhereDate('date_of_downpayment', $today);
         })->count();
 
-        // Chart data for team performance
-        $chartTeamData = $teamPerformance->map(function($t) use ($topPerformers) {
-            // Try to match members from topPerformers by name (loose match)
-            $memberSales = collect($t['agentSales']);
+        // Build the interactive analytics data from client records in the
+        // selected period. Net TCP, units and deals come from the client
+        // database. ArkCrest Share comes only from released commission
+        // requests that already have an ArkCrest commission rate.
+        $analyticsSalesRecords = CommissionRequestSales::query()
+            ->whereNotNull('date_of_downpayment')
+            ->whereBetween('date_of_downpayment', [$dateFrom, $dateTo])
+            ->where('client_status', '!=', 'Cancelled')
+            ->get([
+                'id',
+                'agent_name',
+                'net_tcp',
+                'number_of_units',
+                'block_lot_number',
+            ]);
 
-            // If no agent sales found via team membership, try matching from topPerformers
-            if ($memberSales->isEmpty() || $memberSales->sum('total_sales') == 0) {
-                $allMemberNames = $t['team']->agents->pluck('name')
-                    ->push($t['team']->leader_name)
-                    ->filter()
-                    ->map(fn($n) => strtolower(trim($n)))
-                    ->toArray();
+        $arkcrestShareBySource = collect();
+        $sourceRecordIds = $analyticsSalesRecords->pluck('id')->filter()->values();
 
-                $memberSales = $topPerformers->filter(function($p) use ($allMemberNames) {
-                    $normalized = strtolower(trim($p->agent_name));
-                    foreach ($allMemberNames as $m) {
-                        if ($normalized === $m || str_contains($normalized, $m) || str_contains($m, $normalized)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                })->map(function($p) {
-                    return (object)['agent_name' => $p->agent_name, 'total_sales' => $p->total_sales];
-                })->values();
+        if (
+            $sourceRecordIds->isNotEmpty()
+            && Schema::hasTable('arkcrest_commission_rates')
+            && Schema::hasColumn('commission_requests', 'source_client_record_id')
+        ) {
+            $shareQuery = DB::table('commission_requests as commission_request')
+                ->join(
+                    'arkcrest_commission_rates as arkcrest_rate',
+                    'arkcrest_rate.commission_request_id',
+                    '=',
+                    'commission_request.id'
+                )
+                ->whereIn('commission_request.source_client_record_id', $sourceRecordIds)
+                ->where('commission_request.status', 'Released');
+
+            if (Schema::hasColumn('commission_requests', 'deleted_at')) {
+                $shareQuery->whereNull('commission_request.deleted_at');
             }
 
+            $arkcrestShareBySource = $shareQuery
+                ->selectRaw(
+                    'commission_request.source_client_record_id, '
+                    . 'SUM(COALESCE(arkcrest_rate.arkcrest_commission, 0)) as arkcrest_share'
+                )
+                ->groupBy('commission_request.source_client_record_id')
+                ->pluck('arkcrest_share', 'commission_request.source_client_record_id');
+        }
+
+        $normalizeAgentName = static function (?string $name): string {
+            $name = strtoupper(preg_replace('/\s+/', ' ', trim((string) $name)));
+
+            return preg_replace('/[^A-Z0-9]/', '', $name) ?? '';
+        };
+
+        $agentAnalytics = [];
+
+        foreach ($analyticsSalesRecords as $record) {
+            $displayName = trim((string) $record->agent_name);
+            if ($displayName === '') {
+                $displayName = 'Unassigned';
+            }
+
+            $normalizedName = $normalizeAgentName($displayName);
+
+            if (!isset($agentAnalytics[$normalizedName])) {
+                $agentAnalytics[$normalizedName] = [
+                    'name' => $displayName,
+                    'net_tcp' => 0.0,
+                    'arkcrest_share' => 0.0,
+                    'units' => 0,
+                    'deals' => 0,
+                ];
+            }
+
+            $unitsForRecord = (int) ($record->number_of_units ?? 0);
+            if ($unitsForRecord <= 0 && trim((string) $record->block_lot_number) !== '') {
+                $unitsForRecord = 1;
+            }
+
+            $agentAnalytics[$normalizedName]['net_tcp'] += (float) ($record->net_tcp ?? 0);
+            $agentAnalytics[$normalizedName]['arkcrest_share'] += (float) (
+                $arkcrestShareBySource[$record->id] ?? 0
+            );
+            $agentAnalytics[$normalizedName]['units'] += $unitsForRecord;
+            $agentAnalytics[$normalizedName]['deals']++;
+        }
+
+        // Keep the main Units card aligned with the chart's unit total.
+        $units = (int) collect($agentAnalytics)->sum('units');
+
+        $findAnalyticsKey = static function (
+            string $memberName,
+            array $analytics,
+            array $usedKeys = []
+        ) use ($normalizeAgentName): ?string {
+            $normalizedMember = $normalizeAgentName($memberName);
+
+            if ($normalizedMember === '') {
+                return null;
+            }
+
+            if (isset($analytics[$normalizedMember]) && !in_array($normalizedMember, $usedKeys, true)) {
+                return $normalizedMember;
+            }
+
+            foreach (array_keys($analytics) as $analyticsKey) {
+                if (in_array($analyticsKey, $usedKeys, true)) {
+                    continue;
+                }
+
+                if (
+                    str_contains($analyticsKey, $normalizedMember)
+                    || str_contains($normalizedMember, $analyticsKey)
+                ) {
+                    return $analyticsKey;
+                }
+            }
+
+            return null;
+        };
+
+        $buildChartMembers = static function (
+            array $configuredNames,
+            bool $includeUnassigned
+        ) use ($agentAnalytics, $normalizeAgentName, $findAnalyticsKey): array {
+            $members = [];
+            $usedAnalyticsKeys = [];
+            $usedConfiguredNames = [];
+
+            foreach ($configuredNames as $configuredName) {
+                $configuredName = trim((string) $configuredName);
+                $configuredKey = $normalizeAgentName($configuredName);
+
+                if ($configuredName === '' || $configuredKey === '' || isset($usedConfiguredNames[$configuredKey])) {
+                    continue;
+                }
+
+                $usedConfiguredNames[$configuredKey] = true;
+                $analyticsKey = $findAnalyticsKey($configuredName, $agentAnalytics, $usedAnalyticsKeys);
+
+                if ($analyticsKey !== null) {
+                    $members[] = $agentAnalytics[$analyticsKey];
+                    $usedAnalyticsKeys[] = $analyticsKey;
+                } else {
+                    $members[] = [
+                        'name' => $configuredName,
+                        'net_tcp' => 0.0,
+                        'arkcrest_share' => 0.0,
+                        'units' => 0,
+                        'deals' => 0,
+                    ];
+                }
+            }
+
+            if ($includeUnassigned) {
+                foreach ($agentAnalytics as $analyticsKey => $analytics) {
+                    if (!in_array($analyticsKey, $usedAnalyticsKeys, true)) {
+                        $members[] = $analytics;
+                    }
+                }
+            }
+
+            usort($members, static function (array $left, array $right): int {
+                $salesComparison = $right['net_tcp'] <=> $left['net_tcp'];
+
+                return $salesComparison !== 0
+                    ? $salesComparison
+                    : strcasecmp($left['name'], $right['name']);
+            });
+
+            return array_values($members);
+        };
+
+        $makeTeamChartData = static function (string $teamName, array $members): array {
             return [
-                'team'    => $t['team']->team_name,
-                'total'   => (float) $memberSales->sum('total_sales') ?: (float) $t['teamTotal'],
-                'members' => $memberSales->map(function($a) {
-                    return ['name' => $a->agent_name, 'sales' => (float) $a->total_sales];
-                })->values()->toArray(),
+                'team' => $teamName,
+                'members' => $members,
+                'totals' => [
+                    'net_tcp' => (float) collect($members)->sum('net_tcp'),
+                    'arkcrest_share' => (float) collect($members)->sum('arkcrest_share'),
+                    'units' => (int) collect($members)->sum('units'),
+                    'deals' => (int) collect($members)->sum('deals'),
+                ],
             ];
-        })->values()->toArray();
+        };
+
+        $allConfiguredAgentNames = $teams
+            ->flatMap(function ($team) {
+                return $team->agents->pluck('name')->push($team->leader_name);
+            })
+            ->filter()
+            ->values()
+            ->toArray();
+
+        $chartTeamData = [
+            $makeTeamChartData(
+                'All Agents',
+                $buildChartMembers($allConfiguredAgentNames, true)
+            ),
+        ];
+
+        foreach ($teams as $team) {
+            $configuredNames = $team->agents
+                ->pluck('name')
+                ->push($team->leader_name)
+                ->filter()
+                ->values()
+                ->toArray();
+
+            $chartTeamData[] = $makeTeamChartData(
+                $team->team_name,
+                $buildChartMembers($configuredNames, false)
+            );
+        }
 
         return view('sales-marketing', compact(
             'totalNetTcp', 'totalClients', 'totalRecords',
@@ -387,8 +609,8 @@ class SalesMarketingController extends Controller
         \App\Models\Client::create([
             'name'    => $request->name,
             'address' => $request->address,
-            'emails'  => array_filter($request->input('emails', [])),
-            'phones'  => array_filter($request->input('phones', [])),
+            'emails'  => $this->splitCommaList($request->input('email')),
+            'phones'  => $this->splitCommaList($request->input('phone')),
             'notes'   => $request->notes,
         ]);
         return redirect()->route('reserved-clients')->with('success', 'Client added.');
@@ -400,11 +622,20 @@ class SalesMarketingController extends Controller
         $client->update([
             'name'    => $request->name,
             'address' => $request->address,
-            'emails'  => array_filter($request->input('emails', [])),
-            'phones'  => array_filter($request->input('phones', [])),
+            'emails'  => $this->splitCommaList($request->input('email')),
+            'phones'  => $this->splitCommaList($request->input('phone')),
             'notes'   => $request->notes,
         ]);
         return redirect()->route('reserved-clients')->with('success', 'Client updated.');
+    }
+
+    // "john@a.com, john@b.com" -> ['john@a.com', 'john@b.com']
+    private function splitCommaList(?string $value): array
+    {
+        if (!$value) {
+            return [];
+        }
+        return array_values(array_filter(array_map('trim', explode(',', $value))));
     }
 
     public function destroyClient($id)
@@ -580,6 +811,7 @@ class SalesMarketingController extends Controller
             'price_sqm' => $record->price_sqm ?? '',
             'lot_area' => $record->lot_area ?? '',
             'discount' => $record->discount ?? '',
+            'discount_value' => $record->discount_value ?? '',
             'mode_of_payment' => $record->mode_of_payment ?? '',
         ]);
     }
@@ -627,6 +859,7 @@ class SalesMarketingController extends Controller
             'price_sqm' => $record->price_sqm ?? '',
             'lot_area' => $record->lot_area ?? '',
             'discount' => $record->discount ?? '',
+            'discount_value' => $record->discount_value ?? '',
             'mode_of_payment' => $record->mode_of_payment ?? '',
         ]);
     }
@@ -714,13 +947,14 @@ class SalesMarketingController extends Controller
             'lot_area'            => 'required|numeric|min:0',
             'price_sqm'           => 'nullable|numeric|min:0',
             'tcp'                 => 'nullable|numeric',
-            'discount'            => 'nullable|numeric|min:0|max:100',
-            'discount_value'      => 'nullable|numeric',
+            'discount'            => ['nullable', 'regex:/^(?:100(?:\.0{1,30})?|(?:\d{1,2})(?:\.\d{1,30})?)$/'],
+            'discount_value'      => 'nullable|numeric|min:0',
+            'discount_calculation_source' => 'nullable|in:percent,value',
             'net_tcp'             => 'nullable|numeric',
             'terms_of_payment'    => 'required|string|max:255',
             'agent_name'          => 'required|string|max:255',
             'number_of_units'     => 'required|integer|min:1',
-            'commission_percent'  => 'nullable|numeric|min:0|max:100',
+            'commission_percent'  => ['nullable', 'regex:/^(?:100(?:\.0{1,30})?|(?:\d{1,2})(?:\.\d{1,30})?)$/'],
             'commission'          => 'nullable|numeric',
             'mode_of_payment'     => 'nullable|string|max:255',
             'remarks'             => 'nullable|string',
@@ -730,6 +964,57 @@ class SalesMarketingController extends Controller
             // downpayment_per_term, downpayment_date are managed separately
             // via the downpayment modal — never overwritten by the edit form
         ];
+    }
+
+    /**
+     * Recalculate TCP, discount percentage/value, and Net TCP with exact
+     * base-10 arithmetic. Percentage strings are preserved up to MySQL's
+     * maximum DECIMAL scale of 30 and are never converted to FLOAT/DOUBLE.
+     */
+    private function normalizeClientFinancialFields(array $validated): array
+    {
+        $tcp = ExactFinancialMath::multiplyToMoney(
+            $validated['price_sqm'] ?? 0,
+            $validated['lot_area'] ?? 0
+        );
+
+        $source = $validated['discount_calculation_source'] ?? 'percent';
+
+        if ($tcp !== '0.00') {
+            if ($source === 'value') {
+                $discountValue = ExactFinancialMath::clampMoney(
+                    $validated['discount_value'] ?? 0,
+                    '0.00',
+                    $tcp
+                );
+                $discountPercent = ExactFinancialMath::percentageFromAmount(
+                    $discountValue,
+                    $tcp
+                );
+            } else {
+                $discountPercent = ExactFinancialMath::normalizePercentage(
+                    $validated['discount'] ?? 0
+                );
+                $discountValue = ExactFinancialMath::moneyFromPercentage(
+                    $tcp,
+                    $discountPercent
+                );
+            }
+
+            $validated['tcp'] = $tcp;
+            $validated['discount'] = $discountPercent;
+            $validated['discount_value'] = $discountValue;
+            $validated['net_tcp'] = ExactFinancialMath::subtractMoney($tcp, $discountValue);
+        } else {
+            $validated['tcp'] = '0.00';
+            $validated['discount'] = ExactFinancialMath::normalizePercentage($validated['discount'] ?? 0);
+            $validated['discount_value'] = '0.00';
+            $validated['net_tcp'] = '0.00';
+        }
+
+        unset($validated['discount_calculation_source']);
+
+        return $validated;
     }
 
     public function checkDuplicate(Request $request)
@@ -765,6 +1050,7 @@ class SalesMarketingController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate($this->validationRules());
+        $validated = $this->normalizeClientFinancialFields($validated);
         if (empty($validated['status'])) {
             $validated['status'] = 'Not Yet Released';
         }
@@ -827,6 +1113,8 @@ class SalesMarketingController extends Controller
                 'errors' => $allMessages,
             ], 422);
         }
+
+        $validated = $this->normalizeClientFinancialFields($validated);
 
         // Preserve downpayment fields — never overwrite from the edit form
         unset(

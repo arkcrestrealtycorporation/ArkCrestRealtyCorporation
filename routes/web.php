@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\AuthController;
-
+use App\Http\Controllers\TrainingCourseController;
 // Auth routes (guests only)
 Route::middleware(['guest', 'no.cache'])->group(function () {
     Route::get('/login',     [AuthController::class, 'showLogin'])->name('login');
@@ -22,10 +22,11 @@ Route::middleware(['guest', 'no.cache'])->group(function () {
     Route::post('/forgot-password/send-email', [AuthController::class, 'sendPasswordResetEmail'])->name('forgot.email');
 });
 
-// Root redirect to login
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+// Public landing page
+Route::view('/', 'landing')->name('landing');
+
+// Public "Get in touch" / property inquiry form on the landing page
+Route::post('/inquire', [App\Http\Controllers\InquiryController::class, 'store'])->name('inquire.store');
 
 // Tripping Schedule Form (public — no login required)
 Route::get('/tripping', [App\Http\Controllers\TripScheduleController::class, 'show'])->name('tripping');
@@ -55,13 +56,27 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('page.visible');
 
+    // Staff sales and real estate agent training — Real Estate Agent Training course
+    Route::get('/agent-training', [App\Http\Controllers\TrainingCourseController::class, 'index'])->name('agent-training');
+    Route::get('/agent-training/module/{module}', [App\Http\Controllers\TrainingCourseController::class, 'showModule'])
+        ->name('agent-training.module');
+    Route::post('/agent-training/module/{module}/quiz', [App\Http\Controllers\TrainingCourseController::class, 'submitQuiz'])
+        ->name('agent-training.quiz.submit')
+        ->middleware('throttle:20,1');
+    Route::get('/agent-training/module/{module}/exam', [TrainingCourseController::class, 'showExam'])->name('agent-training.module.exam');
+    Route::get('/agent-training/module/{module}/exam/results', [TrainingCourseController::class, 'examResults'])->name('agent-training.module.exam.results');
+    Route::get('/agent-training/congratulations', [TrainingCourseController::class, 'congratulations'])->name('agent-training.congratulations');
+    Route::get('/agent-training/certificate', [TrainingCourseController::class, 'certificate'])->name('agent-training.certificate');
+    Route::get('/agent-training/certificate/preview', [TrainingCourseController::class, 'certificatePreview'])->name('agent-training.certificate.preview');
+    Route::get('/agent-training/certificate/download', [TrainingCourseController::class, 'certificateDownload'])->name('agent-training.certificate.download');
+
     // Summary Report
     Route::get('/summary-report', [App\Http\Controllers\SummaryReportController::class, 'index'])->name('summary-report')->middleware('page.visible');
     Route::get('/summary-report-yearly', [App\Http\Controllers\SummaryReportController::class, 'yearly'])->name('summary-report.yearly')->middleware('page.visible');
     Route::post('/api/summary-report/update', [App\Http\Controllers\SummaryReportController::class, 'update']);
 
     // ArkCrest Sales (Commission Income)
-    Route::get('/arkcrest-sales', [App\Http\Controllers\ArkcrestSalesController::class, 'index'])->name('arkcrest-sales');
+    Route::get('/arkcrest-sales', [App\Http\Controllers\ArkcrestSalesController::class, 'index'])->name('arkcrest-sales')->middleware('page.visible');
     Route::post('/api/arkcrest-sales/{id}/rate', [App\Http\Controllers\ArkcrestSalesController::class, 'saveRate'])->name('arkcrest-sales.rate');
 
     // Departments (Departmental Expenses)
@@ -70,6 +85,8 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::get('/departmental-expenses/{id}/view-form', [App\Http\Controllers\DepartmentalExpensesController::class, 'viewForm'])->name('departmental-expenses.view-form');
     Route::post('/api/departmental-expenses', [App\Http\Controllers\DepartmentalExpensesController::class, 'store']);
     Route::put('/api/departmental-expenses/{id}', [App\Http\Controllers\DepartmentalExpensesController::class, 'update']);
+    Route::patch('/api/departmental-expenses/{id}/release-status', [App\Http\Controllers\DepartmentalExpensesController::class, 'updateReleaseStatus']);
+    Route::patch('/api/departmental-expenses/{id}/liquidation-status', [App\Http\Controllers\DepartmentalExpensesController::class, 'updateLiquidationStatus']);
     Route::delete('/api/departmental-expenses/{id}', [App\Http\Controllers\DepartmentalExpensesController::class, 'destroy']);
 
     // Autocomplete API Routes
@@ -93,14 +110,46 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::delete('/api/expenses/{id}', [DepartmentController::class, 'deleteExpense']);
     Route::delete('/api/categories/{id}', [DepartmentController::class, 'deleteCategory']);
 
+    // Persuasion Practice (AI buyer roleplay training)
+    Route::get('/practice', [App\Http\Controllers\PersuasionPracticeController::class, 'index'])->name('practice');
+    Route::get('/practice/history', [App\Http\Controllers\PersuasionPracticeController::class, 'history'])->name('practice.history');
+    Route::post('/practice/{scenario}/start', [App\Http\Controllers\PersuasionPracticeController::class, 'start'])->name('practice.start')->middleware('throttle:15,1');
+    Route::get('/practice/session/{session}', [App\Http\Controllers\PersuasionPracticeController::class, 'chat'])->name('practice.chat');
+    Route::post('/api/practice/session/{session}/message', [App\Http\Controllers\PersuasionPracticeController::class, 'sendMessage'])->name('practice.message')->middleware('throttle:20,1');
+    Route::post('/api/practice/session/{session}/retry', [App\Http\Controllers\PersuasionPracticeController::class, 'retryMessage'])->name('practice.retry')->middleware('throttle:20,1');
+    Route::post('/api/practice/session/{session}/end', [App\Http\Controllers\PersuasionPracticeController::class, 'end'])->name('practice.end')->middleware('throttle:10,1');
+
+    // Persuasion Practice — scenario management
+    // View access follows Page Visibility ('settings.practice-scenarios'), checked
+    // inside the controller; create/update/delete remain admin-only.
+    Route::get('/practice/admin', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'index'])->name('practice.admin');
+
+    // Persuasion Practice — team-wide history (admin/manager view of every
+    // agent's sessions, scores, and transcripts). Both view AND delete access
+    // follow Page Visibility ('settings.practice-history'), checked inside
+    // the controller — any staff granted this page can also delete records.
+    Route::get('/practice/admin/history', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'history'])->name('practice.admin.history');
+    Route::delete('/practice/admin/history/{session}', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'destroySession'])->name('practice.admin.history.destroy');
+    Route::post('/practice/admin/history/bulk-delete', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'bulkDestroySession'])->name('practice.admin.history.bulk-destroy');
+
+    Route::middleware('admin')->group(function () {
+        Route::post('/practice/admin', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'store'])->name('practice.admin.store');
+        Route::put('/practice/admin/{scenario}', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'update'])->name('practice.admin.update');
+        Route::delete('/practice/admin/{scenario}', [App\Http\Controllers\PersuasionScenarioAdminController::class, 'destroy'])->name('practice.admin.destroy');
+    });
+
     // Settings
     Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings');
+    Route::get('/users/{user}/avatar', [App\Http\Controllers\UserAvatarController::class, 'show'])
+        ->whereNumber('user')
+        ->name('users.avatar');
     Route::post('/settings/deleted/bulk-restore', [App\Http\Controllers\SettingsController::class, 'bulkRestoreRecords'])->name('settings.deleted.bulk-restore');
     Route::post('/settings/deleted/bulk-delete', [App\Http\Controllers\SettingsController::class, 'bulkDeleteRecords'])->name('settings.deleted.bulk-delete');
 
-    // Edit History / Audit Trail (Administrator only — dedicated controller & route)
+    // Edit History / Audit Trail — view access follows Page Visibility
+    // ('settings.edit-history'), checked inside the controller.
     Route::get('/settings/edit-history', [App\Http\Controllers\Admin\EditHistoryController::class, 'index'])
-        ->name('settings.edit-history')->middleware('admin');
+        ->name('settings.edit-history');
     Route::post('/settings/notifications', [App\Http\Controllers\SettingsController::class, 'saveNotifications'])->name('settings.notifications');
     Route::post('/settings/smtp', [App\Http\Controllers\SettingsController::class, 'saveSmtp'])->name('settings.smtp');
     Route::post('/settings/profile', [App\Http\Controllers\SettingsController::class, 'updateProfile'])->name('settings.profile');
@@ -160,14 +209,14 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::get('/sales-marketing/{id}', [App\Http\Controllers\SalesMarketingController::class, 'show'])->name('sales-marketing.show');
 
     // Property List
-    Route::get('/property-list', [App\Http\Controllers\SalesMarketingController::class, 'propertyList'])->name('property-list');
+    Route::get('/property-list', [App\Http\Controllers\SalesMarketingController::class, 'propertyList'])->name('property-list')->middleware('page.visible');
 
     // Client Database
-    Route::get('/client-database', [App\Http\Controllers\SalesMarketingController::class, 'clientDatabase'])->name('client-database');
+    Route::get('/client-database', [App\Http\Controllers\SalesMarketingController::class, 'clientDatabase'])->name('client-database')->middleware('page.visible');
     Route::get('/api/client-database/{id}/prefill', [App\Http\Controllers\SalesMarketingController::class, 'prefillCommission']);
     Route::get('/api/commission-stage-requests/{id}/prefill', [App\Http\Controllers\SalesMarketingController::class, 'prefillCommissionStageRequest']);
     Route::get('/api/client-database/check-duplicate', [App\Http\Controllers\SalesMarketingController::class, 'checkDuplicate']);
-    Route::get('/reserved-clients', [App\Http\Controllers\SalesMarketingController::class, 'reservedClients'])->name('reserved-clients');
+    Route::get('/reserved-clients', [App\Http\Controllers\SalesMarketingController::class, 'reservedClients'])->name('reserved-clients')->middleware('page.visible');
     Route::post('/reserved-clients/add', [App\Http\Controllers\SalesMarketingController::class, 'storeReservedClient'])->name('reserved-clients.store');
     Route::put('/reserved-clients/{id}', [App\Http\Controllers\SalesMarketingController::class, 'updateReservedClient'])->name('reserved-clients.update');
     Route::delete('/reserved-clients/{id}', [App\Http\Controllers\SalesMarketingController::class, 'destroyReservedClient'])->name('reserved-clients.destroy');
@@ -192,7 +241,7 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::delete('/client-database/{id}', [App\Http\Controllers\SalesMarketingController::class, 'destroy'])->name('client-database.destroy');
 
     // Site Visit Database
-    Route::get('/site-visit-database', [App\Http\Controllers\TripScheduleController::class, 'database'])->name('site-visit-database');
+    Route::get('/site-visit-database', [App\Http\Controllers\TripScheduleController::class, 'database'])->name('site-visit-database')->middleware('page.visible');
     Route::get('/api/site-visit-database/pending', [App\Http\Controllers\TripScheduleController::class, 'pendingJson']);
     Route::get('/api/trips/{id}/prefill', [App\Http\Controllers\TripScheduleController::class, 'prefillData']);
     Route::patch('/site-visit-database/{id}/status', [App\Http\Controllers\TripScheduleController::class, 'updateStatus'])->name('site-visit-database.status');
@@ -226,7 +275,7 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::get('/api/permission-requests/check', [App\Http\Controllers\PermissionRequestController::class, 'check']);
     Route::get('/api/permission-requests/pending', [App\Http\Controllers\PermissionRequestController::class, 'pending']);
     Route::get('/api/permission-requests/by-notif/{notifId}', [App\Http\Controllers\PermissionRequestController::class, 'byNotif']);
-    Route::get('/commission-dashboard', [App\Http\Controllers\CommissionMonitoringController::class, 'dashboard'])->name('commission-dashboard');
+    Route::get('/commission-dashboard', [App\Http\Controllers\CommissionMonitoringController::class, 'dashboard'])->name('commission-dashboard')->middleware('page.visible');
     Route::get('/commission-monitoring', [App\Http\Controllers\CommissionMonitoringController::class, 'index'])->name('commission-monitoring')->middleware('page.visible');
     Route::post('/commission-monitoring', [App\Http\Controllers\CommissionMonitoringController::class, 'store'])->name('commission-monitoring.store');
     Route::get('/api/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'show']);
@@ -234,17 +283,33 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     Route::put('/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'update'])->name('commission-monitoring.update');
     Route::delete('/commission-monitoring/{id}', [App\Http\Controllers\CommissionMonitoringController::class, 'destroy'])->name('commission-monitoring.destroy');
     Route::post('/commission-monitoring/bulk-delete', [App\Http\Controllers\CommissionMonitoringController::class, 'bulkDestroy'])->name('commission-monitoring.bulk-delete');
+    Route::post('/api/commission-notifications/{notificationId}/process', [App\Http\Controllers\CommissionMonitoringController::class, 'processCommissionNotification'])->name('commission-notifications.process');
 
     // Cash Advance
     Route::get('/cash-advance', [App\Http\Controllers\CashAdvanceController::class, 'index'])->name('cash-advance')->middleware('page.visible');
     Route::post('/cash-advance', [App\Http\Controllers\CashAdvanceController::class, 'store'])->name('cash-advance.store');
+    Route::get('/cash-advance/{id}', [App\Http\Controllers\CashAdvanceController::class, 'show'])->name('cash-advance.show');
     Route::post('/cash-advance/{id}/approve', [App\Http\Controllers\CashAdvanceController::class, 'approve'])->name('cash-advance.approve');
     Route::post('/cash-advance/{id}/reject', [App\Http\Controllers\CashAdvanceController::class, 'reject'])->name('cash-advance.reject');
-    Route::delete('/cash-advance/{id}', [App\Http\Controllers\CashAdvanceController::class, 'destroy'])->name('cash-advance.destroy');
+    Route::get('/cash-advance/{id}/repayments', [App\Http\Controllers\CashAdvanceController::class, 'repayments'])->name('cash-advance.repayments');
+    Route::post('/cash-advance/{id}/repayments/{term}/pay', [App\Http\Controllers\CashAdvanceController::class, 'markRepaymentPaid'])->name('cash-advance-repayments.pay');
+    Route::post('/cash-advance/{id}/repayments/{term}/unpay', [App\Http\Controllers\CashAdvanceController::class, 'unmarkRepaymentPaid'])->name('cash-advance-repayments.unpay');
+    Route::delete('/cash-advance-repayments/{repaymentId}', [App\Http\Controllers\CashAdvanceController::class, 'destroyRepayment'])->name('cash-advance-repayments.destroy');
 
+    Route::delete('/cash-advance/{id}', [App\Http\Controllers\CashAdvanceController::class, 'destroy'])->name('cash-advance.destroy');
+    Route::get('/agent-cash-advance', [App\Http\Controllers\AgentCashAdvanceController::class, 'index'])->name('agent-cash-advance')->middleware('page.visible');
+    Route::post('/agent-cash-advance', [App\Http\Controllers\AgentCashAdvanceController::class, 'store'])->name('agent-cash-advance.store');
+    Route::get('/agent-cash-advance/{id}', [App\Http\Controllers\AgentCashAdvanceController::class, 'show'])->name('agent-cash-advance.show');
+    Route::post('/agent-cash-advance/{id}/approve', [App\Http\Controllers\AgentCashAdvanceController::class, 'approve'])->name('agent-cash-advance.approve');
+    Route::post('/agent-cash-advance/{id}/reject', [App\Http\Controllers\AgentCashAdvanceController::class, 'reject'])->name('agent-cash-advance.reject');
+    Route::get('/agent-cash-advance/{id}/repayments', [App\Http\Controllers\AgentCashAdvanceController::class, 'repayments'])->name('agent-cash-advance.repayments');
+    Route::post('/agent-cash-advance/{id}/repayments/{term}/pay', [App\Http\Controllers\AgentCashAdvanceController::class, 'markRepaymentPaid'])->name('agent-cash-advance-repayments.pay');
+    Route::post('/agent-cash-advance/{id}/repayments/{term}/unpay', [App\Http\Controllers\AgentCashAdvanceController::class, 'unmarkRepaymentPaid'])->name('agent-cash-advance-repayments.unpay');
+    Route::delete('/agent-cash-advance-repayments/{repaymentId}', [App\Http\Controllers\AgentCashAdvanceController::class, 'destroyRepayment'])->name('agent-cash-advance-repayments.destroy');
+    Route::delete('/agent-cash-advance/{id}', [App\Http\Controllers\AgentCashAdvanceController::class, 'destroy'])->name('agent-cash-advance.destroy');
     // Calendar
     Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'index'])->name('calendar')->middleware('page.visible');
-    Route::get('/sales-calendar', [App\Http\Controllers\CalendarController::class, 'salesCalendar'])->name('sales-calendar');
+    Route::get('/sales-calendar', [App\Http\Controllers\CalendarController::class, 'salesCalendar'])->name('sales-calendar')->middleware('page.visible');
 
     // Global Search API
     Route::get('/api/global-search', [App\Http\Controllers\GlobalSearchController::class, 'search']);

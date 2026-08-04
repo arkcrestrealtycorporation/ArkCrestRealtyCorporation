@@ -33,6 +33,21 @@
             </svg>
             {{ $currentMonth }} {{ $currentYear }} Overview
         </p>
+        <form method="GET" action="{{ route('dashboard') }}" style="display:flex;align-items:center;gap:8px;margin-top:14px;position:relative;z-index:2;flex-wrap:wrap;">
+            <select name="month" onchange="this.form.submit()" style="background:rgba(255,255,255,.15);color:white;border:1.5px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;">
+                @foreach(['January','February','March','April','May','June','July','August','September','October','November','December'] as $i => $mName)
+                <option value="{{ $i+1 }}" {{ ($i+1) == $selectedMonth ? 'selected' : '' }} style="color:#1e4575;background:white;">{{ $mName }}</option>
+                @endforeach
+            </select>
+            <select name="year" onchange="this.form.submit()" style="background:rgba(255,255,255,.15);color:white;border:1.5px solid rgba(255,255,255,.3);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;">
+                @foreach($availableYears as $y)
+                <option value="{{ $y }}" {{ $y == $selectedYear ? 'selected' : '' }} style="color:#1e4575;background:white;">{{ $y }}</option>
+                @endforeach
+            </select>
+            @if(!$isCurrentMonth)
+            <a href="{{ route('dashboard') }}" style="padding:6px 14px;background:rgba(255,255,255,.2);color:white;border:1.5px solid rgba(255,255,255,.3);border-radius:8px;text-decoration:none;font-size:12px;font-weight:600;">Today</a>
+            @endif
+        </form>
         <div class="today-pills">
             <span class="today-pill">
                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
@@ -54,6 +69,188 @@
         <div class="decoration-circle circle-3"></div>
     </div>
 </div>
+
+<!-- Today's Releases (separated from the performance metrics above) -->
+<div class="releases-section">
+    <div class="releases-section-header">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Today's Releases</span>
+        <span class="releases-section-date">{{ \Carbon\Carbon::today()->format('F j, Y') }}</span>
+    </div>
+    <div class="releases-grid">
+        {{-- Today's Commission Releases (PR #177) --}}
+        <div class="metric-card card-gold metric-card-clickable" onclick="openTodayReleasesModal()" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openTodayReleasesModal()">
+            <div class="metric-icon" style="background:linear-gradient(135deg,#6d28d9,#a855f7);">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="metric-content">
+                <div class="metric-label">Commission Releases Today</div>
+                <div class="metric-value">{{ $todayReleases }} <span style="font-size:14px;font-weight:500;color:#64748b;">release{{ $todayReleases != 1 ? 's' : '' }}</span></div>
+                <div style="font-size:13px;font-weight:700;color:#1e4575;">&#8369;{{ number_format($todayReleasesTotal, 0) }}</div>
+                <div class="metric-subtitle">Commission releases — {{ \Carbon\Carbon::today()->format('F j, Y') }}</div>
+            </div>
+        </div>
+        {{-- Today's Expense Releases --}}
+        <div class="metric-card card-gold metric-card-clickable" onclick="openTodayExpensesModal()" role="button" tabindex="0" onkeydown="if(event.key==='Enter')openTodayExpensesModal()">
+            <div class="metric-icon" style="background:linear-gradient(135deg,#6d28d9,#a855f7);">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+            </div>
+            <div class="metric-content">
+                <div class="metric-label">Today's Expense Releases</div>
+                <div class="metric-value">{{ $todayExpenseReleases }} <span style="font-size:14px;font-weight:500;color:#64748b;">release{{ $todayExpenseReleases != 1 ? 's' : '' }}</span></div>
+                <div style="font-size:13px;font-weight:700;color:#1e4575;">&#8369;{{ number_format($todayExpenseReleasesTotal, 0) }}</div>
+                <div class="metric-subtitle">Expense releases — {{ \Carbon\Carbon::today()->format('F j, Y') }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Commission Releases Modal (PR #177) -->
+<div id="todayReleasesModalOverlay" class="modal-overlay" onclick="if(event.target===this)closeTodayReleasesModal()">
+    <div class="modal-box" style="max-width:760px;">
+        <div class="modal-header">
+            <div>
+                <h3 style="margin:0;font-size:16px;color:#ffffff;">Releases Today</h3>
+                <p style="margin:3px 0 0;font-size:12px;color:#dbeafe;">{{ \Carbon\Carbon::today()->format('F j, Y') }}</p>
+            </div>
+            <button class="modal-close" onclick="closeTodayReleasesModal()">&#10005;</button>
+        </div>
+        <div class="modal-body" style="padding:0;">
+            @if($todayReleaseRecords->count() > 0)
+            <div>
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                        <tr style="background:#f8fafc;border-bottom:1.5px solid #e2e8f0;">
+                            <th style="text-align:left;padding:12px 20px;color:#64748b;font-weight:600;">Agent</th>
+                            <th style="text-align:left;padding:12px 20px;color:#64748b;font-weight:600;">Client</th>
+                            <th style="text-align:left;padding:12px 20px;color:#64748b;font-weight:600;">Project</th>
+                            <th style="text-align:right;padding:12px 20px;color:#64748b;font-weight:600;">Commission</th>
+                            <th style="text-align:left;padding:12px 20px;color:#64748b;font-weight:600;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($todayReleaseRecords as $release)
+                        <tr
+                            style="border-bottom:1px solid #f1f5f9;cursor:pointer;"
+                            onclick="window.location.href='{{ route('commission-monitoring') }}?open_request={{ $release->id }}'"
+                            onmouseover="this.style.background='#f8fafc'"
+                            onmouseout="this.style.background=''"
+                        >
+                            <td style="padding:12px 20px;font-weight:600;color:#0f172a;">{{ $release->agent_name }}</td>
+                            <td style="padding:12px 20px;color:#334155;">{{ $release->client_name }}</td>
+                            <td style="padding:12px 20px;color:#334155;">{{ $release->project_name }}</td>
+                            <td style="padding:12px 20px;text-align:right;font-weight:700;color:#1e4575;">&#8369;{{ number_format($release->commission, 2) }}</td>
+                            <td style="padding:12px 20px;">
+                                @if($release->status === 'Released')
+                                    <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#dcfce7;color:#166534;">Released</span>
+                                @else
+                                    <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;">{{ $release->status }}</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#f8fafc;">
+                            <td colspan="3" style="padding:12px 20px;font-weight:700;color:#0f172a;">Total</td>
+                            <td style="padding:12px 20px;text-align:right;font-weight:800;color:#1e4575;">&#8369;{{ number_format($todayReleasesTotal, 2) }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            @else
+            <div style="padding:40px 20px;text-align:center;color:#94a3b8;">No commission releases scheduled for today.</div>
+            @endif
+        </div>
+        <div style="padding:16px 24px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;">
+            <a href="{{ route('commission-monitoring') }}" style="padding:8px 18px;background:#1e4575;color:white;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700;">Open Commission Monitoring</a>
+        </div>
+    </div>
+</div>
+<script>
+function openTodayReleasesModal() {
+    document.getElementById('todayReleasesModalOverlay').classList.add('active');
+}
+function closeTodayReleasesModal() {
+    document.getElementById('todayReleasesModalOverlay').classList.remove('active');
+}
+</script>
+
+<!-- Today's Expense Releases Modal -->
+<div id="todayExpensesModalOverlay" class="modal-overlay" onclick="if(event.target===this)closeTodayExpensesModal()">
+    <div class="modal-box" style="max-width:800px;">
+        <div class="modal-header">
+            <div>
+                <h3 style="margin:0;font-size:16px;color:#ffffff;">Expense Releases Today</h3>
+                <p style="margin:3px 0 0;font-size:12px;color:#dbeafe;">{{ \Carbon\Carbon::today()->format('F j, Y') }}</p>
+            </div>
+            <button class="modal-close" onclick="closeTodayExpensesModal()">&#10005;</button>
+        </div>
+        <div class="modal-body" style="padding:0;">
+            @if($todayExpenseReleaseRecords->count() > 0)
+            <div>
+                <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                    <thead>
+                        <tr style="background:#f8fafc;border-bottom:1.5px solid #e2e8f0;">
+                            <th style="text-align:left;padding:12px 20px;color:#64748b;font-weight:600;">Requestor</th>
+                            <th style="text-align:left;padding:12px 20px;color:#64748b;font-weight:600;">Department</th>
+                            <th style="text-align:left;padding:12px 20px;color:#64748b;font-weight:600;">Category</th>
+                            <th style="text-align:right;padding:12px 20px;color:#64748b;font-weight:600;">Amount</th>
+                            <th style="text-align:left;padding:12px 20px;color:#64748b;font-weight:600;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($todayExpenseReleaseRecords as $expense)
+                        <tr
+                            style="border-bottom:1px solid #f1f5f9;cursor:pointer;"
+                            onclick="window.location.href='{{ route('departments.admin') }}?highlight={{ $expense->id }}'"
+                            onmouseover="this.style.background='#f8fafc'"
+                            onmouseout="this.style.background=''"
+                        >
+                            <td style="padding:12px 20px;font-weight:600;color:#0f172a;">{{ $expense->requestor_name }}</td>
+                            <td style="padding:12px 20px;color:#334155;">{{ $expense->department }}</td>
+                            <td style="padding:12px 20px;color:#334155;">{{ $expense->category }}</td>
+                            <td style="padding:12px 20px;text-align:right;font-weight:700;color:#1e4575;">&#8369;{{ number_format($expense->requested_amount, 2) }}</td>
+                            <td style="padding:12px 20px;">
+                                @if($expense->release_status === 'RELEASED')
+                                    <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#dcfce7;color:#166534;">Released</span>
+                                @elseif($expense->release_status === 'REJECTED')
+                                    <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#fee2e2;color:#991b1b;">Rejected</span>
+                                @else
+                                    <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;">{{ $expense->release_status }}</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#f8fafc;">
+                            <td colspan="3" style="padding:12px 20px;font-weight:700;color:#0f172a;">Total</td>
+                            <td style="padding:12px 20px;text-align:right;font-weight:800;color:#1e4575;">&#8369;{{ number_format($todayExpenseReleasesTotal, 2) }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            @else
+            <div style="padding:40px 20px;text-align:center;color:#94a3b8;">No expense releases scheduled for today.</div>
+            @endif
+        </div>
+        <div style="padding:16px 24px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;">
+            <a href="{{ route('departments.admin') }}" style="padding:8px 18px;background:#1e4575;color:white;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700;">Open Departmental Expenses</a>
+        </div>
+    </div>
+</div>
+<script>
+function openTodayExpensesModal() {
+    document.getElementById('todayExpensesModalOverlay').classList.add('active');
+}
+function closeTodayExpensesModal() {
+    document.getElementById('todayExpensesModalOverlay').classList.remove('active');
+}
+</script>
+
 
 <!-- Top Metrics Cards -->
 @if(!in_array('dashboard.budget-cards', $hiddenSections))
@@ -152,8 +349,20 @@
         </div>
         <div class="card-body-modern">
             <div class="department-list-modern">
-                @foreach($departmentData as $index => $dept)
-                @php $pct = min($dept['percentage'], 100); $color = $pct < 70 ? '#059669' : ($pct < 90 ? '#d97706' : '#dc2626'); @endphp
+                @php
+                    $sortedDeptData = collect($departmentData)->sortByDesc('expenses')->values();
+                    $maxDeptExpense = $sortedDeptData->max('expenses') ?: 1;
+                @endphp
+                @foreach($sortedDeptData as $index => $dept)
+                @php
+                    $barPct = 0;
+                    if ($dept['expenses'] > 0 && $maxDeptExpense > 0) {
+                        // Floor of 4% so departments with real (but comparatively tiny)
+                        // expenses still show a visible sliver instead of vanishing next
+                        // to one huge outlier department.
+                        $barPct = max(4, min(100, ($dept['expenses'] / $maxDeptExpense) * 100));
+                    }
+                @endphp
                 <div class="dept-item-modern fade-in-up gpu-accelerated">
                     <div style="flex:1;min-width:0;">
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -173,15 +382,10 @@
                             </div>
                             <div style="text-align:right;flex-shrink:0;">
                                 <div class="dept-amount-modern">₱{{ number_format($dept['expenses'], 0) }}</div>
-                                <div style="font-size:10px;color:#94a3b8;">of ₱{{ number_format($dept['budget'], 0) }}</div>
                             </div>
                         </div>
                         <div style="background:#f1f5f9;border-radius:999px;height:5px;overflow:hidden;">
-                            <div style="height:100%;width:{{ $pct }}%;background:{{ $color }};border-radius:999px;transition:width .6s;"></div>
-                        </div>
-                        <div style="display:flex;justify-content:space-between;margin-top:4px;">
-                            <span style="font-size:10px;color:#94a3b8;">{{ number_format($pct, 1) }}% used</span>
-                            <span style="font-size:10px;font-weight:600;color:{{ $dept['remaining'] >= 0 ? '#059669' : '#dc2626' }};">₱{{ number_format($dept['remaining'], 0) }} left</span>
+                            <div style="height:100%;width:{{ $barPct }}%;background:linear-gradient(90deg,#1e4575,#2563eb);border-radius:999px;transition:width .6s;"></div>
                         </div>
                     </div>
                 </div>
@@ -190,61 +394,9 @@
         </div>
     </div>
     @endif
-</div>
+    </div>
 @endif
 
-<!-- Budget Table Section -->
-@if(!in_array('dashboard.budget-table', $hiddenSections))
-<div class="dashboard-card budget-card">
-    <div class="card-header-modern">
-        <div class="header-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-            </svg>
-        </div>
-        <div>
-            <h3 class="card-title-modern">Budget Overview</h3>
-            <p class="card-subtitle-modern">Remaining Fund per Department - {{ $currentMonth }} {{ $currentYear }}</p>
-        </div>
-    </div>
-    <div class="card-body-modern">
-        <div class="table-container">
-            <table class="modern-table">
-                <thead>
-                    <tr>
-                        <th>Department</th>
-                        <th>Total Budget</th>
-                        <th>Used</th>
-                        <th>Remaining</th>
-                        <th>Usage</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($departmentData as $dept)
-                    <tr>
-                        <td>
-                            <div class="table-dept">{{ $dept['name'] }}</div>
-                        </td>
-                        <td>₱{{ number_format($dept['budget'], 2) }}</td>
-                        <td>₱{{ number_format($dept['expenses'], 2) }}</td>
-                        <td class="remaining-amount">₱{{ number_format($dept['remaining'], 2) }}</td>
-                        <td>
-                            <div class="progress-container">
-                                <div class="progress-bar">
-                                    <div class="progress-fill progress-{{ $dept['percentage'] < 70 ? 'success' : ($dept['percentage'] < 90 ? 'warning' : 'danger') }}" 
-                                         style="width: {{ min($dept['percentage'], 100) }}%"></div>
-                                </div>
-                                <span class="progress-text">{{ number_format($dept['percentage'], 1) }}%</span>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-@endif
 
 <style>
 /* ===== WELCOME BANNER ===== */
@@ -329,7 +481,49 @@
     border: 1.5px solid #f1f5f9;
     transition: transform .2s, box-shadow .2s;
 }
-.metric-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,.1); }
+.metric-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,.1); border-color: #A37929; }
+.metric-card-clickable { cursor: pointer; }
+
+/* ===== TODAY'S RELEASES SECTION (separated from performance metrics) ===== */
+.releases-section {
+    background: #eef4fb;
+    border: 1.5px solid #d7e6f5;
+    border-radius: 18px;
+    padding: 20px 20px 4px;
+    margin-bottom: 28px;
+}
+.releases-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1e4575;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 16px;
+}
+.releases-section-date {
+    margin-left: auto;
+    color: #4a6fa5;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+}
+.releases-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.modal-overlay { display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center; }
+.modal-overlay.active { display:flex; }
+.modal-box { background:white;border-radius:16px;width:90%;max-height:90vh;overflow-y:auto;overflow-x:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3);animation:modalIn 0.25s ease-out; }
+@keyframes modalIn { from{opacity:0;transform:scale(0.95) translateY(-10px);}to{opacity:1;transform:scale(1) translateY(0);} }
+.modal-header { background:#1e4575;color:white;padding:18px 24px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #A37929; }
+.modal-close { background:rgba(255,255,255,.15);border:none;color:white;width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:13px; }
 .metric-icon {
     width: 56px; height: 56px;
     border-radius: 14px;
@@ -442,35 +636,6 @@
 .dept-name-modern { font-weight: 600; color: #334155; font-size: 13px; }
 .dept-amount-modern { font-weight: 700; color: #0f172a; font-size: 14px; }
 
-/* ===== BUDGET TABLE ===== */
-.budget-card { margin-bottom: 0; }
-.table-container { overflow-x: auto; }
-.modern-table { width: 100%; border-collapse: collapse; }
-.modern-table thead tr { background: linear-gradient(135deg,#1e4575,#2563eb); }
-.modern-table th {
-    padding: 14px 16px;
-    text-align: left;
-    font-weight: 600;
-    font-size: 12px;
-    color: white;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    white-space: nowrap;
-}
-.modern-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .15s; }
-.modern-table tbody tr:last-child { border-bottom: none; }
-.modern-table tbody tr:hover { background: #f8fafc; }
-.modern-table td { padding: 14px 16px; font-size: 13px; color: #334155; }
-.table-dept { font-weight: 600; color: #1e4575; }
-.remaining-amount { font-weight: 700; color: #059669; }
-.progress-container { display: flex; align-items: center; gap: 10px; }
-.progress-bar { flex: 1; height: 7px; background: #e2e8f0; border-radius: 4px; overflow: hidden; min-width: 80px; }
-.progress-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
-.progress-success { background: linear-gradient(90deg,#A37929,#d4a03a); }
-.progress-warning { background: linear-gradient(90deg,#f59e0b,#d97706); }
-.progress-danger { background: linear-gradient(90deg,#ef4444,#dc2626); }
-.progress-text { font-weight: 600; font-size: 12px; color: #64748b; min-width: 40px; text-align: right; }
-
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
     .section-grid { grid-template-columns: 1fr; }
@@ -478,6 +643,7 @@
 }
 @media (max-width: 640px) {
     .metrics-grid { grid-template-columns: 1fr; }
+    .releases-grid { grid-template-columns: 1fr; }
     .welcome-title { font-size: 22px; }
     .welcome-banner { padding: 24px; }
 }
