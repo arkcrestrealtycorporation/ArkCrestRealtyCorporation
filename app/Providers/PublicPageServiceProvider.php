@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Http\Controllers\Admin\NewsPostController;
+use App\Http\Controllers\Admin\TestimonialController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\NewsUpdateController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -39,6 +41,27 @@ class PublicPageServiceProvider extends ServiceProvider
                         ->name('destroy');
                     Route::delete('/media/{media}', [NewsPostController::class, 'destroyMedia'])
                         ->name('media.destroy');
+                });
+
+            Route::get(
+                '/testimonials/avatar/{testimonial}',
+                [LandingController::class, 'testimonialAvatar']
+            )->name('testimonials.avatar');
+
+            Route::middleware(['auth', 'no.cache', 'admin'])
+                ->prefix('admin/testimonials')
+                ->name('admin.testimonials.')
+                ->group(function (): void {
+                    Route::get('/', [TestimonialController::class, 'index'])
+                        ->name('index');
+                    Route::post('/', [TestimonialController::class, 'store'])
+                        ->name('store');
+                    Route::put('/{testimonial}', [TestimonialController::class, 'update'])
+                        ->name('update');
+                    Route::delete('/{testimonial}', [TestimonialController::class, 'destroy'])
+                        ->name('destroy');
+                    Route::delete('/{testimonial}/avatar', [TestimonialController::class, 'destroyAvatar'])
+                        ->name('avatar.destroy');
                 });
         });
     }
