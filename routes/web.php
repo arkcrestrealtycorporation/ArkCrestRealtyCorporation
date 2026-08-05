@@ -197,6 +197,7 @@ Route::middleware(['auth', 'no.cache'])->group(function () {
     // HR Forms (save/load)
     Route::post('/api/hr-forms', [App\Http\Controllers\HrFormController::class, 'store'])->name('hr-forms.store');
     Route::get('/api/hr-forms', [App\Http\Controllers\HrFormController::class, 'index'])->name('hr-forms.index');
+    Route::put('/api/hr-forms/{id}', [App\Http\Controllers\HrFormController::class, 'update'])->name('hr-forms.update');
     Route::delete('/api/hr-forms/{id}', [App\Http\Controllers\HrFormController::class, 'destroy'])->name('hr-forms.destroy');
     Route::get('/forms', [App\Http\Controllers\FormsController::class, 'index'])->name('forms')->middleware('page.visible');
     Route::get('/forms/site-visit', [App\Http\Controllers\FormsController::class, 'siteVisit'])->name('forms.site-visit');
