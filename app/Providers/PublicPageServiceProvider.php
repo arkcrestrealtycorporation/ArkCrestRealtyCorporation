@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Controllers\Admin\AwardController;
 use App\Http\Controllers\Admin\NewsPostController;
 use App\Http\Controllers\Admin\TestimonialController;
 use App\Http\Controllers\LandingController;
@@ -62,6 +63,27 @@ class PublicPageServiceProvider extends ServiceProvider
                         ->name('destroy');
                     Route::delete('/{testimonial}/avatar', [TestimonialController::class, 'destroyAvatar'])
                         ->name('avatar.destroy');
+                });
+
+            Route::get(
+                '/awards/image/{award}',
+                [LandingController::class, 'awardImage']
+            )->name('awards.image');
+
+            Route::middleware(['auth', 'no.cache', 'admin'])
+                ->prefix('admin/awards')
+                ->name('admin.awards.')
+                ->group(function (): void {
+                    Route::get('/', [AwardController::class, 'index'])
+                        ->name('index');
+                    Route::post('/', [AwardController::class, 'store'])
+                        ->name('store');
+                    Route::put('/{award}', [AwardController::class, 'update'])
+                        ->name('update');
+                    Route::delete('/{award}', [AwardController::class, 'destroy'])
+                        ->name('destroy');
+                    Route::delete('/{award}/image', [AwardController::class, 'destroyImage'])
+                        ->name('image.destroy');
                 });
         });
     }

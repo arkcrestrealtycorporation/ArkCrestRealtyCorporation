@@ -565,6 +565,15 @@
     background-size:contain;
   }
 
+  .award-photo{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center;
+    border-radius:6px;
+    display:block;
+  }
+
   .award-provider{
     min-height:22px;
     max-width:280px;
@@ -1020,83 +1029,31 @@
       </div>
 
       <div class="awards-grid reveal-stagger">
+        @forelse($awards as $award)
         <article class="award-card">
           <div class="award-icon-wrap">
-            <div
-              class="award-icon"
-              role="img"
-              aria-label="758 black award emblem"
-            ></div>
+            @if($award->has_image)
+              <img
+                src="{{ $award->image_url }}"
+                alt="{{ $award->title }}"
+                class="award-photo"
+              >
+            @else
+              <div
+                class="award-icon"
+                role="img"
+                aria-label="758 black award emblem"
+              ></div>
+            @endif
           </div>
-          <div class="award-provider">ArkCrest Realty</div>
-          <h3>Top Sales Team of 2025</h3>
+          <div class="award-provider">{{ $award->recipient_name }}</div>
+          <h3>{{ $award->title }}</h3>
         </article>
-        <article class="award-card">
-          <div class="award-icon-wrap">
-            <div
-              class="award-icon"
-              role="img"
-              aria-label="758 black award emblem"
-            ></div>
-          </div>
-          <div class="award-provider">Carl Angel Buakaew</div>
-          <h3>Top 1 Sales Agent of 2025</h3>
-        </article>
-        <article class="award-card">
-          <div class="award-icon-wrap">
-            <div
-              class="award-icon"
-              role="img"
-              aria-label="758 black award emblem"
-            ></div>
-          </div>
-          <div class="award-provider">Krinessa Mojica</div>
-          <h3>Top 2 Sales Agent of 2025</h3>
-        </article>
-        <article class="award-card">
-          <div class="award-icon-wrap">
-            <div
-              class="award-icon"
-              role="img"
-              aria-label="758 black award emblem"
-            ></div>
-          </div>
-          <div class="award-provider">Ma. Cythia Albania</div>
-          <h3>Top 3 Sales Agent of 2025</h3>
-        </article>
-        <article class="award-card">
-          <div class="award-icon-wrap">
-            <div
-              class="award-icon"
-              role="img"
-              aria-label="758 black award emblem"
-            ></div>
-          </div>
-          <div class="award-provider">Evelyn Espina</div>
-          <h3>Top 6 Sales Agent of 2025</h3>
-        </article>
-        <article class="award-card">
-          <div class="award-icon-wrap">
-            <div
-              class="award-icon"
-              role="img"
-              aria-label="758 black award emblem"
-            ></div>
-          </div>
-          <div class="award-provider">Edwin Mojica</div>
-          <h3>Top 7 Sales Agent of 2025</h3>
-        </article>
-        <article class="award-card">
-          <div class="award-icon-wrap">
-            <div
-              class="award-icon"
-              role="img"
-              aria-label="758 black award emblem"
-            ></div>
-          </div>
-          <div class="award-provider">Jossen Fernandez</div>
-          <h3>Top 9 Sales Agent of 2025</h3>
-        </article>
+        @empty
+        <p style="grid-column:1/-1;text-align:center;color:#5b6b80;">
+          Awards will be posted here soon.
+        </p>
+        @endforelse
       </div>
     </div>
   </section>
