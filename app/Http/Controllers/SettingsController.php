@@ -35,6 +35,9 @@ class SettingsController extends Controller
     'settings.practice-history',
     'settings.edit-history',
     'settings.properties',
+    'admin.news-updates',
+    'admin.testimonials',
+    'admin.awards',
 ];
 
     public function index()
@@ -1019,6 +1022,7 @@ private function getDeletedExpenses()
             'settings.period-lock','settings.visibility','settings.activity','settings.deleted',
             'settings.backup','settings.export',
             'settings.practice-scenarios','settings.practice-history','settings.edit-history','settings.properties',
+            'admin.news-updates','admin.testimonials','admin.awards',
         ];
 
         $visiblePages = $request->input('visible_pages', []);

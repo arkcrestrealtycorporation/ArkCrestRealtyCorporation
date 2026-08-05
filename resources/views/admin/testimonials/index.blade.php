@@ -4,7 +4,10 @@
 
 @section('content')
 @php
-    if (!auth()->user()->isAdmin()) abort(403);
+    $__u = auth()->user();
+    if (!$__u || (!$__u->isAdmin() && in_array('admin.testimonials', $__u->hidden_pages ?? []))) {
+        abort(403);
+    }
 @endphp
 
 <div class="news-admin-page">
@@ -185,6 +188,7 @@
                         <button type="button" class="news-admin-btn secondary small" onclick="toggleNewsEdit({{ $testimonial->id }})">
                             Edit
                         </button>
+                        @if($__u->isAdmin())
                         <form
                             method="POST"
                             action="{{ route('admin.testimonials.destroy', $testimonial) }}"
@@ -194,6 +198,7 @@
                             @method('DELETE')
                             <button type="submit" class="news-admin-btn danger small">Delete</button>
                         </form>
+                        @endif
                     </div>
                 </div>
 
@@ -289,8 +294,7 @@
                             @if($testimonial->has_avatar)
                                 <button
                                     type="submit"
-                                    formaction="{{ route('admin.testimonials.avatar.destroy', $testimonial) }}"
-                                    formnovalidate
+                                    form="testimonial-avatar-destroy-{{ $testimonial->id }}"
                                     class="news-admin-btn secondary"
                                     onclick="return confirm('Remove this client photo?');"
                                 >Remove Photo</button>
@@ -299,6 +303,18 @@
                             <button type="submit" class="news-admin-btn primary">Save Changes</button>
                         </div>
                     </form>
+
+                    @if($testimonial->has_avatar)
+                        <form
+                            id="testimonial-avatar-destroy-{{ $testimonial->id }}"
+                            method="POST"
+                            action="{{ route('admin.testimonials.avatar.destroy', $testimonial) }}"
+                            style="display:none;"
+                        >
+                            @csrf
+                            @method('DELETE')
+                        </form>
+                    @endif
                 </div>
             </article>
         @empty

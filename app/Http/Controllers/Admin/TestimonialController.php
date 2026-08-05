@@ -123,6 +123,10 @@ class TestimonialController extends Controller
     {
         $this->guardAdmin();
 
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Only administrators can delete testimonials.');
+        }
+
         $file = [
             'disk' => $testimonial->avatar_disk,
             'path' => $testimonial->avatar_path,
@@ -284,8 +288,18 @@ class TestimonialController extends Controller
 
     private function guardAdmin(): void
     {
-        if (!auth()->check() || !auth()->user()->isAdmin()) {
-            abort(403, 'Only administrators can manage testimonials.');
+        $user = auth()->user();
+
+        if (!$user) {
+            abort(403, 'Only signed-in staff can manage testimonials.');
+        }
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        if (in_array('admin.testimonials', $user->hidden_pages ?? [])) {
+            abort(403, 'You do not have access to Feedback Management.');
         }
     }
 }

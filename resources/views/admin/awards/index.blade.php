@@ -4,7 +4,10 @@
 
 @section('content')
 @php
-    if (!auth()->user()->isAdmin()) abort(403);
+    $__u = auth()->user();
+    if (!$__u || (!$__u->isAdmin() && in_array('admin.awards', $__u->hidden_pages ?? []))) {
+        abort(403);
+    }
 @endphp
 
 <div class="news-admin-page">
@@ -172,6 +175,7 @@
                         <button type="button" class="news-admin-btn secondary small" onclick="toggleNewsEdit({{ $award->id }})">
                             Edit
                         </button>
+                        @if($__u->isAdmin())
                         <form
                             method="POST"
                             action="{{ route('admin.awards.destroy', $award) }}"
@@ -181,6 +185,7 @@
                             @method('DELETE')
                             <button type="submit" class="news-admin-btn danger small">Delete</button>
                         </form>
+                        @endif
                     </div>
                 </div>
 
@@ -266,8 +271,7 @@
                             @if($award->has_image)
                                 <button
                                     type="submit"
-                                    formaction="{{ route('admin.awards.image.destroy', $award) }}"
-                                    formnovalidate
+                                    form="award-image-destroy-{{ $award->id }}"
                                     class="news-admin-btn secondary"
                                     onclick="return confirm('Remove this award image?');"
                                 >Remove Image</button>
@@ -276,6 +280,18 @@
                             <button type="submit" class="news-admin-btn primary">Save Changes</button>
                         </div>
                     </form>
+
+                    @if($award->has_image)
+                        <form
+                            id="award-image-destroy-{{ $award->id }}"
+                            method="POST"
+                            action="{{ route('admin.awards.image.destroy', $award) }}"
+                            style="display:none;"
+                        >
+                            @csrf
+                            @method('DELETE')
+                        </form>
+                    @endif
                 </div>
             </article>
         @empty

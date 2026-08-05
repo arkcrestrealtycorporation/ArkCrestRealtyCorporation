@@ -121,6 +121,10 @@ class AwardController extends Controller
     {
         $this->guardAdmin();
 
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Only administrators can delete awards.');
+        }
+
         $file = [
             'disk' => $award->image_disk,
             'path' => $award->image_path,
@@ -281,8 +285,18 @@ class AwardController extends Controller
 
     private function guardAdmin(): void
     {
-        if (!auth()->check() || !auth()->user()->isAdmin()) {
-            abort(403, 'Only administrators can manage awards.');
+        $user = auth()->user();
+
+        if (!$user) {
+            abort(403, 'Only signed-in staff can manage awards.');
+        }
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        if (in_array('admin.awards', $user->hidden_pages ?? [])) {
+            abort(403, 'You do not have access to Awards Management.');
         }
     }
 }

@@ -28,7 +28,7 @@ class PublicPageServiceProvider extends ServiceProvider
                 [NewsUpdateController::class, 'media']
             )->name('news-updates.media');
 
-            Route::middleware(['auth', 'no.cache', 'admin'])
+            Route::middleware(['auth', 'no.cache', 'page.visible'])
                 ->prefix('admin/news-updates')
                 ->name('admin.news-updates.')
                 ->group(function (): void {
@@ -49,7 +49,7 @@ class PublicPageServiceProvider extends ServiceProvider
                 [LandingController::class, 'testimonialAvatar']
             )->name('testimonials.avatar');
 
-            Route::middleware(['auth', 'no.cache', 'admin'])
+            Route::middleware(['auth', 'no.cache', 'page.visible'])
                 ->prefix('admin/testimonials')
                 ->name('admin.testimonials.')
                 ->group(function (): void {
@@ -70,7 +70,7 @@ class PublicPageServiceProvider extends ServiceProvider
                 [LandingController::class, 'awardImage']
             )->name('awards.image');
 
-            Route::middleware(['auth', 'no.cache', 'admin'])
+            Route::middleware(['auth', 'no.cache', 'page.visible'])
                 ->prefix('admin/awards')
                 ->name('admin.awards.')
                 ->group(function (): void {

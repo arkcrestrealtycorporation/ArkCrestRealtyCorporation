@@ -4,7 +4,10 @@
 
 @section('content')
 @php
-    if (!auth()->user()->isAdmin()) abort(403);
+    $__u = auth()->user();
+    if (!$__u || (!$__u->isAdmin() && in_array('admin.news-updates', $__u->hidden_pages ?? []))) {
+        abort(403);
+    }
 @endphp
 
 <div class="news-admin-page">
@@ -164,6 +167,7 @@
                         <button type="button" class="news-admin-btn secondary small" onclick="toggleNewsEdit({{ $post->id }})">
                             Edit
                         </button>
+                        @if($__u->isAdmin())
                         <form
                             method="POST"
                             action="{{ route('admin.news-updates.destroy', $post) }}"
@@ -173,6 +177,7 @@
                             @method('DELETE')
                             <button type="submit" class="news-admin-btn danger small">Delete</button>
                         </form>
+                        @endif
                     </div>
                 </div>
 

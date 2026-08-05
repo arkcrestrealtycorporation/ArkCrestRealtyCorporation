@@ -128,6 +128,10 @@ class NewsPostController extends Controller
     {
         $this->guardAdmin();
 
+        if (!auth()->user()->isAdmin()) {
+            abort(403, 'Only administrators can delete News & Updates posts.');
+        }
+
         $files = $newsPost->media
             ->map(fn (NewsPostMedia $media) => [
                 'disk' => $media->disk,
@@ -339,8 +343,21 @@ class NewsPostController extends Controller
 
     private function guardAdmin(): void
     {
-        if (!auth()->check() || !auth()->user()->isAdmin()) {
-            abort(403, 'Only administrators can manage News & Updates posts.');
+        $user = auth()->user();
+
+        if (!$user) {
+            abort(403, 'Only signed-in staff can manage News & Updates posts.');
+        }
+
+        if ($user->isAdmin()) {
+            return;
+        }
+
+        // Defense in depth: the 'page.visible' route middleware already
+        // blocks this before it reaches the controller, but we check again
+        // here in case this method is ever called from elsewhere.
+        if (in_array('admin.news-updates', $user->hidden_pages ?? [])) {
+            abort(403, 'You do not have access to News & Updates Posting.');
         }
     }
 }

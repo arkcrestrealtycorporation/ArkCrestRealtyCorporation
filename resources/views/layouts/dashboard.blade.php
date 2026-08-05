@@ -912,7 +912,7 @@
                     </li>
 
                     <!-- Admin with Dropdown -->
-                            @if($isAdminUser || array_filter(['settings.users','settings.visibility','settings.practice-scenarios','settings.practice-history','settings.activity','settings.edit-history','settings.deleted','settings.teams','settings.properties','settings.period-lock','settings.backup','settings.export'], fn($k) => !in_array($k, $userHiddenSettings)))
+                            @if($isAdminUser || array_filter(['settings.users','settings.visibility','settings.practice-scenarios','settings.practice-history','settings.activity','settings.edit-history','settings.deleted','settings.teams','settings.properties','settings.period-lock','settings.backup','settings.export','admin.news-updates','admin.testimonials','admin.awards'], fn($k) => !in_array($k, $userHiddenSettings)))
                     <li class="nav-item-wrapper">
                         <div class="nav-item-container">
                             <button
@@ -953,7 +953,7 @@
                             </li>
                             @endif
 
-                            @if($isAdminUser)
+                            @if($canSeeSetting('admin.news-updates'))
                             <li>
                                 <a href="{{ route('admin.news-updates.index') }}" class="nav-subitem" data-page="admin-news-updates">
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -962,6 +962,8 @@
                                     <span class="sidebar-text">News &amp; Updates Posting</span>
                                 </a>
                             </li>
+                            @endif
+                            @if($canSeeSetting('admin.testimonials'))
                             <li>
                                 <a href="{{ route('admin.testimonials.index') }}" class="nav-subitem" data-page="admin-testimonials">
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -970,6 +972,8 @@
                                     <span class="sidebar-text">Feedback Management</span>
                                 </a>
                             </li>
+                            @endif
+                            @if($canSeeSetting('admin.awards'))
                             <li>
                                 <a href="{{ route('admin.awards.index') }}" class="nav-subitem" data-page="admin-awards">
                                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
