@@ -23,7 +23,7 @@ Route::middleware(['guest', 'no.cache'])->group(function () {
 });
 
 // Public landing page
-Route::view('/', 'landing')->name('landing');
+Route::get('/', [App\Http\Controllers\LandingController::class, 'index'])->name('landing');
 
 // Public "Get in touch" / property inquiry form on the landing page
 Route::post('/inquire', [App\Http\Controllers\InquiryController::class, 'store'])->name('inquire.store');
