@@ -1018,8 +1018,7 @@
         </span>
         <h2>Our <em>Awards</em></h2>
         <p>
-          Recognitions received by ArkCrest Realty from
-          758 Real Estate Management Services for sales performance in 2025.
+          Recognitions received by ArkCrest Realty or ArkCrest Realty agents for excellence in service, sales, and client satisfaction.
         </p>
       </div>
 
