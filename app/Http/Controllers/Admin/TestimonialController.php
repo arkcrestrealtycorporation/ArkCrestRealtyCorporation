@@ -60,7 +60,7 @@ class TestimonialController extends Controller
 
             return redirect()
                 ->route('admin.testimonials.index')
-                ->with('testimonial_success', 'Testimonial created successfully.');
+                ->with('testimonial_success', 'Feedback created successfully.');
         } catch (Throwable $e) {
             DB::rollBack();
             $this->deleteStoredFile($storedFile);
@@ -68,7 +68,7 @@ class TestimonialController extends Controller
 
             return back()
                 ->withInput()
-                ->with('testimonial_error', 'The testimonial could not be created. Please try again.');
+                ->with('testimonial_error', 'The feedback could not be created. Please try again.');
         }
     }
 
@@ -107,7 +107,7 @@ class TestimonialController extends Controller
 
             return redirect()
                 ->route('admin.testimonials.index')
-                ->with('testimonial_success', 'Testimonial updated successfully.');
+                ->with('testimonial_success', 'Feedback updated successfully.');
         } catch (Throwable $e) {
             DB::rollBack();
             $this->deleteStoredFile($storedFile);
@@ -115,7 +115,7 @@ class TestimonialController extends Controller
 
             return back()
                 ->withInput()
-                ->with('testimonial_error', 'The testimonial could not be updated. Please try again.');
+                ->with('testimonial_error', 'The feedback could not be updated. Please try again.');
         }
     }
 
@@ -124,28 +124,25 @@ class TestimonialController extends Controller
         $this->guardAdmin();
 
         if (!auth()->user()->isAdmin()) {
-            abort(403, 'Only administrators can delete testimonials.');
+            abort(403, 'Only administrators can delete feedback.');
         }
 
-        $file = [
-            'disk' => $testimonial->avatar_disk,
-            'path' => $testimonial->avatar_path,
-        ];
-
         try {
+            // A soft delete only trashes the row — the avatar file is left on
+            // disk untouched so it's still there if this gets restored from
+            // Deleted Records. It's only actually removed on a permanent purge
+            // (see Testimonial::booted()).
             DB::transaction(function () use ($testimonial): void {
                 $testimonial->delete();
             });
 
-            $this->deleteStoredFile($file);
-
             return redirect()
                 ->route('admin.testimonials.index')
-                ->with('testimonial_success', 'Testimonial deleted successfully.');
+                ->with('testimonial_success', 'Feedback deleted successfully.');
         } catch (Throwable $e) {
             report($e);
 
-            return back()->with('testimonial_error', 'The testimonial could not be deleted.');
+            return back()->with('testimonial_error', 'The feedback could not be deleted.');
         }
     }
 
@@ -291,7 +288,7 @@ class TestimonialController extends Controller
         $user = auth()->user();
 
         if (!$user) {
-            abort(403, 'Only signed-in staff can manage testimonials.');
+            abort(403, 'Only signed-in staff can manage feedback.');
         }
 
         if ($user->isAdmin()) {

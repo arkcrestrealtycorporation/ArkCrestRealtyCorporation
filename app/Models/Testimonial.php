@@ -6,10 +6,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Testimonial extends Model
 {
     use HasFactory;
+    use SoftDeletes;
 
     protected $fillable = [
         'client_name', 'client_role', 'quote',
@@ -20,6 +23,22 @@ class Testimonial extends Model
     protected function casts(): array
     {
         return ['sort_order' => 'integer'];
+    }
+
+    protected static function booted(): void
+    {
+        // Only remove the avatar file on a permanent purge, never on a
+        // normal (soft) delete, so restore() always has the file to
+        // bring back.
+        static::deleting(function (Testimonial $testimonial): void {
+            if ($testimonial->isForceDeleting() && $testimonial->avatar_disk && $testimonial->avatar_path) {
+                try {
+                    Storage::disk($testimonial->avatar_disk)->delete($testimonial->avatar_path);
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+        });
     }
 
     public function creator(): BelongsTo

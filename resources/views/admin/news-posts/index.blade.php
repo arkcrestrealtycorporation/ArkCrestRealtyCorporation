@@ -53,7 +53,7 @@
             <span class="news-admin-hint">Up to 10 images/videos per upload</span>
         </div>
 
-        <form method="POST" action="{{ route('admin.news-updates.store') }}" enctype="multipart/form-data" class="news-post-form">
+        <form method="POST" action="{{ route('admin.news-updates.store') }}" enctype="multipart/form-data" class="news-post-form" onsubmit="return confirm('Save and post this news update?');">
             @csrf
 
             <div class="news-admin-field full">

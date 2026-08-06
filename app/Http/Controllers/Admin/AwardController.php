@@ -125,17 +125,14 @@ class AwardController extends Controller
             abort(403, 'Only administrators can delete awards.');
         }
 
-        $file = [
-            'disk' => $award->image_disk,
-            'path' => $award->image_path,
-        ];
-
         try {
+            // A soft delete only trashes the row — the image file is left on
+            // disk untouched so it's still there if this gets restored from
+            // Deleted Records. It's only actually removed on a permanent purge
+            // (see Award::booted()).
             DB::transaction(function () use ($award): void {
                 $award->delete();
             });
-
-            $this->deleteStoredFile($file);
 
             return redirect()
                 ->route('admin.awards.index')

@@ -132,19 +132,14 @@ class NewsPostController extends Controller
             abort(403, 'Only administrators can delete News & Updates posts.');
         }
 
-        $files = $newsPost->media
-            ->map(fn (NewsPostMedia $media) => [
-                'disk' => $media->disk,
-                'path' => $media->path,
-            ])
-            ->all();
-
         try {
+            // A soft delete only trashes the row — attached media rows and
+            // their files are left completely untouched so they're still
+            // there if this gets restored from Deleted Records. They're only
+            // actually removed on a permanent purge (see NewsPost::booted()).
             DB::transaction(function () use ($newsPost): void {
                 $newsPost->delete();
             });
-
-            $this->deleteStoredFiles($files);
 
             return redirect()
                 ->route('admin.news-updates.index')

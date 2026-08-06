@@ -53,7 +53,7 @@
             <span class="news-admin-hint">Only "Published" awards appear on the landing page</span>
         </div>
 
-        <form method="POST" action="{{ route('admin.awards.store') }}" enctype="multipart/form-data" class="news-post-form">
+        <form method="POST" action="{{ route('admin.awards.store') }}" enctype="multipart/form-data" class="news-post-form" onsubmit="return confirm('Save this award?');">
             @csrf
 
             <div class="news-admin-field">
@@ -513,6 +513,9 @@
     white-space:nowrap;
     color:#b17d12!important;
     font-weight:700!important;
+}
+.news-upload-preview[hidden]{
+    display:none;
 }
 .news-upload-preview{
     width:96px;

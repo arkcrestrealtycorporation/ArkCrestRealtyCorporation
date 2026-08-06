@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Testimonials Management')
+@section('title', 'Feedback Management')
 
 @section('content')
 @php
@@ -14,8 +14,8 @@
     <section class="news-admin-banner">
         <div>
             <span class="news-admin-kicker">Admin Publishing</span>
-            <h1>Testimonials Management</h1>
-            <p>Create, edit, and publish the client testimonials shown in the "Words from our clients" section of the public landing page.</p>
+            <h1>Feedback Management</h1>
+            <p>Create, edit, and publish the client feedback shown in the "Words from our clients" section of the public landing page.</p>
         </div>
         <a href="{{ route('landing') }}#testimonials" target="_blank" rel="noopener noreferrer" class="news-admin-public-link">
             View Public Page
@@ -48,12 +48,12 @@
         <div class="news-admin-panel-head">
             <div>
                 <span class="news-admin-section-number">01</span>
-                <h2>Add a New Testimonial</h2>
+                <h2>Add New Feedback</h2>
             </div>
-            <span class="news-admin-hint">Only "Published" testimonials appear on the landing page (max 4 shown)</span>
+            <span class="news-admin-hint">Only "Published" feedback appears on the landing page (max 4 shown)</span>
         </div>
 
-        <form method="POST" action="{{ route('admin.testimonials.store') }}" enctype="multipart/form-data" class="news-post-form">
+        <form method="POST" action="{{ route('admin.testimonials.store') }}" enctype="multipart/form-data" class="news-post-form" onsubmit="return confirm('Save this feedback?');">
             @csrf
 
             <div class="news-admin-field">
@@ -82,14 +82,14 @@
             </div>
 
             <div class="news-admin-field full">
-                <label for="testimonial-quote">Testimonial / Quote</label>
+                <label for="testimonial-quote">Feedback / Quote</label>
                 <textarea
                     id="testimonial-quote"
                     name="quote"
                     rows="5"
                     maxlength="2000"
                     required
-                    placeholder="Write the client's testimonial..."
+                    placeholder="Write the client's feedback..."
                 >{{ old('quote') }}</textarea>
             </div>
 
@@ -138,7 +138,7 @@
 
             <div class="news-admin-actions full">
                 <button type="reset" class="news-admin-btn secondary">Clear Form</button>
-                <button type="submit" class="news-admin-btn primary">Save Testimonial</button>
+                <button type="submit" class="news-admin-btn primary">Save Feedback</button>
             </div>
         </form>
     </section>
@@ -147,9 +147,9 @@
         <div class="news-admin-panel-head">
             <div>
                 <span class="news-admin-section-number">02</span>
-                <h2>All Testimonials</h2>
+                <h2>All Feedback</h2>
             </div>
-            <span class="news-admin-hint">{{ $testimonials->total() }} total testimonial{{ $testimonials->total() === 1 ? '' : 's' }}</span>
+            <span class="news-admin-hint">{{ $testimonials->total() }} total feedback {{ $testimonials->total() === 1 ? 'entry' : 'entries' }}</span>
         </div>
 
         @forelse($testimonials as $testimonial)
@@ -192,7 +192,7 @@
                         <form
                             method="POST"
                             action="{{ route('admin.testimonials.destroy', $testimonial) }}"
-                            onsubmit="return confirm('Delete this testimonial permanently?');"
+                            onsubmit="return confirm('Delete this feedback permanently?');"
                         >
                             @csrf
                             @method('DELETE')
@@ -236,7 +236,7 @@
                         </div>
 
                         <div class="news-admin-field full">
-                            <label for="edit-quote-{{ $testimonial->id }}">Testimonial / Quote</label>
+                            <label for="edit-quote-{{ $testimonial->id }}">Feedback / Quote</label>
                             <textarea
                                 id="edit-quote-{{ $testimonial->id }}"
                                 name="quote"
@@ -322,8 +322,8 @@
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8-1.284 0-2.503-.24-3.605-.671L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                 </svg>
-                <h3>No testimonials yet</h3>
-                <p>Add your first client testimonial using the form above.</p>
+                <h3>No feedback yet</h3>
+                <p>Add your first client feedback using the form above.</p>
             </div>
         @endforelse
 
@@ -776,6 +776,9 @@
     margin:0 auto 10px;
     display:block;
     border:1px solid rgba(0,0,0,.08);
+}
+.news-upload-preview[hidden]{
+    display:none;
 }
 </style>
 
