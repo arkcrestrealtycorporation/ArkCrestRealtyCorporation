@@ -986,15 +986,9 @@
             </div>
           </article>
         @empty
-          {{-- fallback: ipapakita ito habang wala pang naka-publish na testimonial --}}
-          <article class="testimonial-card">
-            <div class="testimonial-quote" aria-hidden="true">&ldquo;</div>
-            <p>ArkCrest made the entire buying process simple and clear. They answered my questions and helped me find a property that matched my budget.</p>
-            <div class="testimonial-person">
-              <img src="https://i.pravatar.cc/120?img=47" alt="Mock customer Maria Santos" class="testimonial-avatar" loading="lazy">
-              <div class="testimonial-details"><strong>Maria Santos</strong><span>First-Time Property Buyer</span></div>
+            <div class="testimonials-empty">
+                <p>No published client feedback yet.</p>
             </div>
-          </article>
         @endforelse
       </div>
     </div>
